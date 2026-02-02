@@ -57,7 +57,10 @@
       "Bash(kubectl patch:*)",
       "Bash(kubectl delete:*)",
       "Bash(kubectl rollout status:*)",
-      "Bash(git ls-remote:*)"
+      "Bash(git ls-remote:*)",
+      "Bash(kubectl exec:*)",
+      "Bash(dig:*)",
+      "Bash(kubectl describe:*)"
     ]
   }
 }

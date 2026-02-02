@@ -17,8 +17,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  SERVER_IMAGE: ${{ github.repository_owner }}/claycosmos-server
-  WEB_IMAGE: ${{ github.repository_owner }}/claycosmos-web
+  SERVER_IMAGE: claycosmos/claycosmos-server
+  WEB_IMAGE: claycosmos/claycosmos-web
 
 jobs:
   # ── Server CI ───────────────────────────────────────────────

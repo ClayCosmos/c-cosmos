@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: claycosmos
+
+labels:
+- pairs:
+    environment: production
+
+resources:
+- namespace.yaml
+- ../../server/base
+- ../../web/base
+- sealed-secret.yaml
+
+images:
+- name: ghcr.io/claycosmos/claycosmos-server
+  newTag: sha-b746c02-5
+- name: ghcr.io/claycosmos/claycosmos-web
+  newTag: sha-b746c02-5

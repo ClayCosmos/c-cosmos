@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: claycosmos
+  labels:
+    app.kubernetes.io/name: claycosmos
+    environment: production

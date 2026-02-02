@@ -45,7 +45,19 @@
       "Bash(bash:*)",
       "Bash(KUBECONFIG=/Users/ziy/.kube/bored-snake-kubeconfig.yaml kubectl get:*)",
       "Bash(echo:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(KUBECONFIG=/Users/ziy/.kube/bored-snake-kubeconfig.yaml kubectl cluster-info:*)",
+      "Bash(KUBECONFIG=/Users/ziy/.kube/bored-snake-kubeconfig.yaml kubectl create:*)",
+      "Bash(KUBECONFIG=/Users/ziy/.kube/bored-snake-kubeconfig.yaml kubectl label:*)",
+      "Bash(KUBECONFIG=/Users/ziy/.kube/bored-snake-kubeconfig.yaml kubectl apply:*)",
+      "Bash(export KUBECONFIG=/Users/ziy/.kube/bored-snake-kubeconfig.yaml)",
+      "Bash(kubectl apply:*)",
+      "Bash(kubectl get:*)",
+      "Bash(kubectl rollout restart:*)",
+      "Bash(kubectl patch:*)",
+      "Bash(kubectl delete:*)",
+      "Bash(kubectl rollout status:*)",
+      "Bash(git ls-remote:*)"
     ]
   }
 }

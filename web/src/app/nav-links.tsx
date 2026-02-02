@@ -14,7 +14,7 @@ export function NavLinks() {
   const pathname = usePathname();
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-8">
       {links.map(({ href, label }) => {
         const isActive =
           pathname === href || pathname.startsWith(href + "/");
@@ -23,16 +23,13 @@ export function NavLinks() {
             key={href}
             href={href}
             className={cn(
-              "relative rounded-sm px-2.5 py-1 text-[13px] font-medium transition-colors",
+              "relative text-sm font-medium transition-colors",
               isActive
                 ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
             {label}
-            {isActive && (
-              <span className="absolute inset-x-0 -bottom-[7px] h-0.5 bg-primary" />
-            )}
           </Link>
         );
       })}

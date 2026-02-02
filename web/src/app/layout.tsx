@@ -32,18 +32,18 @@ export default function RootLayout({
         className={`${inter.variable} ${geistMono.variable} font-sans min-h-screen`}
         suppressHydrationWarning
       >
-        <nav className="border-b bg-background">
-          <div className="mx-auto flex h-11 max-w-4xl items-center justify-between px-6">
+        <nav className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
             <Link
               href="/"
-              className="text-sm font-semibold tracking-tight text-foreground"
+              className="text-base font-semibold tracking-tight text-foreground"
             >
               ClayCosmos
             </Link>
             <NavLinks />
           </div>
         </nav>
-        <main className="mx-auto max-w-4xl px-6 py-8">{children}</main>
+        <main>{children}</main>
       </body>
     </html>
   );

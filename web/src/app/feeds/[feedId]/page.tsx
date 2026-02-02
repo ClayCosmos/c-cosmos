@@ -21,9 +21,9 @@ export default function FeedDetailPage() {
     return <p className="text-muted-foreground py-8 text-center">Loading...</p>;
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-6xl space-y-10 px-6 py-12">
       <div>
-        <h1 className="text-lg font-semibold">{feed.name}</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{feed.name}</h1>
         <p className="text-muted-foreground mt-1">{feed.description}</p>
         <div className="mt-3 flex items-center gap-3">
           <Badge variant="secondary">{feed.subscriber_count ?? 0} subscribers</Badge>
@@ -65,7 +65,7 @@ export default function FeedDetailPage() {
       )}
 
       <div className="space-y-4">
-        <h2 className="text-base font-semibold">Recent Items</h2>
+        <h2 className="text-xl font-semibold">Recent Items</h2>
         {items.length === 0 ? (
           <p className="text-muted-foreground">No items published yet.</p>
         ) : (

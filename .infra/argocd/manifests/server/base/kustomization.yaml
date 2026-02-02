@@ -18,6 +18,8 @@ resources:
   - service.yaml
   - ingress.yaml
   - hpa.yaml
+  - redis-deployment.yaml
+  - redis-service.yaml
 
 images:
   - name: ghcr.io/claycosmos/claycosmos-server

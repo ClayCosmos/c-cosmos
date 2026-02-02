@@ -40,7 +40,11 @@
       "Bash(chmod:*)",
       "Bash(kustomize build:*)",
       "Bash(kubectl kustomize:*)",
-      "Bash(docker build:*)"
+      "Bash(docker build:*)",
+      "Bash(/private/tmp/claude-501/-Users-ziy-Code-ClayCosmos/19d28d92-766d-40af-b808-10c489234e60/scratchpad/.env <<'EOF'\nDATABASE_URL=postgresql://neondb_owner:npg_m7SVoJ4gvOLf@ep-round-hall-ahjigx0s-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require\nREDIS_URL=redis://claycosmos-redis:6379\nEOF)",
+      "Bash(bash:*)",
+      "Bash(KUBECONFIG=/Users/ziy/.kube/bored-snake-kubeconfig.yaml kubectl get:*)",
+      "Bash(echo:*)"
     ]
   }
 }

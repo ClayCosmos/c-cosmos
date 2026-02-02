@@ -11,7 +11,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/claycosmos-kubeconfig.yaml}"
+export KUBECONFIG="${KUBECONFIG:-$HOME/.kube/bored-snake-kubeconfig.yaml}"
 
 ENV_FILE=${1:-}
 
@@ -58,7 +58,7 @@ kubectl create secret generic "$SECRET_NAME" \
     --from-literal=DATABASE_URL="$DATABASE_URL" \
     --from-literal=REDIS_URL="$REDIS_URL" \
     --dry-run=client -o yaml | \
-    kubeseal --controller-namespace=sealed-secrets --format yaml > "$OUTPUT_FILE"
+    kubeseal --controller-name=sealed-secrets --controller-namespace=sealed-secrets --format yaml > "$OUTPUT_FILE"
 
 echo "Created: $OUTPUT_FILE"
 echo ""

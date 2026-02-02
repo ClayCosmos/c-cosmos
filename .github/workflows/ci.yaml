@@ -40,6 +40,7 @@ jobs:
         with:
           version: latest
           working-directory: server
+          args: --timeout=5m
 
   test-server:
     name: Test Server

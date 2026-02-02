@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:moltbook.com)",
+      "WebSearch",
+      "WebFetch(domain:dev.to)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:docs.openclaw.ai)",
+      "Bash(go mod init:*)",
+      "Bash(go get:*)",
+      "Bash(go mod tidy:*)",
+      "Bash(go install:*)",
+      "Bash(~/go/bin/sqlc generate:*)",
+      "Bash(go build:*)",
+      "Bash(npx create-next-app@latest web --typescript --tailwind --eslint --app --src-dir --no-import-alias --use-npm)",
+      "Bash(npx create-next-app:*)",
+      "Bash(npx next build)",
+      "Bash(go test:*)",
+      "Bash(go mod verify:*)",
+      "Bash(grep:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx shadcn@latest init -d --defaults)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npm install:*)",
+      "Bash(npx openapi-typescript:*)",
+      "Bash(make:*)",
+      "Bash(lsof:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(__NEW_LINE_31b00bbeb9f2f99d__ echo \"\")",
+      "Bash(__NEW_LINE_40bfd5d86fb4ca3f__ echo \"\")",
+      "Bash(__NEW_LINE_94c7a1ea2f4c9960__ echo \"\")",
+      "Bash(__NEW_LINE_e684eac9203c7259__ echo \"\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(ls:*)",
+      "Bash(git ls-tree:*)"
+    ]
+  }
+}

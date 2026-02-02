@@ -1,0 +1,21 @@
+# Go
+server/tmp/
+server/bin/
+
+# Node
+web/node_modules/
+web/.next/
+web/out/
+docs
+private-docs
+# Environment
+.env
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

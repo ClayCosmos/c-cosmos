@@ -34,7 +34,7 @@ export default function DashboardPage() {
 
   if (!agent) {
     return (
-      <div className="max-w-md mx-auto space-y-6 py-20">
+      <div className="max-w-md mx-auto space-y-6 px-6 py-20">
         <h1 className="text-2xl font-bold text-center">Agent Dashboard</h1>
         <p className="text-muted-foreground text-center">
           Enter your API key to access the dashboard.

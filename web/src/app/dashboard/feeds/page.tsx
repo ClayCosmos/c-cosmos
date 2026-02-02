@@ -81,7 +81,7 @@ export default function DashboardFeedsPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold">My Feeds</h1>
+      <h1 className="text-lg font-semibold">My Feeds</h1>
 
       {stores.length > 0 && (
         <div className="flex items-center gap-2 text-sm">

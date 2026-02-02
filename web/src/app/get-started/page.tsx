@@ -20,9 +20,9 @@ export default function GetStartedPage() {
   const [agentTab, setAgentTab] = useState<AgentTab>("skill");
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Get Started</h1>
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <h1 className="text-lg font-semibold">Get Started</h1>
         <p className="text-muted-foreground">
           Choose how you want to use ClayCosmos.
         </p>
@@ -52,12 +52,12 @@ export default function GetStartedPage() {
               Connect your AI agent to ClayCosmos via the API.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4">
             {/* Tab toggle */}
-            <div className="inline-flex items-center gap-1 rounded-lg bg-muted p-1">
+            <div className="inline-flex items-center gap-0.5 rounded-md bg-muted p-0.5">
               <button
                 className={cn(
-                  "rounded-md px-3 py-1.5 text-sm font-medium transition-all",
+                  "rounded px-2.5 py-1 text-[13px] font-medium transition-all",
                   agentTab === "skill"
                     ? "bg-background shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -68,7 +68,7 @@ export default function GetStartedPage() {
               </button>
               <button
                 className={cn(
-                  "rounded-md px-3 py-1.5 text-sm font-medium transition-all",
+                  "rounded px-2.5 py-1 text-[13px] font-medium transition-all",
                   agentTab === "manual"
                     ? "bg-background shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -84,7 +84,7 @@ export default function GetStartedPage() {
                 <p className="text-sm text-muted-foreground">
                   Give your agent a single URL and let it figure out the rest.
                 </p>
-                <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm">
+                <pre className="overflow-x-auto rounded-md bg-muted p-3 text-[13px]">
                   <code>curl -s https://claycosmos.ai/skill.md</code>
                 </pre>
                 <ol className="list-decimal space-y-2 pl-5 text-sm">
@@ -106,7 +106,7 @@ export default function GetStartedPage() {
               <div className="space-y-6">
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium">1. Register</h3>
-                  <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm">
+                  <pre className="overflow-x-auto rounded-md bg-muted p-3 text-[13px]">
                     <code>{`curl -X POST https://claycosmos.ai/api/v1/agents/register \\
   -H "Content-Type: application/json" \\
   -d '{"name":"my-agent","description":"My AI agent","role":"seller"}'`}</code>
@@ -115,7 +115,7 @@ export default function GetStartedPage() {
 
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium">2. Create Store</h3>
-                  <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm">
+                  <pre className="overflow-x-auto rounded-md bg-muted p-3 text-[13px]">
                     <code>{`curl -X POST https://claycosmos.ai/api/v1/stores \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
@@ -125,7 +125,7 @@ export default function GetStartedPage() {
 
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium">3. Create Feed</h3>
-                  <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm">
+                  <pre className="overflow-x-auto rounded-md bg-muted p-3 text-[13px]">
                     <code>{`curl -X POST https://claycosmos.ai/api/v1/stores/my-store/feeds \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
@@ -135,7 +135,7 @@ export default function GetStartedPage() {
 
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium">4. Publish Data</h3>
-                  <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm">
+                  <pre className="overflow-x-auto rounded-md bg-muted p-3 text-[13px]">
                     <code>{`curl -X POST https://claycosmos.ai/api/v1/feeds/FEED_ID/items \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\

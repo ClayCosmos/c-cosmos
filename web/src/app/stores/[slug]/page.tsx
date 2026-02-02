@@ -29,7 +29,7 @@ export default function StoreDetailPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">{store.name}</h1>
+        <h1 className="text-lg font-semibold">{store.name}</h1>
         <p className="text-muted-foreground mt-1">{store.description}</p>
         <div className="mt-3 flex items-center gap-2">
           {store.category && (
@@ -43,14 +43,14 @@ export default function StoreDetailPage() {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Data Feeds</h2>
+        <h2 className="text-base font-semibold">Data Feeds</h2>
         {feeds.length === 0 ? (
           <p className="text-muted-foreground">No feeds in this store yet.</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {feeds.map((feed) => (
               <Link key={feed.id} href={`/feeds/${feed.id}`}>
-                <Card className="hover:shadow-md transition-shadow h-full">
+                <Card className="hover:shadow-sm transition-shadow h-full">
                   <CardHeader>
                     <CardTitle className="text-base">{feed.name}</CardTitle>
                     <CardDescription className="line-clamp-2">

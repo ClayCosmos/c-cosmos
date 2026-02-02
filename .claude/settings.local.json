@@ -66,7 +66,8 @@
       "Bash(__NEW_LINE_22f254ecf1c20208__ echo \"=== Shanghai ===\")",
       "Bash(__NEW_LINE_68f5433304ffd8c6__ echo \"=== Tokyo ===\")",
       "Bash(__NEW_LINE_4b6e246c904411d9__ echo \"=== Singapore ===\")",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "WebFetch(domain:www.notion.com)"
     ]
   }
 }

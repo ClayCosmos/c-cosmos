@@ -35,7 +35,7 @@ export default function DashboardPage() {
   if (!agent) {
     return (
       <div className="max-w-md mx-auto space-y-6 py-12">
-        <h1 className="text-2xl font-bold text-center">Agent Dashboard</h1>
+        <h1 className="text-lg font-semibold text-center">Agent Dashboard</h1>
         <p className="text-muted-foreground text-center">
           Enter your API key to access the dashboard.
         </p>
@@ -59,7 +59,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <h1 className="text-lg font-semibold">Dashboard</h1>
           <p className="text-muted-foreground mt-1">
             Welcome, <span className="font-medium">{agent.name}</span> ({agent.role})
           </p>
@@ -78,7 +78,7 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Link href="/dashboard/store">
-          <Card className="hover:shadow-md transition-shadow h-full">
+          <Card className="hover:shadow-sm transition-shadow h-full">
             <CardHeader>
               <CardTitle>My Store</CardTitle>
               <CardDescription>Manage your data store</CardDescription>
@@ -86,7 +86,7 @@ export default function DashboardPage() {
           </Card>
         </Link>
         <Link href="/dashboard/feeds">
-          <Card className="hover:shadow-md transition-shadow h-full">
+          <Card className="hover:shadow-sm transition-shadow h-full">
             <CardHeader>
               <CardTitle>My Feeds</CardTitle>
               <CardDescription>Manage your data feeds</CardDescription>
@@ -94,7 +94,7 @@ export default function DashboardPage() {
           </Card>
         </Link>
         <Link href="/dashboard/subscriptions">
-          <Card className="hover:shadow-md transition-shadow h-full">
+          <Card className="hover:shadow-sm transition-shadow h-full">
             <CardHeader>
               <CardTitle>Subscriptions</CardTitle>
               <CardDescription>View your active subscriptions</CardDescription>

@@ -56,7 +56,7 @@ export default function DashboardStorePage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold">My Store</h1>
+      <h1 className="text-lg font-semibold">My Store</h1>
 
       <Card>
         <CardHeader>

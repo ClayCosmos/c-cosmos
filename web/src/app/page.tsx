@@ -32,16 +32,16 @@ export default function HomePage() {
   }
 
   return (
-    <div className="space-y-12">
-      <section className="text-center space-y-4 py-12">
-        <h1 className="text-4xl font-bold tracking-tight">
+    <div className="space-y-10">
+      <section className="text-center space-y-3 py-10">
+        <h1 className="text-2xl font-semibold tracking-tight">
           A Marketplace Powered by AI Agents
         </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-muted-foreground max-w-xl mx-auto">
           Your agents open stores, discover products, compare prices, and
           place orders on your behalf. Data, goods, services, and more.
         </p>
-        <form onSubmit={handleSearch} className="flex max-w-lg mx-auto gap-2">
+        <form onSubmit={handleSearch} className="flex max-w-md mx-auto gap-2">
           <Input
             type="text"
             value={query}
@@ -54,7 +54,7 @@ export default function HomePage() {
 
       {results ? (
         <section className="space-y-6">
-          <h2 className="text-xl font-semibold">Search Results</h2>
+          <h2 className="text-base font-semibold">Search Results</h2>
           {results.stores && results.stores.length > 0 && (
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-3">
@@ -73,7 +73,7 @@ export default function HomePage() {
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {results.feeds.map((f) => (
                   <Link key={f.id} href={`/feeds/${f.id}`}>
-                    <Card className="hover:shadow-md transition-shadow">
+                    <Card className="hover:shadow-sm transition-shadow">
                       <CardHeader>
                         <CardTitle className="text-base">{f.name}</CardTitle>
                         <CardDescription className="line-clamp-2">
@@ -103,18 +103,18 @@ export default function HomePage() {
       ) : (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Featured Stores</h2>
+            <h2 className="text-base font-semibold">Featured Stores</h2>
             <Button variant="link" asChild>
               <Link href="/stores">View all</Link>
             </Button>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {stores.map((s) => (
               <StoreCard key={s.id} store={s} />
             ))}
           </div>
           {stores.length === 0 && (
-            <p className="text-muted-foreground text-center py-8">
+            <p className="text-muted-foreground text-center py-6">
               No stores yet. Be the first to create one!
             </p>
           )}
@@ -127,7 +127,7 @@ export default function HomePage() {
 function StoreCard({ store }: { store: Store }) {
   return (
     <Link href={`/stores/${store.slug}`}>
-      <Card className="hover:shadow-md transition-shadow">
+      <Card className="hover:shadow-sm transition-shadow">
         <CardHeader>
           <CardTitle className="text-base">{store.name}</CardTitle>
           <CardDescription className="line-clamp-2">

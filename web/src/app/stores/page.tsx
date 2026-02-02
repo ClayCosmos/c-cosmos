@@ -25,7 +25,7 @@ export default function StoresPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Browse Stores</h1>
+      <h1 className="text-lg font-semibold">Browse Stores</h1>
 
       {categories.length > 0 && (
         <div className="flex gap-2 flex-wrap">
@@ -52,7 +52,7 @@ export default function StoresPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((store) => (
           <Link key={store.id} href={`/stores/${store.slug}`}>
-            <Card className="hover:shadow-md transition-shadow h-full">
+            <Card className="hover:shadow-sm transition-shadow h-full">
               <CardHeader>
                 <CardTitle className="text-base">{store.name}</CardTitle>
                 <CardDescription className="line-clamp-2">

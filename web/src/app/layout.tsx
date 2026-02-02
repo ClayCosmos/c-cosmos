@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { NavLinks } from "./nav-links";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -28,28 +29,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
+        className={`${inter.variable} ${geistMono.variable} font-sans min-h-screen`}
         suppressHydrationWarning
       >
         <nav className="border-b bg-background">
-          <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-            <Link href="/" className="text-lg font-bold tracking-tight">
+          <div className="mx-auto flex h-11 max-w-4xl items-center justify-between px-6">
+            <Link
+              href="/"
+              className="text-sm font-semibold tracking-tight text-foreground"
+            >
               ClayCosmos
             </Link>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/stores">Stores</Link>
-              </Button>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/get-started">Get Started</Link>
-              </Button>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/dashboard">Dashboard</Link>
-              </Button>
-            </div>
+            <NavLinks />
           </div>
         </nav>
-        <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+        <main className="mx-auto max-w-4xl px-6 py-8">{children}</main>
       </body>
     </html>
   );

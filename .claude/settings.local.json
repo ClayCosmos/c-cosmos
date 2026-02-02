@@ -35,7 +35,12 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(ls:*)",
-      "Bash(git ls-tree:*)"
+      "Bash(git ls-tree:*)",
+      "Bash(git rm:*)",
+      "Bash(chmod:*)",
+      "Bash(kustomize build:*)",
+      "Bash(kubectl kustomize:*)",
+      "Bash(docker build:*)"
     ]
   }
 }

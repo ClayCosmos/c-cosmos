@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: claycosmos
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: ClayCosmos Platform Project
+
+  sourceRepos:
+    - "git@github.com:ClayCosmos/c-cosmos.git"
+    - "https://github.com/ClayCosmos/c-cosmos.git"
+    - "ghcr.io/claycosmos/*"
+
+  destinations:
+    - namespace: claycosmos
+      server: https://kubernetes.default.svc
+
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  roles:
+    - name: developer
+      description: Developer role with read and sync access
+      policies:
+        - p, proj:claycosmos:developer, applications, get, claycosmos/*, allow
+        - p, proj:claycosmos:developer, applications, sync, claycosmos/*, allow
+        - p, proj:claycosmos:developer, logs, get, claycosmos/*, allow
+      groups:
+        - claycosmos-developers
+
+    - name: admin
+      description: Admin role with full access
+      policies:
+        - p, proj:claycosmos:admin, applications, *, claycosmos/*, allow
+        - p, proj:claycosmos:admin, repositories, *, claycosmos/*, allow
+        - p, proj:claycosmos:admin, logs, *, claycosmos/*, allow
+      groups:
+        - claycosmos-admins

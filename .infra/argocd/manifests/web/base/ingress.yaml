@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: claycosmos-web
+  labels:
+    app.kubernetes.io/name: claycosmos
+    app.kubernetes.io/component: web
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-cloudflare
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - claycosmos.ai
+      secretName: claycosmos-web-tls
+  rules:
+    - host: claycosmos.ai
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: claycosmos-web
+                port:
+                  number: 80

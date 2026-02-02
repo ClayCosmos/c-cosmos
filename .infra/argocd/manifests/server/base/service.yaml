@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: claycosmos-server
+  labels:
+    app.kubernetes.io/name: claycosmos
+    app.kubernetes.io/component: server
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: claycosmos
+    app.kubernetes.io/component: server

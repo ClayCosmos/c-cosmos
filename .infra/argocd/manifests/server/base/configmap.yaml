@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: claycosmos-server-config
+  labels:
+    app.kubernetes.io/name: claycosmos
+    app.kubernetes.io/component: server
+data:
+  PORT: "8080"
+  ENVIRONMENT: "production"

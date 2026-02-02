@@ -16,7 +16,6 @@ resources:
   - configmap.yaml
   - deployment.yaml
   - service.yaml
-  - ingress.yaml
   - hpa.yaml
   - redis-deployment.yaml
   - redis-service.yaml

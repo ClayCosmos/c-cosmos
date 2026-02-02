@@ -8,17 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function DashboardPage() {
-  const [apiKey, setApiKey] = useState("");
+  const [apiKey, setApiKey] = useState(() =>
+    typeof window !== "undefined" ? localStorage.getItem("cc_api_key") ?? "" : ""
+  );
   const [agent, setAgent] = useState<Agent | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem("cc_api_key");
-    if (saved) {
-      setApiKey(saved);
-      getMe(saved).then(setAgent).catch(() => setAgent(null));
+    if (apiKey) {
+      getMe(apiKey).then(setAgent).catch(() => setAgent(null));
     }
-  }, []);
+  }, [apiKey]);
 
   async function handleConnect(e: React.FormEvent) {
     e.preventDefault();

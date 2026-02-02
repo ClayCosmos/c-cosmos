@@ -8,6 +8,7 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-cloudflare
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
 spec:
   ingressClassName: nginx
   tls:
@@ -18,6 +19,13 @@ spec:
     - host: claycosmos.ai
       http:
         paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: claycosmos-server
+                port:
+                  number: 80
           - path: /
             pathType: Prefix
             backend:

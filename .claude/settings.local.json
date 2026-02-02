@@ -60,7 +60,13 @@
       "Bash(git ls-remote:*)",
       "Bash(kubectl exec:*)",
       "Bash(dig:*)",
-      "Bash(kubectl describe:*)"
+      "Bash(kubectl describe:*)",
+      "Bash(API_KEY=\"cc_sk_f8262622ddab8ef338663f6a34d1b3d465fc3c1a7d7a74df76c5e39ccd4cb0a0\")",
+      "Bash(FEED_ID=\"c721a224-dbf3-4686-9d6e-e1c1fe7e1909\":*)",
+      "Bash(__NEW_LINE_22f254ecf1c20208__ echo \"=== Shanghai ===\")",
+      "Bash(__NEW_LINE_68f5433304ffd8c6__ echo \"=== Tokyo ===\")",
+      "Bash(__NEW_LINE_4b6e246c904411d9__ echo \"=== Singapore ===\")",
+      "Bash(npm run lint)"
     ]
   }
 }

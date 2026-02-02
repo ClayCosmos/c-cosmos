@@ -41,6 +41,9 @@ export default function RootLayout({
                 <Link href="/stores">Stores</Link>
               </Button>
               <Button variant="ghost" size="sm" asChild>
+                <Link href="/get-started">Get Started</Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
                 <Link href="/dashboard">Dashboard</Link>
               </Button>
             </div>

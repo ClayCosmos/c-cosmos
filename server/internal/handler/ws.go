@@ -70,10 +70,9 @@ func (h *WSHandler) readPump(ws *websocket.Conn, conn *service.WSConn) {
 		h.hub.Unregister(conn)
 		ws.Close()
 	}()
-	ws.SetReadDeadline(time.Now().Add(60 * time.Second))
+	_ = ws.SetReadDeadline(time.Now().Add(60 * time.Second))
 	ws.SetPongHandler(func(string) error {
-		ws.SetReadDeadline(time.Now().Add(60 * time.Second))
-		return nil
+		return ws.SetReadDeadline(time.Now().Add(60 * time.Second))
 	})
 
 	for {
@@ -108,15 +107,15 @@ func (h *WSHandler) writePump(ws *websocket.Conn, conn *service.WSConn) {
 		select {
 		case msg, ok := <-conn.Send:
 			if !ok {
-				ws.WriteMessage(websocket.CloseMessage, nil)
+				_ = ws.WriteMessage(websocket.CloseMessage, nil)
 				return
 			}
-			ws.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			_ = ws.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if err := ws.WriteMessage(websocket.TextMessage, msg); err != nil {
 				return
 			}
 		case <-ticker.C:
-			ws.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			_ = ws.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if err := ws.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}

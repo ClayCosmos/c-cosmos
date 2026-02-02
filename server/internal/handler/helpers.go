@@ -33,10 +33,6 @@ func toPgText(s *string) pgtype.Text {
 	return pgtype.Text{String: *s, Valid: true}
 }
 
-func toPgUUID(id [16]byte) pgtype.UUID {
-	return pgtype.UUID{Bytes: id, Valid: true}
-}
-
 func parsePgUUID(s string) (pgtype.UUID, error) {
 	id, err := uuid.Parse(s)
 	if err != nil {

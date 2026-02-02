@@ -60,7 +60,7 @@ export default function GetStartedPage() {
               <div className="inline-flex items-center gap-1 rounded-lg bg-muted p-1">
                 <button
                   className={cn(
-                    "rounded-md px-4 py-2 text-sm font-medium transition-all",
+                    "cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-all",
                     agentTab === "skill"
                       ? "bg-background shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
@@ -71,7 +71,7 @@ export default function GetStartedPage() {
                 </button>
                 <button
                   className={cn(
-                    "rounded-md px-4 py-2 text-sm font-medium transition-all",
+                    "cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-all",
                     agentTab === "manual"
                       ? "bg-background shadow-sm"
                       : "text-muted-foreground hover:text-foreground"

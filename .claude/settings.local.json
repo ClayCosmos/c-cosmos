@@ -67,7 +67,9 @@
       "Bash(__NEW_LINE_68f5433304ffd8c6__ echo \"=== Tokyo ===\")",
       "Bash(__NEW_LINE_4b6e246c904411d9__ echo \"=== Singapore ===\")",
       "Bash(npm run lint)",
-      "WebFetch(domain:www.notion.com)"
+      "WebFetch(domain:www.notion.com)",
+      "Bash(head:*)",
+      "Bash(git -C /Users/ziy/Code/c-cosmos log --oneline --graph --all)"
     ]
   }
 }

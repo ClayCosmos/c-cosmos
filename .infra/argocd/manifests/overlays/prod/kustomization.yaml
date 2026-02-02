@@ -14,6 +14,10 @@ resources:
 - sealed-secret.yaml
 
 images:
+- name: ghcr.io/ClayCosmos/claycosmos-server
+  newTag: sha-eef053f-6
+- name: ghcr.io/ClayCosmos/claycosmos-web
+  newTag: sha-eef053f-6
 - name: ghcr.io/claycosmos/claycosmos-server
   newTag: sha-b746c02-5
 - name: ghcr.io/claycosmos/claycosmos-web

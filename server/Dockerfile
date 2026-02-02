@@ -1,5 +1,7 @@
-# Build stage
-FROM golang:1.24-alpine AS builder
+# Build stage — runs on the build host's native arch (no QEMU)
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS builder
+
+ARG TARGETARCH
 
 WORKDIR /app
 
@@ -10,7 +12,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build \
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build \
     -ldflags="-w -s" \
     -o /app/server \
     ./cmd/api

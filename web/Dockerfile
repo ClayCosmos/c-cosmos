@@ -1,5 +1,5 @@
-# Dependencies stage
-FROM node:22-alpine AS deps
+# Dependencies stage — runs on build host's native arch (no QEMU)
+FROM --platform=$BUILDPLATFORM node:22-alpine AS deps
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # Build stage
-FROM node:22-alpine AS builder
+FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 
 WORKDIR /app
 

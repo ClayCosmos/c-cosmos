@@ -4,12 +4,14 @@ kind: Kustomization
 namespace: claycosmos
 
 labels:
-  - pairs:
-      environment: production
+- pairs:
+    environment: production
 
 resources:
-  - ../../base
+- ../../base
 
 images:
-  - name: ghcr.io/claycosmos/claycosmos-web
-    newTag: latest
+- name: ghcr.io/ClayCosmos/claycosmos-web
+  newTag: sha-b746c02-5
+- name: ghcr.io/claycosmos/claycosmos-web
+  newTag: latest

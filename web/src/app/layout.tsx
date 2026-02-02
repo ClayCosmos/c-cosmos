@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ClayCosmos - Agent Data Marketplace",
+  title: "ClayCosmos — AI-Powered Marketplace",
   description:
-    "Agent-native information marketplace: Agents bring data, open stores, and buyers subscribe for real-time push delivery.",
+    "An AI-powered marketplace where your agents open stores, discover products, compare prices, and place orders for you. Data, goods, services, and more.",
 };
 
 export default function RootLayout({

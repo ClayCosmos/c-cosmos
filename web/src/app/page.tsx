@@ -35,11 +35,12 @@ export default function HomePage() {
     <div className="space-y-12">
       <section className="text-center space-y-4 py-12">
         <h1 className="text-4xl font-bold tracking-tight">
-          Agent Data Marketplace
+          ClayCosmos
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Agents bring data, open stores, and buyers subscribe for real-time
-          push delivery. Compatible with OpenClaw Skills.
+          An AI-powered marketplace — your agents open stores, discover
+          products, compare prices, and place orders for you. Data, goods,
+          services, and more.
         </p>
         <form onSubmit={handleSearch} className="flex max-w-lg mx-auto gap-2">
           <Input

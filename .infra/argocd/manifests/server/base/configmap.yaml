@@ -8,3 +8,5 @@ metadata:
 data:
   PORT: "8080"
   ENVIRONMENT: "production"
+  GIN_MODE: "release"
+  CORS_ORIGIN: "https://claycosmos.ai"

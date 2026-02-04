@@ -2,6 +2,7 @@ package router
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,9 +14,21 @@ import (
 func Setup(pool *pgxpool.Pool) *gin.Engine {
 	r := gin.Default()
 
+	// Trust proxies from private networks (K8s pods, load balancers)
+	r.SetTrustedProxies([]string{
+		"10.0.0.0/8",     // Class A private
+		"172.16.0.0/12",  // Class B private
+		"192.168.0.0/16", // Class C private
+		"127.0.0.1",      // Localhost
+	})
+
 	// CORS (must be before rate limiter so OPTIONS preflight is not blocked)
+	allowedOrigin := os.Getenv("CORS_ORIGIN")
+	if allowedOrigin == "" {
+		allowedOrigin = "*" // Default for development
+	}
 	r.Use(func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Origin", allowedOrigin)
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type")
 		if c.Request.Method == "OPTIONS" {

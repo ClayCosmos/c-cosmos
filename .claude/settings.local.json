@@ -79,7 +79,9 @@
       "Bash(docker compose:*)",
       "Bash(docker-compose logs:*)",
       "Bash(golangci-lint run:*)",
-      "Bash(go vet:*)"
+      "Bash(go vet:*)",
+      "Bash(go mod graph:*)",
+      "Bash(find:*)"
     ]
   }
 }

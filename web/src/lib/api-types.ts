@@ -253,6 +253,243 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/wallets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List agent's wallets */
+        get: operations["listWallets"];
+        put?: never;
+        /**
+         * Initiate wallet binding
+         * @description Start the wallet binding process. Returns a message to sign with
+         *     your wallet to prove ownership.
+         */
+        post: operations["bindWallet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wallets/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify wallet ownership
+         * @description Complete wallet binding by providing the signature. The signature
+         *     must be created by signing the message from the bind request.
+         */
+        post: operations["verifyWallet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wallets/{walletId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a wallet */
+        delete: operations["deleteWallet"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all products */
+        get: operations["listAllProducts"];
+        put?: never;
+        /**
+         * Create a new product
+         * @description Creates a product in the agent's store.
+         */
+        post: operations["createProduct"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/products/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List my products */
+        get: operations["listMyProducts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/products/{productId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a product by ID */
+        get: operations["getProduct"];
+        put?: never;
+        post?: never;
+        /** Delete a product */
+        delete: operations["deleteProduct"];
+        options?: never;
+        head?: never;
+        /** Update a product */
+        patch: operations["updateProduct"];
+        trace?: never;
+    };
+    "/stores/{slug}/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List products in a store */
+        get: operations["listProductsByStore"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List my orders
+         * @description List orders as buyer or seller.
+         */
+        get: operations["listMyOrders"];
+        put?: never;
+        /**
+         * Create a new order
+         * @description Creates an order for a product. Returns escrow contract details
+         *     for on-chain payment.
+         */
+        post: operations["createOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{orderId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get an order by ID */
+        get: operations["getOrder"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{orderId}/paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark order as paid
+         * @description Called after on-chain payment is confirmed. Updates order status
+         *     and triggers delivery.
+         */
+        post: operations["markOrderPaid"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{orderId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete an order
+         * @description Buyer confirms receipt and releases escrow funds to seller.
+         */
+        post: operations["completeOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{orderId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel an order
+         * @description Buyer cancels a pending order (before payment).
+         */
+        post: operations["cancelOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -450,6 +687,143 @@ export interface components {
             stores?: components["schemas"]["Store"][] | null;
             feeds?: components["schemas"]["DataFeed"][] | null;
         };
+        Wallet: {
+            /** Format: uuid */
+            id?: string;
+            /** @enum {string} */
+            chain?: "base" | "ethereum" | "arbitrum";
+            /** @description Ethereum-style hex address */
+            address?: string;
+            is_primary?: boolean;
+            /** Format: date-time */
+            verified_at?: string | null;
+            /** Format: date-time */
+            created_at?: string;
+        };
+        BindWalletRequest: {
+            /**
+             * @default base
+             * @enum {string}
+             */
+            chain: "base" | "ethereum" | "arbitrum";
+            /** @description Ethereum-style hex address */
+            address: string;
+        };
+        BindWalletResponse: {
+            /** @description Message to sign with wallet */
+            message?: string;
+            /** @description Unique nonce for this binding request */
+            nonce?: string;
+            /** @description Unix timestamp when nonce expires */
+            expires_at?: number;
+        };
+        VerifyWalletRequest: {
+            /**
+             * @default base
+             * @enum {string}
+             */
+            chain: "base" | "ethereum" | "arbitrum";
+            /** @description Ethereum-style hex address */
+            address: string;
+            /** @description Hex-encoded signature of the message */
+            signature: string;
+            /** @description Nonce from the bind request */
+            nonce: string;
+        };
+        Product: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            store_id?: string;
+            name?: string;
+            slug?: string;
+            description?: string | null;
+            /** @description Price in USDC micro-units (6 decimals) */
+            price_usdc?: number;
+            /** @description Price in USD for display */
+            price_usd?: number;
+            /** @description Available stock (-1 for unlimited) */
+            stock?: number;
+            /** @enum {string} */
+            status?: "active" | "inactive";
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        ProductDetail: components["schemas"]["Product"] & {
+            /** @description Content delivered after purchase (only visible to owner) */
+            delivery_content?: string | null;
+            store_name?: string | null;
+            store_slug?: string | null;
+        };
+        CreateProductRequest: {
+            name: string;
+            description?: string | null;
+            /** @description Price in USDC micro-units (6 decimals) */
+            price_usdc: number;
+            /** @description Content delivered to buyer after payment */
+            delivery_content: string;
+            /** @description Available stock (-1 for unlimited) */
+            stock?: number | null;
+        };
+        UpdateProductRequest: {
+            name?: string | null;
+            description?: string | null;
+            price_usdc?: number | null;
+            delivery_content?: string | null;
+            stock?: number | null;
+        };
+        Order: {
+            /** Format: uuid */
+            id?: string;
+            /** @description Human-readable order number */
+            order_no?: string;
+            /** Format: uuid */
+            product_id?: string;
+            product_name?: string;
+            /** Format: uuid */
+            buyer_agent_id?: string;
+            /** Format: uuid */
+            seller_agent_id?: string;
+            /** @description Buyer's wallet address */
+            buyer_wallet?: string;
+            /** @description Seller's wallet address */
+            seller_wallet?: string;
+            /** @description Amount in USDC micro-units */
+            amount_usdc?: number;
+            /** @description Amount in USD for display */
+            amount_usd?: number;
+            /** @description On-chain escrow order ID (bytes32) */
+            escrow_order_id?: string;
+            /** @description Escrow contract address */
+            escrow_contract?: string;
+            /** @enum {string} */
+            status?: "pending" | "paid" | "completed" | "cancelled";
+            /** @description Payment transaction hash */
+            tx_hash?: string | null;
+            /** @description Delivered content (visible to buyer after payment) */
+            delivery_content?: string | null;
+            /** Format: date-time */
+            delivered_at?: string | null;
+            /** Format: date-time */
+            completed_at?: string | null;
+            /**
+             * Format: date-time
+             * @description Deadline for completing the order
+             */
+            deadline?: string;
+            /** Format: date-time */
+            created_at?: string;
+        };
+        CreateOrderRequest: {
+            /** Format: uuid */
+            product_id: string;
+            /** @description Buyer's wallet address for payment */
+            buyer_wallet: string;
+            /** @description Days until deadline (default 7) */
+            deadline_days?: number | null;
+        };
     };
     responses: {
         /** @description Invalid request parameters */
@@ -552,6 +926,10 @@ export interface components {
         Limit: number;
         /** @description Number of results to skip for pagination */
         Offset: number;
+        /** @description Product UUID */
+        ProductId: string;
+        /** @description Order UUID */
+        OrderId: string;
     };
     requestBodies: never;
     headers: never;
@@ -1085,6 +1463,472 @@ export interface operations {
                 };
                 content?: never;
             };
+        };
+    };
+    listWallets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Array of wallets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        wallets?: components["schemas"]["Wallet"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    bindWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BindWalletRequest"];
+            };
+        };
+        responses: {
+            /** @description Message to sign */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BindWalletResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    verifyWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyWalletRequest"];
+            };
+        };
+        responses: {
+            /** @description Wallet verified */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wallet"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    deleteWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message?: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listAllProducts: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of results to return (default: 20, max: 100) */
+                limit?: components["parameters"]["Limit"];
+                /** @description Number of results to skip for pagination */
+                offset?: components["parameters"]["Offset"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Array of products */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        products?: components["schemas"]["ProductDetail"][];
+                    };
+                };
+            };
+        };
+    };
+    createProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProductRequest"];
+            };
+        };
+        responses: {
+            /** @description Product created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listMyProducts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Array of products */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        products?: components["schemas"]["ProductDetail"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Product UUID */
+                productId: components["parameters"]["ProductId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Product details */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductDetail"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Product UUID */
+                productId: components["parameters"]["ProductId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Product deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message?: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Product UUID */
+                productId: components["parameters"]["ProductId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProductRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated product */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listProductsByStore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Unique store slug */
+                slug: components["parameters"]["StoreSlug"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Array of products with store info */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        products?: components["schemas"]["Product"][];
+                        store?: {
+                            /** Format: uuid */
+                            id?: string;
+                            name?: string;
+                            slug?: string;
+                        };
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listMyOrders: {
+        parameters: {
+            query?: {
+                /** @description Filter by role (buyer or seller) */
+                role?: "buyer" | "seller";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Array of orders */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        orders?: components["schemas"]["Order"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOrderRequest"];
+            };
+        };
+        responses: {
+            /** @description Order created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Order UUID */
+                orderId: components["parameters"]["OrderId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Order details */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    markOrderPaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Order UUID */
+                orderId: components["parameters"]["OrderId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Transaction hash of the payment */
+                    tx_hash: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Order marked as paid */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    completeOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Order UUID */
+                orderId: components["parameters"]["OrderId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @description Transaction hash of the escrow release */
+                    tx_hash?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Order completed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    cancelOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Order UUID */
+                orderId: components["parameters"]["OrderId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Order cancelled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
 }

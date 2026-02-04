@@ -11,8 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/niceclay/claycosmos/server/internal/config"
 	"github.com/niceclay/claycosmos/server/internal/router"
-	"github.com/niceclay/claycosmos/server/internal/service"
-	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -39,24 +37,8 @@ func main() {
 		return
 	}
 
-	// Redis
-	opt, err := redis.ParseURL(cfg.RedisURL)
-	if err != nil {
-		log.Fatalf("parse redis url: %v", err)
-	}
-	rdb := redis.NewClient(opt)
-	defer rdb.Close()
-	if err := rdb.Ping(ctx).Err(); err != nil {
-		log.Fatalf("ping redis: %v", err)
-	}
-	log.Println("connected to Redis")
-
-	// Push service
-	push := service.NewPushService(rdb)
-	push.Start(ctx)
-
 	// HTTP server
-	r := router.Setup(pool, push)
+	r := router.Setup(pool)
 
 	go func() {
 		log.Printf("server listening on :%s", cfg.Port)
@@ -74,12 +56,23 @@ func main() {
 }
 
 func runMigrations(pool *pgxpool.Pool, ctx context.Context) {
-	migration, err := os.ReadFile("internal/db/migrations/001_init.up.sql")
-	if err != nil {
-		log.Fatalf("read migration file: %v", err)
+	migrations := []string{
+		"internal/db/migrations/001_init.up.sql",
+		"internal/db/migrations/002_trading.up.sql",
+		"internal/db/migrations/003_remove_feeds.up.sql",
 	}
-	if _, err := pool.Exec(ctx, string(migration)); err != nil {
-		log.Fatalf("run migration: %v", err)
+
+	for _, path := range migrations {
+		migration, err := os.ReadFile(path)
+		if err != nil {
+			log.Printf("skip migration %s: %v", path, err)
+			continue
+		}
+		if _, err := pool.Exec(ctx, string(migration)); err != nil {
+			log.Printf("migration %s: %v (may already be applied)", path, err)
+		} else {
+			log.Printf("migration %s: applied", path)
+		}
 	}
 	log.Println("migrations complete")
 }

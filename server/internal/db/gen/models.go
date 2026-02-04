@@ -20,32 +20,57 @@ type Agent struct {
 	OwnerID      pgtype.Text        `json:"owner_id"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	TradingStats []byte             `json:"trading_stats"`
 }
 
-type DataFeed struct {
+type BlockchainEvent struct {
+	ID          pgtype.UUID        `json:"id"`
+	Chain       string             `json:"chain"`
+	TxHash      string             `json:"tx_hash"`
+	LogIndex    int32              `json:"log_index"`
+	BlockNumber int64              `json:"block_number"`
+	EventName   string             `json:"event_name"`
+	EventData   []byte             `json:"event_data"`
+	Processed   pgtype.Bool        `json:"processed"`
+	ProcessedAt pgtype.Timestamptz `json:"processed_at"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type Order struct {
+	ID              pgtype.UUID        `json:"id"`
+	OrderNo         string             `json:"order_no"`
+	ProductID       pgtype.UUID        `json:"product_id"`
+	BuyerAgentID    pgtype.UUID        `json:"buyer_agent_id"`
+	SellerAgentID   pgtype.UUID        `json:"seller_agent_id"`
+	BuyerWallet     string             `json:"buyer_wallet"`
+	SellerWallet    string             `json:"seller_wallet"`
+	AmountUsdc      int64              `json:"amount_usdc"`
+	EscrowOrderID   string             `json:"escrow_order_id"`
+	EscrowContract  string             `json:"escrow_contract"`
+	Status          string             `json:"status"`
+	TxHash          pgtype.Text        `json:"tx_hash"`
+	CompleteTxHash  pgtype.Text        `json:"complete_tx_hash"`
+	DeliveryContent pgtype.Text        `json:"delivery_content"`
+	DeliveredAt     pgtype.Timestamptz `json:"delivered_at"`
+	CompletedAt     pgtype.Timestamptz `json:"completed_at"`
+	Deadline        pgtype.Timestamptz `json:"deadline"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Product struct {
 	ID              pgtype.UUID        `json:"id"`
 	StoreID         pgtype.UUID        `json:"store_id"`
 	Name            string             `json:"name"`
 	Slug            string             `json:"slug"`
 	Description     pgtype.Text        `json:"description"`
-	Schema          []byte             `json:"schema"`
-	UpdateFrequency pgtype.Text        `json:"update_frequency"`
-	PricePerMonth   pgtype.Int4        `json:"price_per_month"`
-	SampleData      []byte             `json:"sample_data"`
-	SubscriberCount pgtype.Int4        `json:"subscriber_count"`
+	PriceUsdc       int64              `json:"price_usdc"`
+	DeliveryContent pgtype.Text        `json:"delivery_content"`
+	Stock           pgtype.Int4        `json:"stock"`
 	Status          string             `json:"status"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 	Tsv             interface{}        `json:"tsv"`
-}
-
-type DataItem struct {
-	ID          pgtype.UUID        `json:"id"`
-	FeedID      pgtype.UUID        `json:"feed_id"`
-	Data        []byte             `json:"data"`
-	Version     pgtype.Int4        `json:"version"`
-	PublishedAt pgtype.Timestamptz `json:"published_at"`
-	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
 }
 
 type Store struct {
@@ -61,15 +86,15 @@ type Store struct {
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 	Tsv           interface{}        `json:"tsv"`
+	WalletAddress pgtype.Text        `json:"wallet_address"`
 }
 
-type Subscription struct {
-	ID                  pgtype.UUID        `json:"id"`
-	SubscriberAgentID   pgtype.UUID        `json:"subscriber_agent_id"`
-	FeedID              pgtype.UUID        `json:"feed_id"`
-	Status              string             `json:"status"`
-	WebhookUrl          pgtype.Text        `json:"webhook_url"`
-	LastDeliveredItemID pgtype.UUID        `json:"last_delivered_item_id"`
-	CreatedAt           pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+type Wallet struct {
+	ID         pgtype.UUID        `json:"id"`
+	AgentID    pgtype.UUID        `json:"agent_id"`
+	Chain      string             `json:"chain"`
+	Address    string             `json:"address"`
+	IsPrimary  pgtype.Bool        `json:"is_primary"`
+	VerifiedAt pgtype.Timestamptz `json:"verified_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 }

@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   getStore,
-  listFeedsByStore,
+  listProductsByStore,
   type Store,
-  type DataFeed,
+  type Product,
 } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,12 +15,14 @@ import { Badge } from "@/components/ui/badge";
 export default function StoreDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const [store, setStore] = useState<Store | null>(null);
-  const [feeds, setFeeds] = useState<DataFeed[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     if (!slug) return;
     getStore(slug).then(setStore).catch(console.error);
-    listFeedsByStore(slug).then(setFeeds).catch(console.error);
+    listProductsByStore(slug)
+      .then((res) => setProducts(res.products || []))
+      .catch(console.error);
   }, [slug]);
 
   if (!store)
@@ -43,31 +45,35 @@ export default function StoreDetailPage() {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Data Feeds</h2>
-        {feeds.length === 0 ? (
-          <p className="text-muted-foreground">No feeds in this store yet.</p>
+        <h2 className="text-xl font-semibold">Products ({products.length})</h2>
+        {products.length === 0 ? (
+          <p className="text-muted-foreground">No products in this store yet.</p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {feeds.map((feed) => (
-              <Link key={feed.id} href={`/feeds/${feed.id}`}>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {products.map((product) => (
+              <Link key={product.id} href={`/products/${product.id}`}>
                 <Card className="hover:shadow-md transition-shadow h-full">
                   <CardHeader>
-                    <CardTitle className="text-base">{feed.name}</CardTitle>
+                    <CardTitle className="text-base">{product.name}</CardTitle>
                     <CardDescription className="line-clamp-2">
-                      {feed.description}
+                      {product.description || "No description"}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span>{feed.subscriber_count ?? 0} subscribers</span>
-                      {feed.update_frequency && (
-                        <Badge variant="outline" className="text-xs">{feed.update_frequency}</Badge>
-                      )}
-                      <span>
-                        {feed.price_per_month === 0 || feed.price_per_month == null
-                          ? "Free"
-                          : `$${(feed.price_per_month / 100).toFixed(2)}/mo`}
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg font-semibold text-primary">
+                        ${product.price_usd?.toFixed(2)} USDC
                       </span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={product.status === "active" ? "default" : "secondary"}>
+                          {product.status}
+                        </Badge>
+                        {product.stock !== undefined && product.stock !== -1 && (
+                          <span className="text-xs text-muted-foreground">
+                            {product.stock} left
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

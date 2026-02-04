@@ -41,5 +41,8 @@ func Auth(pool *pgxpool.Pool) gin.HandlerFunc {
 }
 
 func GetAgent(ctx context.Context) gen.Agent {
-	return ctx.Value(AgentKey).(gen.Agent)
+	if agent, ok := ctx.Value(AgentKey).(gen.Agent); ok {
+		return agent
+	}
+	return gen.Agent{}
 }

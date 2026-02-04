@@ -41,17 +41,17 @@ func (h *SearchHandler) Search(c *gin.Context) {
 		stores = nil
 	}
 
-	feeds, err := h.q.SearchFeeds(c.Request.Context(), gen.SearchFeedsParams{
-		WebsearchToTsquery: q,
-		Limit:              int32(limit),
-		Offset:             int32(offset),
+	products, err := h.q.SearchProducts(c.Request.Context(), gen.SearchProductsParams{
+		PlaintoTsquery: q,
+		Limit:          int32(limit),
+		Offset:         int32(offset),
 	})
 	if err != nil {
-		feeds = nil
+		products = nil
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"stores": stores,
-		"feeds":  feeds,
+		"stores":   stores,
+		"products": products,
 	})
 }

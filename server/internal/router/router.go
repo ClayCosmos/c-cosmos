@@ -8,10 +8,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/niceclay/claycosmos/server/internal/handler"
 	"github.com/niceclay/claycosmos/server/internal/middleware"
-	"github.com/niceclay/claycosmos/server/internal/service"
 )
 
-func Setup(pool *pgxpool.Pool, push *service.PushService) *gin.Engine {
+func Setup(pool *pgxpool.Pool) *gin.Engine {
 	r := gin.Default()
 
 	// CORS (must be before rate limiter so OPTIONS preflight is not blocked)
@@ -38,22 +37,19 @@ func Setup(pool *pgxpool.Pool, push *service.PushService) *gin.Engine {
 	// Handlers
 	agentH := handler.NewAgentHandler(pool)
 	storeH := handler.NewStoreHandler(pool)
-	feedH := handler.NewFeedHandler(pool)
-	itemH := handler.NewItemHandler(pool, push)
-	subH := handler.NewSubscriptionHandler(pool, push)
 	searchH := handler.NewSearchHandler(pool)
-	wsH := handler.NewWSHandler(pool, push.Hub())
+	walletH := handler.NewWalletHandler(pool)
+	productH := handler.NewProductHandler(pool)
+	orderH := handler.NewOrderHandler(pool, "")
 
 	// Public routes
 	v1.POST("/agents/register", agentH.Register)
 	v1.GET("/stores", storeH.List)
 	v1.GET("/stores/:slug", storeH.GetBySlug)
-	v1.GET("/stores/:slug/feeds", feedH.ListByStore)
-	v1.GET("/feeds/:feedId", feedH.GetByID)
-	v1.GET("/feeds/:feedId/items", itemH.List)
-	v1.GET("/feeds/:feedId/items/latest", itemH.GetLatest)
+	v1.GET("/stores/:slug/products", productH.ListProducts)
+	v1.GET("/products", productH.ListAllProducts)
+	v1.GET("/products/:id", productH.GetProduct)
 	v1.GET("/search", searchH.Search)
-	v1.GET("/ws", wsH.Handle)
 
 	// Authenticated routes
 	auth := v1.Group("")
@@ -65,14 +61,26 @@ func Setup(pool *pgxpool.Pool, push *service.PushService) *gin.Engine {
 		auth.POST("/stores", storeH.Create)
 		auth.PATCH("/stores/:slug", storeH.Update)
 
-		auth.POST("/stores/:slug/feeds", feedH.Create)
-		auth.PATCH("/feeds/:feedId", feedH.Update)
+		// Wallet routes
+		auth.POST("/wallets", walletH.BindWallet)
+		auth.POST("/wallets/verify", walletH.VerifyWallet)
+		auth.POST("/wallets/bind-programmatic", walletH.BindProgrammatic) // For AI Agents
+		auth.GET("/wallets", walletH.ListWallets)
+		auth.DELETE("/wallets/:id", walletH.DeleteWallet)
 
-		auth.POST("/feeds/:feedId/items", itemH.Create)
+		// Product routes
+		auth.POST("/products", productH.CreateProduct)
+		auth.GET("/products/mine", productH.ListMyProducts)
+		auth.PATCH("/products/:id", productH.UpdateProduct)
+		auth.DELETE("/products/:id", productH.DeleteProduct)
 
-		auth.POST("/feeds/:feedId/subscribe", subH.Subscribe)
-		auth.DELETE("/feeds/:feedId/subscribe", subH.Unsubscribe)
-		auth.GET("/subscriptions", subH.List)
+		// Order routes
+		auth.POST("/orders", orderH.CreateOrder)
+		auth.GET("/orders", orderH.ListMyOrders)
+		auth.GET("/orders/:id", orderH.GetOrder)
+		auth.POST("/orders/:id/paid", orderH.MarkOrderPaid)
+		auth.POST("/orders/:id/complete", orderH.CompleteOrder)
+		auth.POST("/orders/:id/cancel", orderH.CancelOrder)
 	}
 
 	return r

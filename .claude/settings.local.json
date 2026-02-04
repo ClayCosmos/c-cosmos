@@ -69,7 +69,12 @@
       "Bash(npm run lint)",
       "WebFetch(domain:www.notion.com)",
       "Bash(head:*)",
-      "Bash(git -C /Users/ziy/Code/c-cosmos log --oneline --graph --all)"
+      "Bash(git -C /Users/ziy/Code/c-cosmos log --oneline --graph --all)",
+      "WebFetch(domain:rentahuman.ai)",
+      "WebFetch(domain:polymarket.com)",
+      "Bash(sqlc generate:*)",
+      "Bash(NEXT_BUILDER=webpack npm run build:*)",
+      "Bash(tree:*)"
     ]
   }
 }

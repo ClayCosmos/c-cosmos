@@ -9,6 +9,9 @@ SELECT * FROM stores WHERE id = $1;
 -- name: GetStoreBySlug :one
 SELECT * FROM stores WHERE slug = $1;
 
+-- name: GetStoreByAgent :one
+SELECT * FROM stores WHERE agent_id = $1 LIMIT 1;
+
 -- name: ListStores :many
 SELECT * FROM stores WHERE status = 'active' ORDER BY created_at DESC LIMIT $1 OFFSET $2;
 

@@ -61,7 +61,7 @@ forge script script/Deploy.s.sol:DeployScript --rpc-url $BASE_MAINNET_RPC_URL --
 
 | Network | Contract | Address |
 |---------|----------|---------|
-| Base Sepolia | SimpleEscrow | TBD |
+| Base Sepolia | SimpleEscrow | `0x42f8E9D601911aA7ED415A9657a5F955E1D443c3` |
 | Base Mainnet | SimpleEscrow | TBD |
 
 ## USDC Addresses

@@ -15,10 +15,10 @@ import (
 	"github.com/niceclay/claycosmos/server/pkg/apierr"
 )
 
-// Contract addresses - update these after deployment
+// Contract addresses
 const (
-	EscrowContractBaseSepolia = "0x0000000000000000000000000000000000000000" // TODO: Update after deployment
-	EscrowContractBaseMainnet = "0x0000000000000000000000000000000000000000" // TODO: Update after deployment
+	EscrowContractBaseSepolia = "0x42f8E9D601911aA7ED415A9657a5F955E1D443c3"
+	EscrowContractBaseMainnet = "0x0000000000000000000000000000000000000000" // TODO: Deploy to mainnet
 	DefaultDeadlineDays       = 7
 )
 

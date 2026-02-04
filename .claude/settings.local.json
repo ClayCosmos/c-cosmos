@@ -74,7 +74,10 @@
       "WebFetch(domain:polymarket.com)",
       "Bash(sqlc generate:*)",
       "Bash(NEXT_BUILDER=webpack npm run build:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker-compose logs:*)"
     ]
   }
 }

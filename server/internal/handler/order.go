@@ -208,28 +208,7 @@ func (h *OrderHandler) ListMyOrders(c *gin.Context) {
 		err = e
 		// Convert to buyer row type for consistency
 		for _, o := range sellerOrders {
-			orders = append(orders, gen.ListOrdersByBuyerRow{
-				ID:              o.ID,
-				OrderNo:         o.OrderNo,
-				ProductID:       o.ProductID,
-				BuyerAgentID:    o.BuyerAgentID,
-				SellerAgentID:   o.SellerAgentID,
-				BuyerWallet:     o.BuyerWallet,
-				SellerWallet:    o.SellerWallet,
-				AmountUsdc:      o.AmountUsdc,
-				EscrowOrderID:   o.EscrowOrderID,
-				EscrowContract:  o.EscrowContract,
-				Status:          o.Status,
-				TxHash:          o.TxHash,
-				CompleteTxHash:  o.CompleteTxHash,
-				DeliveryContent: o.DeliveryContent,
-				DeliveredAt:     o.DeliveredAt,
-				CompletedAt:     o.CompletedAt,
-				Deadline:        o.Deadline,
-				CreatedAt:       o.CreatedAt,
-				UpdatedAt:       o.UpdatedAt,
-				ProductName:     o.ProductName,
-			})
+			orders = append(orders, gen.ListOrdersByBuyerRow(o))
 		}
 	} else {
 		orders, err = h.q.ListOrdersByBuyer(c.Request.Context(), gen.ListOrdersByBuyerParams{
@@ -313,11 +292,8 @@ func (h *OrderHandler) MarkOrderPaid(c *gin.Context) {
 		}
 	}
 
-	// Decrement stock (only if not already done - check prevents double decrement)
-	if _, err := h.q.DecrementProductStock(c.Request.Context(), order.ProductID); err != nil {
-		// Log but don't fail - stock decrement is not critical
-		// In production, would log this error
-	}
+	// Decrement stock - ignore error as it's not critical
+	_, _ = h.q.DecrementProductStock(c.Request.Context(), order.ProductID)
 
 	c.JSON(http.StatusOK, toOrderResponse(updated, product.Name))
 }
@@ -353,7 +329,7 @@ func (h *OrderHandler) CompleteOrder(c *gin.Context) {
 	var req struct {
 		TxHash string `json:"tx_hash"`
 	}
-	c.ShouldBindJSON(&req)
+	_ = c.ShouldBindJSON(&req)
 
 	updated, err := h.q.UpdateOrderCompleted(c.Request.Context(), gen.UpdateOrderCompletedParams{
 		ID:             orderID,
@@ -410,14 +386,14 @@ func (h *OrderHandler) CancelOrder(c *gin.Context) {
 func generateOrderNo() string {
 	now := time.Now()
 	randBytes := make([]byte, 4)
-	rand.Read(randBytes)
+	_, _ = rand.Read(randBytes)
 	return fmt.Sprintf("CC-%s-%s", now.Format("20060102"), hex.EncodeToString(randBytes))
 }
 
 func generateEscrowOrderID() string {
-	bytes := make([]byte, 32)
-	rand.Read(bytes)
-	return "0x" + hex.EncodeToString(bytes)
+	b := make([]byte, 32)
+	_, _ = rand.Read(b)
+	return "0x" + hex.EncodeToString(b)
 }
 
 func toOrderResponse(o gen.Order, productName string) OrderResponse {

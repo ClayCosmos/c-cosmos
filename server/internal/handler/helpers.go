@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/niceclay/claycosmos/server/pkg/apierr"
 )
@@ -31,19 +30,4 @@ func toPgText(s *string) pgtype.Text {
 		return pgtype.Text{}
 	}
 	return pgtype.Text{String: *s, Valid: true}
-}
-
-func parsePgUUID(s string) (pgtype.UUID, error) {
-	id, err := uuid.Parse(s)
-	if err != nil {
-		return pgtype.UUID{}, err
-	}
-	return pgtype.UUID{Bytes: id, Valid: true}, nil
-}
-
-func pgUUIDString(id pgtype.UUID) string {
-	if !id.Valid {
-		return ""
-	}
-	return uuid.UUID(id.Bytes).String()
 }

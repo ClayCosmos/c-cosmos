@@ -270,11 +270,12 @@ func (h *WalletHandler) BindProgrammatic(c *gin.Context) {
 	address := common.HexToAddress(req.Address).Hex()
 
 	// Check if wallet already bound
-	existing, err := h.q.GetWalletByAgentAndChain(c.Request.Context(), gen.GetWalletByAgentAndChainParams{
+	existing, existingErr := h.q.GetWalletByAgentAndChain(c.Request.Context(), gen.GetWalletByAgentAndChainParams{
 		AgentID: agent.ID,
 		Chain:   chain,
 	})
-	if err == nil && existing.VerifiedAt.Valid {
+	walletExists := existingErr == nil
+	if walletExists && existing.VerifiedAt.Valid {
 		respondError(c, apierr.BadRequest("wallet already bound for this chain"))
 		return
 	}
@@ -317,27 +318,28 @@ func (h *WalletHandler) BindProgrammatic(c *gin.Context) {
 	nowPg := pgtype.Timestamptz{Time: time.Now(), Valid: true}
 
 	var wallet gen.Wallet
-	if err == nil {
+	var walletErr error
+	if walletExists {
 		// Update existing wallet
-		wallet, err = h.q.UpdateWalletVerified(c.Request.Context(), gen.UpdateWalletVerifiedParams{
+		wallet, walletErr = h.q.UpdateWalletVerified(c.Request.Context(), gen.UpdateWalletVerifiedParams{
 			ID:         existing.ID,
 			VerifiedAt: nowPg,
 		})
-		if err != nil {
+		if walletErr != nil {
 			respondError(c, apierr.Internal("failed to verify wallet"))
 			return
 		}
 	} else {
 		// Create new wallet
-		wallet, err = h.q.CreateWallet(c.Request.Context(), gen.CreateWalletParams{
+		wallet, walletErr = h.q.CreateWallet(c.Request.Context(), gen.CreateWalletParams{
 			AgentID:    agent.ID,
 			Chain:      chain,
 			Address:    address,
 			IsPrimary:  pgtype.Bool{Bool: true, Valid: true},
 			VerifiedAt: nowPg,
 		})
-		if err != nil {
-			respondError(c, apierr.Internal("failed to create wallet: "+err.Error()))
+		if walletErr != nil {
+			respondError(c, apierr.Internal("failed to create wallet: "+walletErr.Error()))
 			return
 		}
 	}

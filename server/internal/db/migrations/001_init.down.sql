@@ -1,5 +1,0 @@
-DROP TABLE IF EXISTS subscriptions;
-DROP TABLE IF EXISTS data_items;
-DROP TABLE IF EXISTS data_feeds;
-DROP TABLE IF EXISTS stores;
-DROP TABLE IF EXISTS agents;

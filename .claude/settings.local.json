@@ -77,7 +77,9 @@
       "Bash(tree:*)",
       "Bash(docker ps:*)",
       "Bash(docker compose:*)",
-      "Bash(docker-compose logs:*)"
+      "Bash(docker-compose logs:*)",
+      "Bash(golangci-lint run:*)",
+      "Bash(go vet:*)"
     ]
   }
 }

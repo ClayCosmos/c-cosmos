@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -14,9 +13,6 @@ import (
 )
 
 func main() {
-	migrate := flag.Bool("migrate", false, "run database migrations and exit")
-	flag.Parse()
-
 	cfg := config.Load()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -31,11 +27,6 @@ func main() {
 		log.Fatalf("ping postgres: %v", err)
 	}
 	log.Println("connected to PostgreSQL")
-
-	if *migrate {
-		runMigrations(pool, ctx)
-		return
-	}
 
 	// HTTP server
 	r := router.Setup(pool)
@@ -53,26 +44,4 @@ func main() {
 	<-quit
 	log.Println("shutting down...")
 	cancel()
-}
-
-func runMigrations(pool *pgxpool.Pool, ctx context.Context) {
-	migrations := []string{
-		"internal/db/migrations/001_init.up.sql",
-		"internal/db/migrations/002_trading.up.sql",
-		"internal/db/migrations/003_remove_feeds.up.sql",
-	}
-
-	for _, path := range migrations {
-		migration, err := os.ReadFile(path)
-		if err != nil {
-			log.Printf("skip migration %s: %v", path, err)
-			continue
-		}
-		if _, err := pool.Exec(ctx, string(migration)); err != nil {
-			log.Printf("migration %s: %v (may already be applied)", path, err)
-		} else {
-			log.Printf("migration %s: applied", path)
-		}
-	}
-	log.Println("migrations complete")
 }

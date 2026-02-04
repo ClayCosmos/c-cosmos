@@ -12,7 +12,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/niceclay/claycosmos/server/internal/db/gen"
 	"github.com/niceclay/claycosmos/server/internal/handler"
 	"github.com/niceclay/claycosmos/server/internal/middleware"
 )
@@ -50,32 +49,25 @@ func TestMain(m *testing.M) {
 }
 
 func runTestMigrations(pool *pgxpool.Pool) error {
-	migrations := []string{
-		"../db/migrations/001_init.up.sql",
-		"../db/migrations/002_trading.up.sql",
-		"../db/migrations/003_remove_feeds.up.sql",
+	data, err := os.ReadFile("../db/migrations/init.sql")
+	if err != nil {
+		return fmt.Errorf("read init.sql: %w", err)
 	}
-	for _, path := range migrations {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("read migration %s: %w", path, err)
-		}
-		if _, err := pool.Exec(context.Background(), string(data)); err != nil {
-			// Ignore errors for already existing objects
-			continue
-		}
+	if _, err := pool.Exec(context.Background(), string(data)); err != nil {
+		// Ignore errors for already existing objects
+		return nil
 	}
 	return nil
 }
 
 func cleanupTestData(pool *pgxpool.Pool) {
 	ctx := context.Background()
-	pool.Exec(ctx, "DELETE FROM orders WHERE 1=1")
-	pool.Exec(ctx, "DELETE FROM products WHERE 1=1")
-	pool.Exec(ctx, "DELETE FROM wallets WHERE 1=1")
-	pool.Exec(ctx, "DELETE FROM blockchain_events WHERE 1=1")
-	pool.Exec(ctx, "DELETE FROM stores WHERE 1=1")
-	pool.Exec(ctx, "DELETE FROM agents WHERE 1=1")
+	_, _ = pool.Exec(ctx, "DELETE FROM orders WHERE 1=1")
+	_, _ = pool.Exec(ctx, "DELETE FROM products WHERE 1=1")
+	_, _ = pool.Exec(ctx, "DELETE FROM wallets WHERE 1=1")
+	_, _ = pool.Exec(ctx, "DELETE FROM blockchain_events WHERE 1=1")
+	_, _ = pool.Exec(ctx, "DELETE FROM stores WHERE 1=1")
+	_, _ = pool.Exec(ctx, "DELETE FROM agents WHERE 1=1")
 }
 
 func setupTestRouter(pool *pgxpool.Pool) *gin.Engine {
@@ -108,40 +100,6 @@ func setupTestRouter(pool *pgxpool.Pool) *gin.Engine {
 	}
 
 	return r
-}
-
-// Helper to create a test agent and get API key
-func createTestAgent(t *testing.T, pool *pgxpool.Pool, name string) (agentID string, apiKey string) {
-	t.Helper()
-
-	q := gen.New(pool)
-	ctx := context.Background()
-
-	// Create agent directly in DB for testing
-	agent, err := q.CreateAgent(ctx, gen.CreateAgentParams{
-		Name:         name,
-		ApiKeyPrefix: "test1234",
-		ApiKeyHash:   "test_hash_" + name,
-		Role:         "hybrid",
-	})
-	if err != nil {
-		t.Fatalf("create test agent: %v", err)
-	}
-
-	// For testing, we use the api_key_prefix as a simple lookup
-	// In real code, we'd need to set up proper auth
-	return fmt.Sprintf("%x-%x-%x-%x-%x",
-			agent.ID.Bytes[0:4], agent.ID.Bytes[4:6], agent.ID.Bytes[6:8],
-			agent.ID.Bytes[8:10], agent.ID.Bytes[10:16]),
-		"cc_sk_" + name + "_test_key"
-}
-
-// Helper to create a test store (simplified for basic tests)
-func createTestStore(t *testing.T, pool *pgxpool.Pool, agentID string) string {
-	t.Helper()
-	// For full integration tests, we would create store via direct SQL
-	// This is a placeholder that returns a dummy ID
-	return "00000000-0000-0000-0000-000000000001"
 }
 
 func TestOrderFlow(t *testing.T) {

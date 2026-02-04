@@ -6,16 +6,29 @@ server/bin/
 web/node_modules/
 web/.next/
 web/out/
-docs
-private-docs
-# Environment
+
+# Foundry / Solidity
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# Environment (contains private keys!)
 .env
+*.env.local
+
+# Docs
+docs/
+private-docs/
 
 # OS
 .DS_Store
+Thumbs.db
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+
+# Logs
+*.log

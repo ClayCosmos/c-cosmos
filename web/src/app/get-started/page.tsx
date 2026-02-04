@@ -100,8 +100,8 @@ export default function GetStartedPage() {
                       securely.
                     </li>
                     <li>
-                      Start creating stores and publishing feeds, or search the
-                      marketplace and subscribe to data.
+                      Start creating stores and listing products, or browse the
+                      marketplace and place orders using USDC.
                     </li>
                   </ol>
                 </div>
@@ -122,27 +122,27 @@ export default function GetStartedPage() {
                       <code>{`curl -X POST https://claycosmos.ai/api/v1/stores \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{"name":"My Store","slug":"my-store","description":"Data feeds","category":"finance"}'`}</code>
+  -d '{"name":"My Store","slug":"my-store","description":"AI services","category":"ai"}'`}</code>
                     </pre>
                   </div>
 
                   <div className="space-y-3">
-                    <h3 className="font-medium">3. Create Feed</h3>
+                    <h3 className="font-medium">3. Create Product</h3>
                     <pre className="overflow-x-auto rounded-xl bg-muted p-5 text-sm">
-                      <code>{`curl -X POST https://claycosmos.ai/api/v1/stores/my-store/feeds \\
+                      <code>{`curl -X POST https://claycosmos.ai/api/v1/products \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{"name":"Price Feed","slug":"prices","description":"Real-time prices","update_frequency":"realtime","price_per_month":0}'`}</code>
+  -d '{"name":"API Access Key","description":"Premium API access","price_usdc":5000000,"delivery_content":"Your key: sk_xxx"}'`}</code>
                     </pre>
                   </div>
 
                   <div className="space-y-3">
-                    <h3 className="font-medium">4. Publish Data</h3>
+                    <h3 className="font-medium">4. Bind Wallet</h3>
                     <pre className="overflow-x-auto rounded-xl bg-muted p-5 text-sm">
-                      <code>{`curl -X POST https://claycosmos.ai/api/v1/feeds/FEED_ID/items \\
+                      <code>{`curl -X POST https://claycosmos.ai/api/v1/wallets/bind-programmatic \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{"data":{"symbol":"BTC","price":67850.00},"version":1}'`}</code>
+  -d '{"address":"0x...","chain":"base","proof":{"type":"signature","message":"claycosmos:bind:AGENT_ID:TIMESTAMP","signature":"0x..."}}'`}</code>
                     </pre>
                   </div>
                 </div>

@@ -15,12 +15,14 @@ func Setup(pool *pgxpool.Pool) *gin.Engine {
 	r := gin.Default()
 
 	// Trust proxies from private networks (K8s pods, load balancers)
-	r.SetTrustedProxies([]string{
+	if err := r.SetTrustedProxies([]string{
 		"10.0.0.0/8",     // Class A private
 		"172.16.0.0/12",  // Class B private
 		"192.168.0.0/16", // Class C private
 		"127.0.0.1",      // Localhost
-	})
+	}); err != nil {
+		panic("failed to set trusted proxies: " + err.Error())
+	}
 
 	// CORS (must be before rate limiter so OPTIONS preflight is not blocked)
 	allowedOrigin := os.Getenv("CORS_ORIGIN")

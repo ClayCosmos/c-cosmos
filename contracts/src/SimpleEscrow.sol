@@ -6,7 +6,7 @@ import {ReentrancyGuard} from "./utils/ReentrancyGuard.sol";
 
 /// @title SimpleEscrow - ClayCosmos MVP Escrow Contract
 /// @notice A simple escrow contract for AI Agent trading on Base
-/// @dev MVP version without upgradability and platform fees
+/// @dev MVP version without upgradability
 contract SimpleEscrow is ReentrancyGuard {
     // ============ Enums ============
 
@@ -34,9 +34,12 @@ contract SimpleEscrow is ReentrancyGuard {
     mapping(bytes32 => Order) public orders;
     mapping(address => bool) public supportedTokens;
     address public owner;
+    address public feeRecipient;
+    uint256 public feeRate; // in basis points (100 = 1%, max 1000 = 10%)
 
     uint256 public constant MIN_DEADLINE = 1 hours;
     uint256 public constant MAX_DEADLINE = 30 days;
+    uint256 public constant MAX_FEE_RATE = 1000; // 10%
 
     // ============ Events ============
 
@@ -52,6 +55,8 @@ contract SimpleEscrow is ReentrancyGuard {
     event OrderCancelled(bytes32 indexed orderId, uint256 amount);
     event TokenUpdated(address indexed token, bool supported);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event FeeUpdated(uint256 oldRate, uint256 newRate);
+    event FeeRecipientUpdated(address oldRecipient, address newRecipient);
 
     // ============ Errors ============
 
@@ -64,6 +69,7 @@ contract SimpleEscrow is ReentrancyGuard {
     error UnsupportedToken();
     error DeadlineNotReached();
     error TransferFailed();
+    error InvalidFeeRate();
 
     // ============ Modifiers ============
 
@@ -74,8 +80,11 @@ contract SimpleEscrow is ReentrancyGuard {
 
     // ============ Constructor ============
 
-    constructor(address _owner) {
+    constructor(address _owner, address _feeRecipient, uint256 _feeRate) {
+        if (_feeRate > MAX_FEE_RATE) revert InvalidFeeRate();
         owner = _owner;
+        feeRecipient = _feeRecipient;
+        feeRate = _feeRate;
         emit OwnershipTransferred(address(0), _owner);
     }
 
@@ -169,6 +178,21 @@ contract SimpleEscrow is ReentrancyGuard {
         emit TokenUpdated(token, supported);
     }
 
+    /// @notice Set fee rate (in basis points)
+    /// @param _feeRate New fee rate (max 1000 = 10%)
+    function setFeeRate(uint256 _feeRate) external onlyOwner {
+        if (_feeRate > MAX_FEE_RATE) revert InvalidFeeRate();
+        emit FeeUpdated(feeRate, _feeRate);
+        feeRate = _feeRate;
+    }
+
+    /// @notice Set fee recipient address
+    /// @param _feeRecipient New fee recipient
+    function setFeeRecipient(address _feeRecipient) external onlyOwner {
+        emit FeeRecipientUpdated(feeRecipient, _feeRecipient);
+        feeRecipient = _feeRecipient;
+    }
+
     /// @notice Transfer ownership
     /// @param newOwner New owner address
     function transferOwnership(address newOwner) external onlyOwner {
@@ -182,9 +206,18 @@ contract SimpleEscrow is ReentrancyGuard {
     function _completeOrder(bytes32 orderId, Order storage order) internal {
         order.status = OrderStatus.Completed;
 
+        uint256 fee = (order.amount * feeRate) / 10000;
+        uint256 sellerAmount = order.amount - fee;
+
         // Transfer funds to seller
-        bool success = IERC20(order.token).transfer(order.seller, order.amount);
+        bool success = IERC20(order.token).transfer(order.seller, sellerAmount);
         if (!success) revert TransferFailed();
+
+        // Transfer fee to platform
+        if (fee > 0) {
+            success = IERC20(order.token).transfer(feeRecipient, fee);
+            if (!success) revert TransferFailed();
+        }
 
         emit OrderCompleted(orderId, order.amount);
     }

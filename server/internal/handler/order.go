@@ -17,7 +17,7 @@ import (
 
 // Contract addresses
 const (
-	EscrowContractBaseSepolia = "0x42f8E9D601911aA7ED415A9657a5F955E1D443c3"
+	EscrowContractBaseSepolia = "0xcB2CEB939e955a28c9d4ADC0358C0B959F5ec9ce"
 	EscrowContractBaseMainnet = "0x0000000000000000000000000000000000000000" // TODO: Deploy to mainnet
 	DefaultDeadlineDays       = 7
 )

@@ -81,7 +81,10 @@
       "Bash(golangci-lint run:*)",
       "Bash(go vet:*)",
       "Bash(go mod graph:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(forge build:*)",
+      "Bash(~/.foundry/bin/forge build:*)",
+      "Bash(~/.foundry/bin/forge test:*)"
     ]
   }
 }

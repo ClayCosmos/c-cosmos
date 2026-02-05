@@ -18,8 +18,10 @@ contract DeployScript is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        // Deploy SimpleEscrow with deployer as owner
-        SimpleEscrow escrow = new SimpleEscrow(deployer);
+        // Deploy SimpleEscrow with deployer as owner and fee recipient
+        // Fee rate: 150 basis points = 1.5% (promotional rate, default is 300 = 3%)
+        uint256 feeRate = 150;
+        SimpleEscrow escrow = new SimpleEscrow(deployer, deployer, feeRate);
         console.log("SimpleEscrow deployed at:", address(escrow));
 
         // Determine which USDC to use based on chain ID
@@ -49,6 +51,8 @@ contract DeployScript is Script {
         console.log("Chain ID:", chainId);
         console.log("Escrow:", address(escrow));
         console.log("Owner:", deployer);
+        console.log("Fee Recipient:", deployer);
+        console.log("Fee Rate (bps):", feeRate);
         console.log("USDC:", usdc);
     }
 }

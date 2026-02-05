@@ -161,16 +161,30 @@ forge script script/Deploy.s.sol:DeployScript \
 ```
 == Logs ==
   Deployer address: 0xEfaDD8D2B79562132De0Fe307Aa7A0a2eA76f688
-  SimpleEscrow deployed at: 0x42f8E9D601911aA7ED415A9657a5F955E1D443c3
+  SimpleEscrow deployed at: 0xcB2CEB939e955a28c9d4ADC0358C0B959F5ec9ce
   Chain: Base Sepolia
   USDC enabled: 0x036CbD53842c5426634e7929541eC2318f3dCF7e
 
   === Deployment Summary ===
   Chain ID: 84532
-  Escrow: 0x42f8E9D601911aA7ED415A9657a5F955E1D443c3
+  Escrow: 0xcB2CEB939e955a28c9d4ADC0358C0B959F5ec9ce
   Owner: 0xEfaDD8D2B79562132De0Fe307Aa7A0a2eA76f688
+  Fee Recipient: 0xEfaDD8D2B79562132De0Fe307Aa7A0a2eA76f688
+  Fee Rate (bps): 150
   USDC: 0x036CbD53842c5426634e7929541eC2318f3dCF7e
 ```
+
+### 6. 平台手续费
+
+合约部署时设置了 1.5% 的促销费率（默认费率为 3%）。
+
+| 参数 | 值 |
+|------|-----|
+| 费率 | 150 bps (1.5%) |
+| 最大费率 | 1000 bps (10%) |
+| 收款地址 | 与部署者相同 |
+
+费率可通过 `setFeeRate` 函数调整，收款地址可通过 `setFeeRecipient` 函数修改。
 
 ---
 
@@ -183,7 +197,7 @@ forge script script/Deploy.s.sol:DeployScript \
 ```go
 // Contract addresses
 const (
-    EscrowContractBaseSepolia = "0x42f8E9D601911aA7ED415A9657a5F955E1D443c3"
+    EscrowContractBaseSepolia = "0xcB2CEB939e955a28c9d4ADC0358C0B959F5ec9ce"
     EscrowContractBaseMainnet = "0x..." // 主网部署后更新
     DefaultDeadlineDays       = 7
 )
@@ -197,11 +211,13 @@ const (
 
 | 项目 | 值 |
 |------|-----|
-| 合约地址 | `0x42f8E9D601911aA7ED415A9657a5F955E1D443c3` |
+| 合约地址 | `0xcB2CEB939e955a28c9d4ADC0358C0B959F5ec9ce` |
 | 网络 | Base Sepolia (Chain ID: 84532) |
 | Owner | `0xEfaDD8D2B79562132De0Fe307Aa7A0a2eA76f688` |
+| 费率 | 150 bps (1.5% 促销费率) |
+| 收款地址 | `0xEfaDD8D2B79562132De0Fe307Aa7A0a2eA76f688` |
 | USDC | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
-| Basescan | https://sepolia.basescan.org/address/0x42f8e9d601911aa7ed415a9657a5f955e1d443c3 |
+| Basescan | https://sepolia.basescan.org/address/0xcb2ceb939e955a28c9d4adc0358c0b959f5ec9ce |
 
 ### 交易流程
 
@@ -220,7 +236,7 @@ const (
      │                              │<─────────────────────────────│
      │                              │                              │
      │  4. complete (确认收货)      │                              │
-     │─────────────────────────────>│  5. 转账给卖家                │
+     │─────────────────────────────>│  5. 转账给卖家 (扣除手续费)   │
      │                              │─────────────────────────────>│
 ```
 
@@ -233,6 +249,8 @@ const (
 | `cancel(orderId)` | Buyer | 取消订单，退款 |
 | `autoComplete(orderId)` | Anyone | 超时后自动完成（释放资金给卖家） |
 | `getOrder(orderId)` | Anyone | 查询订单信息 |
+| `setFeeRate(feeRate)` | Owner | 设置手续费率（basis points） |
+| `setFeeRecipient(recipient)` | Owner | 设置手续费收款地址 |
 
 ### USDC 地址
 
@@ -284,4 +302,4 @@ cast wallet address $PRIVATE_KEY
 
 | 日期 | 网络 | 合约地址 | 部署者 |
 |------|------|----------|--------|
-| 2026-02-05 | Base Sepolia | `0x42f8E9D601911aA7ED415A9657a5F955E1D443c3` | `0xEfaDD8D2B79562132De0Fe307Aa7A0a2eA76f688` |
+| 2026-02-05 | Base Sepolia | `0xcB2CEB939e955a28c9d4ADC0358C0B959F5ec9ce` | `0xEfaDD8D2B79562132De0Fe307Aa7A0a2eA76f688` |

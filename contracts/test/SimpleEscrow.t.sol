@@ -12,16 +12,18 @@ contract SimpleEscrowTest is Test {
     address public owner = address(1);
     address public buyer = address(2);
     address public seller = address(3);
+    address public feeWallet = address(4);
 
     uint256 public constant INITIAL_BALANCE = 1000 * 1e6; // 1000 USDC
     uint256 public constant ORDER_AMOUNT = 10 * 1e6; // 10 USDC
+    uint256 public constant FEE_RATE = 150; // 1.5%
 
     bytes32 public orderId = keccak256("order-001");
 
     function setUp() public {
         // Deploy contracts
         usdc = new MockERC20("USD Coin", "USDC", 6);
-        escrow = new SimpleEscrow(owner);
+        escrow = new SimpleEscrow(owner, feeWallet, FEE_RATE);
 
         // Setup token support
         vm.prank(owner);
@@ -94,6 +96,7 @@ contract SimpleEscrowTest is Test {
         escrow.createOrder(orderId, seller, address(usdc), ORDER_AMOUNT, deadline);
 
         uint256 sellerBalanceBefore = usdc.balanceOf(seller);
+        uint256 feeWalletBalanceBefore = usdc.balanceOf(feeWallet);
 
         vm.prank(buyer);
         escrow.complete(orderId);
@@ -101,8 +104,12 @@ contract SimpleEscrowTest is Test {
         SimpleEscrow.Order memory order = escrow.getOrder(orderId);
         assertEq(uint256(order.status), uint256(SimpleEscrow.OrderStatus.Completed));
 
-        // Check seller received funds
-        assertEq(usdc.balanceOf(seller), sellerBalanceBefore + ORDER_AMOUNT);
+        // Fee: 10_000_000 * 150 / 10000 = 150_000 (0.15 USDC)
+        uint256 expectedFee = (ORDER_AMOUNT * FEE_RATE) / 10000;
+        uint256 expectedSellerAmount = ORDER_AMOUNT - expectedFee;
+
+        assertEq(usdc.balanceOf(seller), sellerBalanceBefore + expectedSellerAmount);
+        assertEq(usdc.balanceOf(feeWallet), feeWalletBalanceBefore + expectedFee);
         assertEq(usdc.balanceOf(address(escrow)), 0);
     }
 
@@ -161,6 +168,7 @@ contract SimpleEscrowTest is Test {
         vm.warp(deadline + 1);
 
         uint256 sellerBalanceBefore = usdc.balanceOf(seller);
+        uint256 feeWalletBalanceBefore = usdc.balanceOf(feeWallet);
 
         // Anyone can call autoComplete
         escrow.autoComplete(orderId);
@@ -168,7 +176,11 @@ contract SimpleEscrowTest is Test {
         SimpleEscrow.Order memory order = escrow.getOrder(orderId);
         assertEq(uint256(order.status), uint256(SimpleEscrow.OrderStatus.Completed));
 
-        assertEq(usdc.balanceOf(seller), sellerBalanceBefore + ORDER_AMOUNT);
+        uint256 expectedFee = (ORDER_AMOUNT * FEE_RATE) / 10000;
+        uint256 expectedSellerAmount = ORDER_AMOUNT - expectedFee;
+
+        assertEq(usdc.balanceOf(seller), sellerBalanceBefore + expectedSellerAmount);
+        assertEq(usdc.balanceOf(feeWallet), feeWalletBalanceBefore + expectedFee);
     }
 
     function test_AutoComplete_RevertIfDeadlineNotReached() public {
@@ -212,5 +224,65 @@ contract SimpleEscrowTest is Test {
         escrow.transferOwnership(newOwner);
 
         assertEq(escrow.owner(), newOwner);
+    }
+
+    // ============ Fee Tests ============
+
+    function test_SetFeeRate() public {
+        uint256 newRate = 300; // 3%
+
+        vm.prank(owner);
+        escrow.setFeeRate(newRate);
+
+        assertEq(escrow.feeRate(), newRate);
+    }
+
+    function test_SetFeeRate_RevertIfTooHigh() public {
+        vm.prank(owner);
+        vm.expectRevert(SimpleEscrow.InvalidFeeRate.selector);
+        escrow.setFeeRate(1001); // > 10%
+    }
+
+    function test_SetFeeRate_RevertIfNotOwner() public {
+        vm.prank(buyer);
+        vm.expectRevert(SimpleEscrow.Unauthorized.selector);
+        escrow.setFeeRate(300);
+    }
+
+    function test_SetFeeRecipient() public {
+        address newRecipient = address(200);
+
+        vm.prank(owner);
+        escrow.setFeeRecipient(newRecipient);
+
+        assertEq(escrow.feeRecipient(), newRecipient);
+    }
+
+    function test_SetFeeRecipient_RevertIfNotOwner() public {
+        vm.prank(buyer);
+        vm.expectRevert(SimpleEscrow.Unauthorized.selector);
+        escrow.setFeeRecipient(address(200));
+    }
+
+    function test_ZeroFee() public {
+        // Set fee rate to 0
+        vm.prank(owner);
+        escrow.setFeeRate(0);
+
+        uint256 deadline = block.timestamp + 7 days;
+
+        vm.prank(buyer);
+        escrow.createOrder(orderId, seller, address(usdc), ORDER_AMOUNT, deadline);
+
+        uint256 sellerBalanceBefore = usdc.balanceOf(seller);
+        uint256 feeWalletBalanceBefore = usdc.balanceOf(feeWallet);
+
+        vm.prank(buyer);
+        escrow.complete(orderId);
+
+        // Seller receives full amount, no fee charged
+        assertEq(usdc.balanceOf(seller), sellerBalanceBefore + ORDER_AMOUNT);
+        assertEq(usdc.balanceOf(feeWallet), feeWalletBalanceBefore);
+        assertEq(usdc.balanceOf(address(escrow)), 0);
     }
 }

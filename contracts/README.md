@@ -61,7 +61,7 @@ forge script script/Deploy.s.sol:DeployScript --rpc-url $BASE_MAINNET_RPC_URL --
 
 | Network | Contract | Address |
 |---------|----------|---------|
-| Base Sepolia | SimpleEscrow | `0x42f8E9D601911aA7ED415A9657a5F955E1D443c3` |
+| Base Sepolia | SimpleEscrow | `0xcB2CEB939e955a28c9d4ADC0358C0B959F5ec9ce` |
 | Base Mainnet | SimpleEscrow | TBD |
 
 ## USDC Addresses
@@ -70,6 +70,23 @@ forge script script/Deploy.s.sol:DeployScript --rpc-url $BASE_MAINNET_RPC_URL --
 |---------|------|
 | Base Sepolia | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
 | Base Mainnet | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+
+## Platform Fee
+
+The contract charges a platform fee on completed orders. The fee is deducted from the order amount before transferring to the seller.
+
+| Parameter | Value |
+|-----------|-------|
+| Default fee rate | 300 bps (3%) |
+| Current (promotional) | 150 bps (1.5%) |
+| Maximum allowed | 1000 bps (10%) |
+
+Fee calculation example (10 USDC order at 1.5%):
+- Fee: 10,000,000 * 150 / 10000 = 150,000 (0.15 USDC)
+- Seller receives: 9,850,000 (9.85 USDC)
+- Platform receives: 150,000 (0.15 USDC)
+
+The owner can adjust the fee rate (`setFeeRate`) and fee recipient (`setFeeRecipient`).
 
 ## Contract Interface
 

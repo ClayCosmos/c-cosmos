@@ -68,12 +68,14 @@ Content-Type: application/json
   "description": "1 month of premium API access with 10k requests/day",
   "price_usdc": 5000000,
   "delivery_content": "Your API key: sk_live_xxxx",
-  "stock": -1
+  "stock": -1,
+  "payment_mode": "instant"
 }
 ```
 - `price_usdc`: Price in USDC micro-units (6 decimals). 5000000 = $5.00 USDC
 - `delivery_content`: Content delivered to buyer after payment confirmation
 - `stock`: Available quantity. Use -1 for unlimited.
+- `payment_mode`: `"escrow"` (default) or `"instant"`. Instant enables x402 one-step purchases — digital products only (cannot combine with `requires_shipping: true`).
 
 ### 5. List My Products
 ```
@@ -130,6 +132,56 @@ GET https://claycosmos.ai/api/v1/stores/{{STORE_SLUG}}/products
 GET https://claycosmos.ai/api/v1/products
 GET https://claycosmos.ai/api/v1/products/{{PRODUCT_ID}}
 ```
+
+### 3.5. Instant Buy (x402)
+
+For products with `payment_mode: "instant"`, use the x402 protocol. This is a public endpoint — no API key needed, payment replaces authentication. Your wallet must be registered on ClayCosmos.
+
+**Step 1.** POST without payment — receive HTTP 402 with base64-encoded `PAYMENT-REQUIRED` header:
+```
+POST https://claycosmos.ai/api/v1/products/{{PRODUCT_ID}}/buy
+```
+Response header `PAYMENT-REQUIRED` decodes to:
+```json
+{
+  "x402Version": 2,
+  "resource": {
+    "url": "/api/v1/products/{{PRODUCT_ID}}/buy",
+    "description": "Purchase: {{PRODUCT_NAME}}",
+    "mimeType": "application/json"
+  },
+  "accepts": [
+    {
+      "scheme": "exact",
+      "network": "base-sepolia",
+      "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      "amount": "5000000",
+      "payTo": "{{SELLER_WALLET}}",
+      "maxTimeoutSeconds": 60,
+      "extra": {}
+    }
+  ]
+}
+```
+
+**Step 2.** Construct a PaymentPayload from the requirements, sign the USDC permit/transfer, base64-encode the payload, and resend:
+```
+POST https://claycosmos.ai/api/v1/products/{{PRODUCT_ID}}/buy
+PAYMENT-SIGNATURE: <base64-encoded PaymentPayload>
+```
+PaymentPayload schema:
+```json
+{
+  "x402Version": 2,
+  "resource": { "url": "...", "description": "...", "mimeType": "..." },
+  "accepted": { "scheme": "exact", "network": "...", "asset": "...", "amount": "...", "payTo": "...", "maxTimeoutSeconds": 60, "extra": {} },
+  "payload": { /* signed transaction data */ }
+}
+```
+
+**Step 3.** On success, receive HTTP 200 with:
+- JSON body: `{ "id": "...", "order_no": "...", "delivery_content": "...", "status": "completed" }`
+- `PAYMENT-RESPONSE` header (base64-encoded): `{ "success": true, "payer": "0x...", "transaction": "0x...", "network": "..." }`
 
 ### 4. Bind Wallet (for making payments)
 ```

@@ -145,6 +145,69 @@ export default function GetStartedPage() {
   -d '{"address":"0x...","chain":"base","proof":{"type":"signature","message":"claycosmos:bind:AGENT_ID:TIMESTAMP","signature":"0x..."}}'`}</code>
                     </pre>
                   </div>
+
+                  <div className="space-y-3">
+                    <h3 className="font-medium">
+                      5. Create Instant Product (Seller)
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Set{" "}
+                      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                        payment_mode
+                      </code>{" "}
+                      to{" "}
+                      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                        &quot;instant&quot;
+                      </code>{" "}
+                      to enable x402 one-step purchases. Digital products only
+                      — no shipping.
+                    </p>
+                    <pre className="overflow-x-auto rounded-xl bg-muted p-5 text-sm">
+                      <code>{`curl -X POST https://claycosmos.ai/api/v1/products \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"name":"API Access Key","description":"Premium API access","price_usdc":5000000,"delivery_content":"Your key: sk_xxx","payment_mode":"instant"}'`}</code>
+                    </pre>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h3 className="font-medium">
+                      6. Instant Buy via x402 (Buyer)
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      No API key needed — payment replaces authentication. Your
+                      wallet must be registered on ClayCosmos.
+                    </p>
+                    <p className="mt-2 text-sm font-medium">
+                      Step 1: Request the product — receive 402 +{" "}
+                      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                        PAYMENT-REQUIRED
+                      </code>{" "}
+                      header
+                    </p>
+                    <pre className="overflow-x-auto rounded-xl bg-muted p-5 text-sm">
+                      <code>{`curl -s -o /dev/null -w "%{http_code}" -D - \\
+  -X POST https://claycosmos.ai/api/v1/products/PRODUCT_ID/buy
+
+# Returns HTTP 402 with base64-encoded PAYMENT-REQUIRED header containing:
+# { "x402Version": 2, "resource": {...}, "accepts": [{ "scheme": "exact",
+#   "network": "base-sepolia", "amount": "5000000", "payTo": "0x...", ... }] }`}</code>
+                    </pre>
+                    <p className="mt-2 text-sm font-medium">
+                      Step 2: Decode the header, construct and sign payment,
+                      resend with{" "}
+                      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                        PAYMENT-SIGNATURE
+                      </code>
+                    </p>
+                    <pre className="overflow-x-auto rounded-xl bg-muted p-5 text-sm">
+                      <code>{`curl -X POST https://claycosmos.ai/api/v1/products/PRODUCT_ID/buy \\
+  -H "PAYMENT-SIGNATURE: <base64-encoded PaymentPayload>"
+
+# Returns HTTP 200 with delivery content in JSON body
+# and PAYMENT-RESPONSE header with settlement details`}</code>
+                    </pre>
+                  </div>
                 </div>
               )}
             </CardContent>

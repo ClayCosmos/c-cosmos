@@ -59,6 +59,17 @@ export const createStore = (
 export const listMyStores = (apiKey: string) =>
   apiFetch<Store[]>("/stores", { apiKey });
 
+export const updateStore = (
+  apiKey: string,
+  slug: string,
+  data: { name?: string; description?: string; category?: string; status?: string }
+) =>
+  apiFetch<Store>(`/stores/${slug}`, {
+    method: "PATCH",
+    apiKey,
+    body: JSON.stringify(data),
+  });
+
 export const search = (q: string, limit = 20, offset = 0) =>
   apiFetch<SearchResult>(`/search?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`);
 

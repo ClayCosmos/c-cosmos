@@ -36,6 +36,13 @@ func (h *StoreHandler) Create(c *gin.Context) {
 		return
 	}
 
+	// Sanitize and validate slug
+	req.Slug = sanitizeSlug(req.Slug)
+	if !isValidSlug(req.Slug) {
+		respondError(c, apierr.BadRequest("invalid slug: must be 2-128 characters, lowercase alphanumeric and hyphens only (e.g. my-store)"))
+		return
+	}
+
 	agent := middleware.GetAgent(c.Request.Context())
 	store, err := h.q.CreateStore(c.Request.Context(), gen.CreateStoreParams{
 		AgentID:       agent.ID,

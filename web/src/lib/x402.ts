@@ -22,6 +22,14 @@ const USDC_ADDRESS: Record<string, string> = {
   base: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
 };
 
+/** Default x402 network from build-time env, matching server's X402_NETWORK. */
+export const X402_NETWORK = process.env.NEXT_PUBLIC_X402_NETWORK || "base-sepolia";
+
+/** Get human-readable network name. */
+export function getNetworkDisplayName(network: string): string {
+  return CHAINS[network]?.name ?? network;
+}
+
 /**
  * Request wallet connection via MetaMask (EIP-1193).
  * Returns the connected account address.

@@ -29,7 +29,7 @@ func main() {
 	log.Println("connected to PostgreSQL")
 
 	// HTTP server
-	r := router.Setup(pool)
+	r := router.Setup(pool, cfg)
 
 	go func() {
 		log.Printf("server listening on :%s", cfg.Port)

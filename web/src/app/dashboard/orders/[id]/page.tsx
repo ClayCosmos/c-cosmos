@@ -140,9 +140,14 @@ export default function OrderDetailPage() {
                 {order.order_no}
               </p>
             </div>
-            <Badge variant="secondary" className={`text-sm ${getOrderStatusColor(order.status!)}`}>
-              {order.status}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className={`text-sm ${getOrderStatusColor(order.status!)}`}>
+                {order.status}
+              </Badge>
+              <Badge variant={order.payment_mode === "instant" ? "default" : "outline"} className="text-sm">
+                {order.payment_mode === "instant" ? "x402" : "Escrow"}
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -213,27 +218,36 @@ export default function OrderDetailPage() {
             </div>
           )}
 
-          {/* Escrow Info */}
-          <div className="p-4 bg-muted rounded-lg space-y-3">
-            <h3 className="font-medium">Escrow Payment Details</h3>
-            <div className="grid gap-2 text-sm">
-              <div>
-                <span className="text-muted-foreground">Contract: </span>
-                <a
-                  href={`https://sepolia.basescan.org/address/${order.escrow_contract}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-mono text-blue-600 hover:underline break-all"
-                >
-                  {order.escrow_contract}
-                </a>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Order ID: </span>
-                <span className="font-mono break-all">{order.escrow_order_id}</span>
+          {/* Payment Details */}
+          {order.payment_mode === "instant" ? (
+            <div className="p-4 bg-muted rounded-lg space-y-3">
+              <h3 className="font-medium">x402 Instant Payment</h3>
+              <p className="text-sm text-muted-foreground">
+                This order was completed instantly via the x402 protocol.
+              </p>
+            </div>
+          ) : (
+            <div className="p-4 bg-muted rounded-lg space-y-3">
+              <h3 className="font-medium">Escrow Payment Details</h3>
+              <div className="grid gap-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Contract: </span>
+                  <a
+                    href={`https://sepolia.basescan.org/address/${order.escrow_contract}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-blue-600 hover:underline break-all"
+                  >
+                    {order.escrow_contract}
+                  </a>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Order ID: </span>
+                  <span className="font-mono break-all">{order.escrow_order_id}</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Transaction Hash */}
           {order.tx_hash && (

@@ -370,6 +370,26 @@ export interface paths {
         patch: operations["updateProduct"];
         trace?: never;
     };
+    "/products/{productId}/buy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Instant purchase via x402 protocol
+         * @description Buy a product instantly using the x402 payment protocol.
+         */
+        post: operations["instantBuyProduct"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/stores/{slug}/products": {
         parameters: {
             query?: never;
@@ -748,6 +768,9 @@ export interface components {
             external_url?: string | null;
             /** @description Whether this product requires a shipping address (physical goods) */
             requires_shipping?: boolean;
+            /** @description Payment mode: escrow (multi-step) or instant (x402 protocol) */
+            /** @enum {string} */
+            payment_mode?: "escrow" | "instant";
             /** @description Available stock (-1 for unlimited) */
             stock?: number;
             /** @enum {string} */
@@ -778,6 +801,9 @@ export interface components {
             external_url?: string | null;
             /** @description Whether this product requires a shipping address (physical goods) */
             requires_shipping?: boolean | null;
+            /** @description Payment mode (default: escrow). Physical products must use escrow. */
+            /** @enum {string|null} */
+            payment_mode?: "escrow" | "instant" | null;
         };
         UpdateProductRequest: {
             name?: string | null;
@@ -791,6 +817,9 @@ export interface components {
             external_url?: string | null;
             /** @description Whether this product requires a shipping address */
             requires_shipping?: boolean | null;
+            /** @description Payment mode */
+            /** @enum {string|null} */
+            payment_mode?: "escrow" | "instant" | null;
         };
         ShippingAddress: {
             recipient_name: string;
@@ -827,6 +856,9 @@ export interface components {
             escrow_order_id?: string;
             /** @description Escrow contract address */
             escrow_contract?: string;
+            /** @description Payment mode used for this order */
+            /** @enum {string} */
+            payment_mode?: "escrow" | "instant";
             /** @enum {string} */
             status?: "pending" | "paid" | "completed" | "cancelled";
             /** @description Payment transaction hash */
@@ -845,6 +877,24 @@ export interface components {
             deadline?: string;
             /** Format: date-time */
             created_at?: string;
+        };
+        PaymentRequirement: {
+            scheme?: string;
+            network?: string;
+            maxAmountRequired?: string;
+            resource?: string;
+            description?: string;
+            payTo?: string;
+            maxTimeoutSeconds?: number;
+            asset?: string;
+        };
+        InstantBuyResponse: {
+            /** Format: uuid */
+            id?: string;
+            order_no?: string;
+            tx_hash?: string | null;
+            delivery_content?: string;
+            status?: string;
         };
         CreateOrderRequest: {
             /** Format: uuid */
@@ -1755,6 +1805,46 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    instantBuyProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Product UUID */
+                productId: components["parameters"]["ProductId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Purchase successful */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstantBuyResponse"];
+                };
+            };
+            /** @description Payment required */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error?: string;
+                        message?: string;
+                        payment_requirements?: components["schemas"]["PaymentRequirement"][];
+                        x402_version?: number;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
     };

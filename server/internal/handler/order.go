@@ -68,6 +68,7 @@ type OrderResponse struct {
 	AmountUSD       float64          `json:"amount_usd"`
 	EscrowOrderID   string           `json:"escrow_order_id"`
 	EscrowContract  string           `json:"escrow_contract"`
+	PaymentMode     string           `json:"payment_mode"`
 	Status          string           `json:"status"`
 	TxHash          string           `json:"tx_hash,omitempty"`
 	ShippingAddress *ShippingAddress `json:"shipping_address,omitempty"`
@@ -457,6 +458,7 @@ func toOrderResponse(o gen.Order, productName string) OrderResponse {
 		AmountUSD:       float64(o.AmountUsdc) / 1_000_000,
 		EscrowOrderID:   o.EscrowOrderID,
 		EscrowContract:  o.EscrowContract,
+		PaymentMode:     o.PaymentMode,
 		Status:          o.Status,
 		ShippingAddress: parseShippingAddress(o.ShippingAddress),
 		Deadline:        o.Deadline.Time,
@@ -492,6 +494,7 @@ func toOrderResponseFromRow(o gen.ListOrdersByBuyerRow) OrderResponse {
 		AmountUSD:       float64(o.AmountUsdc) / 1_000_000,
 		EscrowOrderID:   o.EscrowOrderID,
 		EscrowContract:  o.EscrowContract,
+		PaymentMode:     o.PaymentMode,
 		Status:          o.Status,
 		ShippingAddress: parseShippingAddress(o.ShippingAddress),
 		Deadline:        o.Deadline.Time,

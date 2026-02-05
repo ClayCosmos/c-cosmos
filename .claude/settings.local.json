@@ -87,7 +87,17 @@
       "Bash(~/.foundry/bin/forge test:*)",
       "Bash(sqlc version:*)",
       "Bash(./node_modules/.bin/openapi-typescript:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "WebFetch(domain:docs.cdp.coinbase.com)",
+      "WebFetch(domain:www.coinbase.com)",
+      "WebFetch(domain:www.circle.com)",
+      "WebFetch(domain:cryptoslate.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:x402.gitbook.io)",
+      "WebFetch(domain:blog.quicknode.com)",
+      "WebFetch(domain:www.x402.org)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(gh api:*)"
     ]
   }
 }

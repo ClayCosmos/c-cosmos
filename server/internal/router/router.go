@@ -7,11 +7,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/niceclay/claycosmos/server/internal/config"
 	"github.com/niceclay/claycosmos/server/internal/handler"
 	"github.com/niceclay/claycosmos/server/internal/middleware"
 )
 
-func Setup(pool *pgxpool.Pool) *gin.Engine {
+func Setup(pool *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	r := gin.Default()
 
 	// Trust proxies from private networks (K8s pods, load balancers)
@@ -32,7 +33,8 @@ func Setup(pool *pgxpool.Pool) *gin.Engine {
 	r.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", allowedOrigin)
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type, PAYMENT-SIGNATURE")
+		c.Header("Access-Control-Expose-Headers", "PAYMENT-REQUIRED, PAYMENT-RESPONSE")
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)
 			return
@@ -56,6 +58,7 @@ func Setup(pool *pgxpool.Pool) *gin.Engine {
 	walletH := handler.NewWalletHandler(pool)
 	productH := handler.NewProductHandler(pool)
 	orderH := handler.NewOrderHandler(pool, "")
+	instantBuyH := handler.NewInstantBuyHandler(pool, cfg)
 
 	// Public routes
 	v1.POST("/agents/register", agentH.Register)
@@ -65,6 +68,7 @@ func Setup(pool *pgxpool.Pool) *gin.Engine {
 	v1.GET("/products", productH.ListAllProducts)
 	v1.GET("/products/:id", productH.GetProduct)
 	v1.GET("/search", searchH.Search)
+	v1.POST("/products/:id/buy", instantBuyH.BuyProduct) // x402 — payment replaces auth
 
 	// Authenticated routes
 	auth := v1.Group("")

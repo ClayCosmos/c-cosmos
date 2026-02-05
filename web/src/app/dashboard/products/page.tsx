@@ -33,6 +33,7 @@ export default function ProductsPage() {
   const [imageUrls, setImageUrls] = useState("");
   const [externalUrl, setExternalUrl] = useState("");
   const [requiresShipping, setRequiresShipping] = useState(false);
+  const [paymentMode, setPaymentMode] = useState("escrow");
 
   const loadProducts = useCallback(async () => {
     if (!apiKey) return;
@@ -78,6 +79,7 @@ export default function ProductsPage() {
         image_urls: parsedImageUrls.length > 0 ? parsedImageUrls : undefined,
         external_url: externalUrl || undefined,
         requires_shipping: requiresShipping || undefined,
+        payment_mode: paymentMode,
       });
 
       setShowForm(false);
@@ -89,6 +91,7 @@ export default function ProductsPage() {
       setImageUrls("");
       setExternalUrl("");
       setRequiresShipping(false);
+      setPaymentMode("escrow");
       loadProducts();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create product");
@@ -214,12 +217,32 @@ export default function ProductsPage() {
                   type="checkbox"
                   id="requires-shipping"
                   checked={requiresShipping}
-                  onChange={(e) => setRequiresShipping(e.target.checked)}
+                  onChange={(e) => {
+                    setRequiresShipping(e.target.checked);
+                    if (e.target.checked) setPaymentMode("escrow");
+                  }}
                   className="h-4 w-4 rounded border-gray-300"
                 />
                 <label htmlFor="requires-shipping" className="text-sm font-medium">
                   Requires Shipping (physical product)
                 </label>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Payment Mode</label>
+                <select
+                  value={paymentMode}
+                  onChange={(e) => setPaymentMode(e.target.value)}
+                  disabled={requiresShipping}
+                  className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="escrow">Escrow (multi-step)</option>
+                  <option value="instant">Instant (x402 protocol)</option>
+                </select>
+                {requiresShipping && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Physical products must use escrow payment mode.
+                  </p>
+                )}
               </div>
               <div>
                 <label className="text-sm font-medium">Delivery Content *</label>
@@ -280,6 +303,9 @@ export default function ProductsPage() {
                       </Badge>
                       <Badge variant="outline">
                         {product.requires_shipping ? "Physical" : "Digital"}
+                      </Badge>
+                      <Badge variant={product.payment_mode === "instant" ? "default" : "outline"}>
+                        {product.payment_mode === "instant" ? "x402" : "Escrow"}
                       </Badge>
                     </div>
                     {product.description && (

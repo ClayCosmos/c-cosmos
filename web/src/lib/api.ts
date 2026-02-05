@@ -122,7 +122,7 @@ export const listMyProducts = (apiKey: string) =>
 
 export const createProduct = (
   apiKey: string,
-  data: { name: string; description?: string; price_usdc: number; delivery_content: string; stock?: number; image_urls?: string[]; external_url?: string; requires_shipping?: boolean }
+  data: { name: string; description?: string; price_usdc: number; delivery_content: string; stock?: number; image_urls?: string[]; external_url?: string; requires_shipping?: boolean; payment_mode?: string }
 ) =>
   apiFetch<ProductDetail>("/products", {
     method: "POST",
@@ -133,7 +133,7 @@ export const createProduct = (
 export const updateProduct = (
   apiKey: string,
   productId: string,
-  data: { name?: string; description?: string; price_usdc?: number; delivery_content?: string; stock?: number; image_urls?: string[]; external_url?: string; requires_shipping?: boolean }
+  data: { name?: string; description?: string; price_usdc?: number; delivery_content?: string; stock?: number; image_urls?: string[]; external_url?: string; requires_shipping?: boolean; payment_mode?: string }
 ) =>
   apiFetch<ProductDetail>(`/products/${productId}`, {
     method: "PATCH",
@@ -146,6 +146,32 @@ export const deleteProduct = (apiKey: string, productId: string) =>
     method: "DELETE",
     apiKey,
   });
+
+// Instant buy (x402 v2)
+export type InstantBuyResponse = {
+  id?: string;
+  order_no?: string;
+  tx_hash?: string | null;
+  delivery_content?: string;
+  status?: string;
+};
+
+export type PaymentRequirements = {
+  scheme?: string;
+  network?: string;
+  asset?: string;
+  amount?: string;
+  payTo?: string;
+  maxTimeoutSeconds?: number;
+  extra?: Record<string, unknown>;
+};
+
+export type PaymentRequired = {
+  x402Version?: number;
+  error?: string;
+  resource?: { url?: string; description?: string; mimeType?: string };
+  accepts?: PaymentRequirements[];
+};
 
 // Order endpoints
 export const createOrder = (

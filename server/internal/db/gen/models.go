@@ -51,6 +51,7 @@ type Order struct {
 	TxHash          pgtype.Text        `json:"tx_hash"`
 	CompleteTxHash  pgtype.Text        `json:"complete_tx_hash"`
 	ShippingAddress []byte             `json:"shipping_address"`
+	PaymentMode     string             `json:"payment_mode"`
 	DeliveryContent pgtype.Text        `json:"delivery_content"`
 	DeliveredAt     pgtype.Timestamptz `json:"delivered_at"`
 	CompletedAt     pgtype.Timestamptz `json:"completed_at"`
@@ -70,6 +71,7 @@ type Product struct {
 	ImageUrls        []string           `json:"image_urls"`
 	ExternalUrl      pgtype.Text        `json:"external_url"`
 	RequiresShipping bool               `json:"requires_shipping"`
+	PaymentMode      string             `json:"payment_mode"`
 	Stock            pgtype.Int4        `json:"stock"`
 	Status           string             `json:"status"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`

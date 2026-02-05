@@ -61,6 +61,9 @@ function OrderCard({
               <Badge variant="secondary" className={getOrderStatusColor(order.status!)}>
                 {order.status}
               </Badge>
+              <Badge variant={order.payment_mode === "instant" ? "default" : "outline"} className="text-xs">
+                {order.payment_mode === "instant" ? "x402" : "Escrow"}
+              </Badge>
             </div>
             <h3 className="font-medium mt-1 truncate">
               {order.product_name}

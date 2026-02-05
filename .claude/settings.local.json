@@ -105,7 +105,13 @@
       "Bash(npx tsc:*)",
       "Skill(code-review:code-review)",
       "Bash(brew list:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(for f in server/internal/db/gen/*.go)",
+      "Bash(do git ls-files --error-unmatch \"$f\")",
+      "Bash(done)",
+      "Bash(git reset:*)",
+      "Bash(git push:*)"
     ]
   }
 }

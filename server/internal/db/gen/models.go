@@ -50,6 +50,7 @@ type Order struct {
 	Status          string             `json:"status"`
 	TxHash          pgtype.Text        `json:"tx_hash"`
 	CompleteTxHash  pgtype.Text        `json:"complete_tx_hash"`
+	ShippingAddress []byte             `json:"shipping_address"`
 	DeliveryContent pgtype.Text        `json:"delivery_content"`
 	DeliveredAt     pgtype.Timestamptz `json:"delivered_at"`
 	CompletedAt     pgtype.Timestamptz `json:"completed_at"`
@@ -59,20 +60,21 @@ type Order struct {
 }
 
 type Product struct {
-	ID              pgtype.UUID        `json:"id"`
-	StoreID         pgtype.UUID        `json:"store_id"`
-	Name            string             `json:"name"`
-	Slug            string             `json:"slug"`
-	Description     pgtype.Text        `json:"description"`
-	PriceUsdc       int64              `json:"price_usdc"`
-	DeliveryContent pgtype.Text        `json:"delivery_content"`
-	ImageUrls       []string           `json:"image_urls"`
-	ExternalUrl     pgtype.Text        `json:"external_url"`
-	Stock           pgtype.Int4        `json:"stock"`
-	Status          string             `json:"status"`
-	CreatedAt       pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
-	Tsv             interface{}        `json:"tsv"`
+	ID               pgtype.UUID        `json:"id"`
+	StoreID          pgtype.UUID        `json:"store_id"`
+	Name             string             `json:"name"`
+	Slug             string             `json:"slug"`
+	Description      pgtype.Text        `json:"description"`
+	PriceUsdc        int64              `json:"price_usdc"`
+	DeliveryContent  pgtype.Text        `json:"delivery_content"`
+	ImageUrls        []string           `json:"image_urls"`
+	ExternalUrl      pgtype.Text        `json:"external_url"`
+	RequiresShipping bool               `json:"requires_shipping"`
+	Stock            pgtype.Int4        `json:"stock"`
+	Status           string             `json:"status"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	Tsv              interface{}        `json:"tsv"`
 }
 
 type Store struct {

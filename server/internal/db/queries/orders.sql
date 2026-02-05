@@ -2,9 +2,10 @@
 INSERT INTO orders (
     order_no, product_id, buyer_agent_id, seller_agent_id,
     buyer_wallet, seller_wallet, amount_usdc,
-    escrow_order_id, escrow_contract, status, deadline
+    escrow_order_id, escrow_contract, status, deadline,
+    shipping_address
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 RETURNING *;
 
 -- name: GetOrderByID :one

@@ -746,6 +746,8 @@ export interface components {
             image_urls?: string[];
             /** @description External link (may be off-site) */
             external_url?: string | null;
+            /** @description Whether this product requires a shipping address (physical goods) */
+            requires_shipping?: boolean;
             /** @description Available stock (-1 for unlimited) */
             stock?: number;
             /** @enum {string} */
@@ -774,6 +776,8 @@ export interface components {
             image_urls?: string[];
             /** @description External link (may be off-site) */
             external_url?: string | null;
+            /** @description Whether this product requires a shipping address (physical goods) */
+            requires_shipping?: boolean | null;
         };
         UpdateProductRequest: {
             name?: string | null;
@@ -785,6 +789,19 @@ export interface components {
             image_urls?: string[] | null;
             /** @description External link (may be off-site) */
             external_url?: string | null;
+            /** @description Whether this product requires a shipping address */
+            requires_shipping?: boolean | null;
+        };
+        ShippingAddress: {
+            recipient_name: string;
+            phone: string;
+            address_line1: string;
+            address_line2?: string | null;
+            city: string;
+            state?: string | null;
+            country: string;
+            postal_code: string;
+            notes?: string | null;
         };
         Order: {
             /** Format: uuid */
@@ -814,6 +831,7 @@ export interface components {
             status?: "pending" | "paid" | "completed" | "cancelled";
             /** @description Payment transaction hash */
             tx_hash?: string | null;
+            shipping_address?: components["schemas"]["ShippingAddress"];
             /** @description Delivered content (visible to buyer after payment) */
             delivery_content?: string | null;
             /** Format: date-time */
@@ -835,6 +853,7 @@ export interface components {
             buyer_wallet: string;
             /** @description Days until deadline (default 7) */
             deadline_days?: number | null;
+            shipping_address?: components["schemas"]["ShippingAddress"];
         };
     };
     responses: {

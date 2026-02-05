@@ -1060,6 +1060,9 @@ components:
           type: string
           nullable: true
           description: External link (may be off-site)
+        requires_shipping:
+          type: boolean
+          description: Whether this product requires a shipping address (physical goods)
         stock:
           type: integer
           description: Available stock (-1 for unlimited)
@@ -1119,6 +1122,10 @@ components:
           type: string
           nullable: true
           description: External link (may be off-site)
+        requires_shipping:
+          type: boolean
+          nullable: true
+          description: Whether this product requires a shipping address (physical goods)
 
     UpdateProductRequest:
       type: object
@@ -1148,6 +1155,37 @@ components:
           type: string
           nullable: true
           description: External link (may be off-site)
+        requires_shipping:
+          type: boolean
+          nullable: true
+          description: Whether this product requires a shipping address
+
+    # -- Shipping Address --
+    ShippingAddress:
+      type: object
+      required: [recipient_name, phone, address_line1, city, country, postal_code]
+      properties:
+        recipient_name:
+          type: string
+        phone:
+          type: string
+        address_line1:
+          type: string
+        address_line2:
+          type: string
+          nullable: true
+        city:
+          type: string
+        state:
+          type: string
+          nullable: true
+        country:
+          type: string
+        postal_code:
+          type: string
+        notes:
+          type: string
+          nullable: true
 
     # -- Order --
     Order:
@@ -1195,6 +1233,8 @@ components:
           type: string
           nullable: true
           description: Payment transaction hash
+        shipping_address:
+          $ref: "#/components/schemas/ShippingAddress"
         delivery_content:
           type: string
           nullable: true
@@ -1229,6 +1269,8 @@ components:
           type: integer
           nullable: true
           description: Days until deadline (default 7)
+        shipping_address:
+          $ref: "#/components/schemas/ShippingAddress"
 
     # -- Wallet --
     Wallet:

@@ -4,7 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { getProduct, createOrder, listWallets, type ProductDetail, type Wallet, type Order } from "@/lib/api";
+import { getProduct, createOrder, listWallets, type ProductDetail, type Wallet, type Order, type ShippingAddress } from "@/lib/api";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useApiKey } from "@/hooks/useApiKey";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +34,19 @@ export default function ProductDetailPage() {
   const [selectedWallet, setSelectedWallet] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [order, setOrder] = useState<Order | null>(null);
+
+  // Shipping address state
+  const [shippingAddr, setShippingAddr] = useState<ShippingAddress>({
+    recipient_name: "",
+    phone: "",
+    address_line1: "",
+    address_line2: "",
+    city: "",
+    state: "",
+    country: "",
+    postal_code: "",
+    notes: "",
+  });
 
   const loadProduct = useCallback(async () => {
     if (!productId) return;
@@ -74,10 +89,18 @@ export default function ProductDetailPage() {
       return;
     }
 
+    if (product?.requires_shipping) {
+      if (!shippingAddr.recipient_name || !shippingAddr.phone || !shippingAddr.address_line1 || !shippingAddr.city || !shippingAddr.country || !shippingAddr.postal_code) {
+        setError("Please fill in all required shipping address fields");
+        return;
+      }
+    }
+
     setCheckoutLoading(true);
     setError("");
     try {
-      const newOrder = await createOrder(apiKey!, productId, selectedWallet);
+      const addr = product?.requires_shipping ? shippingAddr : undefined;
+      const newOrder = await createOrder(apiKey!, productId, selectedWallet, undefined, addr);
       setOrder(newOrder);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create order");
@@ -237,6 +260,9 @@ export default function ProductDetailPage() {
             <Badge variant={product.status === "active" ? "default" : "secondary"}>
               {product.status}
             </Badge>
+            {product.requires_shipping && (
+              <Badge variant="outline">Physical</Badge>
+            )}
             {product.stock !== undefined && (
               <span className="text-sm text-muted-foreground">
                 {product.stock === -1 ? "Unlimited stock" : `${product.stock} in stock`}
@@ -328,6 +354,89 @@ export default function ProductDetailPage() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {product.requires_shipping && (
+                    <div className="space-y-3 border-t pt-4">
+                      <h3 className="text-sm font-semibold">Shipping Address</h3>
+                      <div>
+                        <label className="text-xs text-muted-foreground">Recipient Name *</label>
+                        <Input
+                          value={shippingAddr.recipient_name}
+                          onChange={(e) => setShippingAddr({ ...shippingAddr, recipient_name: e.target.value })}
+                          placeholder="John Doe"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">Phone *</label>
+                        <Input
+                          value={shippingAddr.phone}
+                          onChange={(e) => setShippingAddr({ ...shippingAddr, phone: e.target.value })}
+                          placeholder="+1-555-0100"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">Address Line 1 *</label>
+                        <Input
+                          value={shippingAddr.address_line1}
+                          onChange={(e) => setShippingAddr({ ...shippingAddr, address_line1: e.target.value })}
+                          placeholder="123 Main St"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">Address Line 2</label>
+                        <Input
+                          value={shippingAddr.address_line2 ?? ""}
+                          onChange={(e) => setShippingAddr({ ...shippingAddr, address_line2: e.target.value })}
+                          placeholder="Apt 4B"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs text-muted-foreground">City *</label>
+                          <Input
+                            value={shippingAddr.city}
+                            onChange={(e) => setShippingAddr({ ...shippingAddr, city: e.target.value })}
+                            placeholder="San Francisco"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground">State</label>
+                          <Input
+                            value={shippingAddr.state ?? ""}
+                            onChange={(e) => setShippingAddr({ ...shippingAddr, state: e.target.value })}
+                            placeholder="CA"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs text-muted-foreground">Country *</label>
+                          <Input
+                            value={shippingAddr.country}
+                            onChange={(e) => setShippingAddr({ ...shippingAddr, country: e.target.value })}
+                            placeholder="US"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground">Postal Code *</label>
+                          <Input
+                            value={shippingAddr.postal_code}
+                            onChange={(e) => setShippingAddr({ ...shippingAddr, postal_code: e.target.value })}
+                            placeholder="94105"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">Notes</label>
+                        <Textarea
+                          value={shippingAddr.notes ?? ""}
+                          onChange={(e) => setShippingAddr({ ...shippingAddr, notes: e.target.value })}
+                          placeholder="Ring doorbell"
+                          rows={2}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {error && <p className="text-sm text-destructive">{error}</p>}
 

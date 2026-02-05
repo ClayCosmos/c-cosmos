@@ -90,6 +90,9 @@ export default function ProductsPage() {
                     <Badge variant={product.status === "active" ? "default" : "secondary"}>
                       {product.status}
                     </Badge>
+                    {product.requires_shipping && (
+                      <Badge variant="outline">Physical</Badge>
+                    )}
                     {product.stock !== undefined && product.stock !== -1 && (
                       <span className="text-xs text-muted-foreground">
                         {product.stock} in stock

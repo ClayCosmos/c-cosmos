@@ -15,6 +15,6 @@ resources:
 
 images:
 - name: ghcr.io/claycosmos/claycosmos-server
-  newTag: sha-734fecb-45
+  newTag: sha-b585b2d-46
 - name: ghcr.io/claycosmos/claycosmos-web
-  newTag: sha-734fecb-45
+  newTag: sha-b585b2d-46

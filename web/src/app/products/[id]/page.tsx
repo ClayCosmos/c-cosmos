@@ -263,6 +263,9 @@ export default function ProductDetailPage() {
             {product.requires_shipping && (
               <Badge variant="outline">Physical</Badge>
             )}
+            <Badge variant={product.payment_mode === "instant" ? "default" : "outline"}>
+              {product.payment_mode === "instant" ? "x402 Instant" : "Escrow"}
+            </Badge>
             {product.stock !== undefined && (
               <span className="text-sm text-muted-foreground">
                 {product.stock === -1 ? "Unlimited stock" : `${product.stock} in stock`}
@@ -332,6 +335,38 @@ export default function ProductDetailPage() {
                 <p className="text-sm text-muted-foreground">
                   This product is out of stock.
                 </p>
+              ) : product.payment_mode === "instant" ? (
+                <>
+                  <div className="p-3 bg-muted rounded-lg space-y-2">
+                    <h3 className="text-sm font-semibold">x402 Instant Purchase</h3>
+                    <p className="text-xs text-muted-foreground">
+                      This product supports instant purchase via the x402 protocol.
+                      AI Agents can buy it in a single HTTP request.
+                    </p>
+                    <div className="space-y-1 text-xs font-mono">
+                      <p>
+                        <span className="text-muted-foreground">Endpoint:</span>{" "}
+                        <code className="bg-background px-1 rounded">
+                          POST /api/v1/products/{product.id}/buy
+                        </code>
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">Price:</span>{" "}
+                        ${product.price_usd?.toFixed(2)} USDC ({product.price_usdc?.toLocaleString()} micro-units)
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">Network:</span>{" "}
+                        Base Sepolia
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    No API key needed. Send a POST request — the first call returns
+                    402 with payment requirements in the PAYMENT-REQUIRED header.
+                    Include your payment proof in the PAYMENT-SIGNATURE header to
+                    complete the purchase.
+                  </p>
+                </>
               ) : (
                 <>
                   <div>

@@ -34,6 +34,7 @@ type CreateProductRequest struct {
 	ImageURLs        []string `json:"image_urls"`
 	ExternalURL      string   `json:"external_url"`
 	RequiresShipping *bool    `json:"requires_shipping"`
+	PaymentMode      *string  `json:"payment_mode"`
 }
 
 type UpdateProductRequest struct {
@@ -45,6 +46,7 @@ type UpdateProductRequest struct {
 	ImageURLs        *[]string `json:"image_urls"`
 	ExternalURL      *string   `json:"external_url"`
 	RequiresShipping *bool     `json:"requires_shipping"`
+	PaymentMode      *string   `json:"payment_mode"`
 }
 
 type ProductResponse struct {
@@ -58,6 +60,7 @@ type ProductResponse struct {
 	ImageURLs        []string  `json:"image_urls"`
 	ExternalURL      string    `json:"external_url,omitempty"`
 	RequiresShipping bool      `json:"requires_shipping"`
+	PaymentMode      string    `json:"payment_mode"`
 	Stock            int32     `json:"stock"`
 	Status           string    `json:"status"`
 	CreatedAt        time.Time `json:"created_at"`
@@ -106,6 +109,19 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		requiresShipping = *req.RequiresShipping
 	}
 
+	paymentMode := "escrow"
+	if req.PaymentMode != nil {
+		paymentMode = *req.PaymentMode
+	}
+	if paymentMode != "escrow" && paymentMode != "instant" {
+		respondError(c, apierr.BadRequest("payment_mode must be 'escrow' or 'instant'"))
+		return
+	}
+	if requiresShipping && paymentMode == "instant" {
+		respondError(c, apierr.BadRequest("physical products (requires_shipping=true) must use escrow payment mode"))
+		return
+	}
+
 	product, err := h.q.CreateProduct(c.Request.Context(), gen.CreateProductParams{
 		StoreID:          store.ID,
 		Name:             req.Name,
@@ -116,6 +132,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		ImageUrls:        req.ImageURLs,
 		ExternalUrl:      pgtype.Text{String: req.ExternalURL, Valid: req.ExternalURL != ""},
 		RequiresShipping: requiresShipping,
+		PaymentMode:      paymentMode,
 		Stock:            pgtype.Int4{Int32: stock, Valid: true},
 		Status:           "active",
 	})
@@ -216,6 +233,7 @@ func (h *ProductHandler) ListAllProducts(c *gin.Context) {
 				ImageURLs:        imageURLs,
 				ExternalURL:      p.ExternalUrl.String,
 				RequiresShipping: p.RequiresShipping,
+				PaymentMode:      p.PaymentMode,
 				Stock:            p.Stock.Int32,
 				Status:           p.Status,
 				CreatedAt:        p.CreatedAt.Time,
@@ -305,6 +323,22 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	if req.RequiresShipping != nil {
 		params.RequiresShipping = pgtype.Bool{Bool: *req.RequiresShipping, Valid: true}
 	}
+	if req.PaymentMode != nil {
+		if *req.PaymentMode != "escrow" && *req.PaymentMode != "instant" {
+			respondError(c, apierr.BadRequest("payment_mode must be 'escrow' or 'instant'"))
+			return
+		}
+		// Check if the product would be physical + instant (not allowed)
+		isShipping := product.RequiresShipping
+		if req.RequiresShipping != nil {
+			isShipping = *req.RequiresShipping
+		}
+		if isShipping && *req.PaymentMode == "instant" {
+			respondError(c, apierr.BadRequest("physical products (requires_shipping=true) must use escrow payment mode"))
+			return
+		}
+		params.PaymentMode = pgtype.Text{String: *req.PaymentMode, Valid: true}
+	}
 	if req.Stock != nil {
 		params.Stock = pgtype.Int4{Int32: *req.Stock, Valid: true}
 	}
@@ -385,6 +419,7 @@ func toProductResp(p gen.Product) ProductResponse {
 		ImageURLs:        imageURLs,
 		ExternalURL:      p.ExternalUrl.String,
 		RequiresShipping: p.RequiresShipping,
+		PaymentMode:      p.PaymentMode,
 		Stock:            p.Stock.Int32,
 		Status:           p.Status,
 		CreatedAt:        p.CreatedAt.Time,

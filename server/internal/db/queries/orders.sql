@@ -8,6 +8,16 @@ INSERT INTO orders (
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 RETURNING *;
 
+-- name: CreateInstantOrder :one
+INSERT INTO orders (
+    order_no, product_id, buyer_agent_id, seller_agent_id,
+    buyer_wallet, seller_wallet, amount_usdc,
+    escrow_order_id, escrow_contract, payment_mode,
+    status, tx_hash, delivery_content, delivered_at,
+    completed_at, deadline, shipping_address
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'instant', 'completed', $10, $11, now(), now(), now(), $12)
+RETURNING *;
+
 -- name: GetOrderByID :one
 SELECT * FROM orders WHERE id = $1;
 

@@ -369,6 +369,56 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /products/{productId}/buy:
+    post:
+      operationId: instantBuyProduct
+      tags: [Product]
+      summary: Instant purchase via x402 protocol (v2)
+      security: []
+      description: |
+        Buy a product instantly using the x402 payment protocol v2.
+        No authentication required — payment replaces auth.
+
+        **Flow:**
+        1. Send POST without PAYMENT-SIGNATURE header → receive 402 with
+           base64-encoded PaymentRequired in `PAYMENT-REQUIRED` response header.
+        2. Construct payment proof and send POST with `PAYMENT-SIGNATURE` header
+           (base64-encoded PaymentPayload) → receive 200 with delivery content
+           and `PAYMENT-RESPONSE` header (base64-encoded SettleResponse).
+
+        Only works for products with payment_mode=instant.
+        The buyer must have a registered and verified wallet on ClayCosmos.
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      responses:
+        "200":
+          description: Purchase successful, delivery content returned
+          headers:
+            PAYMENT-RESPONSE:
+              description: Base64-encoded SettleResponse JSON
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstantBuyResponse"
+        "402":
+          description: Payment required — PAYMENT-REQUIRED header contains base64-encoded PaymentRequired
+          headers:
+            PAYMENT-REQUIRED:
+              description: Base64-encoded PaymentRequired JSON (x402 v2)
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Empty object (payment details are in the PAYMENT-REQUIRED header)
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   # ── Order ─────────────────────────────────────────────────────────────
   /orders:
     post:
@@ -1063,6 +1113,10 @@ components:
         requires_shipping:
           type: boolean
           description: Whether this product requires a shipping address (physical goods)
+        payment_mode:
+          type: string
+          enum: [escrow, instant]
+          description: "Payment mode: escrow (multi-step) or instant (x402 protocol)"
         stock:
           type: integer
           description: Available stock (-1 for unlimited)
@@ -1126,6 +1180,11 @@ components:
           type: boolean
           nullable: true
           description: Whether this product requires a shipping address (physical goods)
+        payment_mode:
+          type: string
+          enum: [escrow, instant]
+          nullable: true
+          description: "Payment mode (default: escrow). Physical products must use escrow."
 
     UpdateProductRequest:
       type: object
@@ -1159,6 +1218,11 @@ components:
           type: boolean
           nullable: true
           description: Whether this product requires a shipping address
+        payment_mode:
+          type: string
+          enum: [escrow, instant]
+          nullable: true
+          description: "Payment mode"
 
     # -- Shipping Address --
     ShippingAddress:
@@ -1226,6 +1290,10 @@ components:
         escrow_contract:
           type: string
           description: Escrow contract address
+        payment_mode:
+          type: string
+          enum: [escrow, instant]
+          description: "Payment mode used for this order"
         status:
           type: string
           enum: [pending, paid, completed, cancelled]
@@ -1377,3 +1445,65 @@ components:
           nullable: true
           items:
             $ref: "#/components/schemas/ProductDetail"
+
+    # -- x402 v2 Protocol Types --
+    ResourceInfo:
+      type: object
+      description: Describes the resource being paid for
+      properties:
+        url:
+          type: string
+        description:
+          type: string
+        mimeType:
+          type: string
+
+    PaymentRequirements:
+      type: object
+      description: One accepted payment option (x402 v2)
+      properties:
+        scheme:
+          type: string
+        network:
+          type: string
+        asset:
+          type: string
+        amount:
+          type: string
+        payTo:
+          type: string
+        maxTimeoutSeconds:
+          type: integer
+        extra:
+          type: object
+
+    PaymentRequired:
+      type: object
+      description: "Returned as base64 in PAYMENT-REQUIRED header (x402 v2)"
+      properties:
+        x402Version:
+          type: integer
+        error:
+          type: string
+        resource:
+          $ref: "#/components/schemas/ResourceInfo"
+        accepts:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentRequirements"
+
+    InstantBuyResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_no:
+          type: string
+        tx_hash:
+          type: string
+          nullable: true
+        delivery_content:
+          type: string
+        status:
+          type: string

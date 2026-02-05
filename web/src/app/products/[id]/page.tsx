@@ -21,6 +21,8 @@ import {
   ensureChain,
   signTransferWithAuthorization,
   buildPaymentPayload,
+  X402_NETWORK,
+  getNetworkDisplayName,
 } from "@/lib/x402";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -149,6 +151,18 @@ export default function ProductDetailPage() {
 
       // Connect wallet and switch chain
       const account = await connectWallet();
+
+      // Pre-validate: MetaMask address must match a registered ClayCosmos wallet
+      const matchesRegistered = wallets.some(
+        (w) => w.address?.toLowerCase() === account.toLowerCase()
+      );
+      if (!matchesRegistered) {
+        throw new Error(
+          `Wallet ${account.slice(0, 6)}...${account.slice(-4)} is not registered on ClayCosmos. ` +
+          "Please verify this address in Dashboard → Wallets first."
+        );
+      }
+
       if (requirements.network) {
         setInstantNetwork(requirements.network);
         await ensureChain(requirements.network);
@@ -282,7 +296,8 @@ export default function ProductDetailPage() {
 
   // Instant buy completed successfully
   if (instantOrder) {
-    const explorerBase = instantNetwork === "base"
+    const network = instantNetwork || X402_NETWORK;
+    const explorerBase = network === "base"
       ? "https://basescan.org/tx/"
       : "https://sepolia.basescan.org/tx/";
     return (
@@ -439,7 +454,102 @@ export default function ProductDetailPage() {
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!isConnected ? (
+              {product.payment_mode === "instant" ? (
+                /* --- x402 Instant Buy: handles all connection states internally --- */
+                product.status !== "active" ? (
+                  <p className="text-sm text-muted-foreground">
+                    This product is currently unavailable.
+                  </p>
+                ) : product.stock === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    This product is out of stock.
+                  </p>
+                ) : (
+                  <>
+                    {/* Buy button: requires agent + wallet + MetaMask */}
+                    {isConnected && wallets.length > 0 && hasEthereum ? (
+                      <>
+                        {instantError && (
+                          <p className="text-sm text-destructive">{instantError}</p>
+                        )}
+                        <Button
+                          className="w-full"
+                          size="lg"
+                          onClick={handleInstantBuy}
+                          disabled={instantStep !== "idle" && instantStep !== "error"}
+                        >
+                          {instantStep === "connecting"
+                            ? "Connecting Wallet..."
+                            : instantStep === "signing"
+                              ? "Confirm in Wallet..."
+                              : instantStep === "submitting"
+                                ? "Processing Payment..."
+                                : instantStep === "error"
+                                  ? "Try Again"
+                                  : "Buy Instantly"}
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="space-y-2">
+                        {!isConnected && (
+                          <Link href="/dashboard">
+                            <Button variant="outline" className="w-full">
+                              1. Connect Your Agent
+                            </Button>
+                          </Link>
+                        )}
+                        {isConnected && wallets.length === 0 && (
+                          <Link href="/dashboard/wallets">
+                            <Button variant="outline" className="w-full">
+                              2. Verify Your Wallet
+                            </Button>
+                          </Link>
+                        )}
+                        {!hasEthereum && (
+                          <a
+                            href="https://metamask.io/download/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Button variant="outline" className="w-full">
+                              Install MetaMask
+                            </Button>
+                          </a>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          To buy via browser, register your agent and verify the same
+                          wallet address you use in MetaMask.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* x402 protocol info: always visible for agent developers */}
+                    <div className="p-3 bg-muted rounded-lg space-y-2 border-t">
+                      <h3 className="text-sm font-semibold">x402 Protocol</h3>
+                      <div className="space-y-1 text-xs font-mono">
+                        <p>
+                          <span className="text-muted-foreground">Endpoint:</span>{" "}
+                          <code className="bg-background px-1 rounded">
+                            POST /api/v1/products/{product.id}/buy
+                          </code>
+                        </p>
+                        <p>
+                          <span className="text-muted-foreground">Price:</span>{" "}
+                          {product.price_usdc?.toLocaleString()} micro-units USDC
+                        </p>
+                        <p>
+                          <span className="text-muted-foreground">Network:</span>{" "}
+                          {getNetworkDisplayName(X402_NETWORK)}
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        AI Agents: POST without headers to get 402 + payment requirements.
+                        Buyer wallet must be registered on ClayCosmos.
+                      </p>
+                    </div>
+                  </>
+                )
+              ) : !isConnected ? (
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">
                     Connect your agent to purchase this product.
@@ -465,50 +575,6 @@ export default function ProductDetailPage() {
                 <p className="text-sm text-muted-foreground">
                   This product is out of stock.
                 </p>
-              ) : product.payment_mode === "instant" ? (
-                <>
-                  {!hasEthereum ? (
-                    <div className="p-3 bg-muted rounded-lg space-y-2">
-                      <h3 className="text-sm font-semibold">MetaMask Required</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Install MetaMask to buy this product instantly with your browser wallet.
-                      </p>
-                      <a
-                        href="https://metamask.io/download/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary text-xs hover:underline"
-                      >
-                        Get MetaMask
-                      </a>
-                    </div>
-                  ) : (
-                    <>
-                      {instantError && (
-                        <p className="text-sm text-destructive">{instantError}</p>
-                      )}
-                      <Button
-                        className="w-full"
-                        size="lg"
-                        onClick={handleInstantBuy}
-                        disabled={instantStep !== "idle" && instantStep !== "error"}
-                      >
-                        {instantStep === "connecting"
-                          ? "Connecting Wallet..."
-                          : instantStep === "signing"
-                            ? "Confirm in Wallet..."
-                            : instantStep === "submitting"
-                              ? "Processing Payment..."
-                              : instantStep === "error"
-                                ? "Try Again"
-                                : "Buy Instantly"}
-                      </Button>
-                    </>
-                  )}
-                  <p className="text-xs text-muted-foreground text-center">
-                    Pay with USDC via the x402 protocol. No API key needed.
-                  </p>
-                </>
               ) : (
                 <>
                   <div>

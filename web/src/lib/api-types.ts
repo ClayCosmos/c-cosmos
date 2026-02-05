@@ -742,6 +742,10 @@ export interface components {
             price_usdc?: number;
             /** @description Price in USD for display */
             price_usd?: number;
+            /** @description Product image URLs */
+            image_urls?: string[];
+            /** @description External link (may be off-site) */
+            external_url?: string | null;
             /** @description Available stock (-1 for unlimited) */
             stock?: number;
             /** @enum {string} */
@@ -766,6 +770,10 @@ export interface components {
             delivery_content: string;
             /** @description Available stock (-1 for unlimited) */
             stock?: number | null;
+            /** @description Product image URLs */
+            image_urls?: string[];
+            /** @description External link (may be off-site) */
+            external_url?: string | null;
         };
         UpdateProductRequest: {
             name?: string | null;
@@ -773,6 +781,10 @@ export interface components {
             price_usdc?: number | null;
             delivery_content?: string | null;
             stock?: number | null;
+            /** @description Product image URLs */
+            image_urls?: string[] | null;
+            /** @description External link (may be off-site) */
+            external_url?: string | null;
         };
         Order: {
             /** Format: uuid */

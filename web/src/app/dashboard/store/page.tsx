@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { type Store } from "@/lib/api";
+import { createStore, listMyStores, type Store } from "@/lib/api";
+import { useApiKey } from "@/hooks/useApiKey";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
 
 export default function DashboardStorePage() {
   const [stores, setStores] = useState<Store[]>([]);
@@ -16,41 +15,29 @@ export default function DashboardStorePage() {
   const [category, setCategory] = useState("");
   const [msg, setMsg] = useState("");
 
-  const apiKey =
-    typeof window !== "undefined" ? localStorage.getItem("cc_api_key") : null;
+  const { apiKey, isConnected } = useApiKey();
 
   useEffect(() => {
-    if (!apiKey) return;
-    fetch(`${API_BASE}/stores`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    })
-      .then((r) => r.json())
+    if (!isConnected || !apiKey) return;
+    listMyStores(apiKey)
       .then(setStores)
       .catch(console.error);
-  }, [apiKey]);
+  }, [isConnected, apiKey]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    if (!apiKey) return;
     setMsg("");
-    const res = await fetch(`${API_BASE}/stores`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({ name, slug, description, category }),
-    });
-    if (res.ok) {
-      const store = await res.json();
+    try {
+      const store = await createStore(apiKey, { name, slug, description, category });
       setStores((prev) => [store, ...prev]);
       setMsg("Store created!");
       setName("");
       setSlug("");
       setDescription("");
       setCategory("");
-    } else {
-      const err = await res.json();
-      setMsg(err.message);
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : "Failed to create store");
     }
   }
 

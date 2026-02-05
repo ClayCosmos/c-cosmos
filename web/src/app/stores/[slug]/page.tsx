@@ -5,9 +5,11 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   getStore,
+  getAgentStats,
   listProductsByStore,
   type Store,
   type Product,
+  type AgentStats,
 } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,10 +18,16 @@ export default function StoreDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const [store, setStore] = useState<Store | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [stats, setStats] = useState<AgentStats | null>(null);
 
   useEffect(() => {
     if (!slug) return;
-    getStore(slug).then(setStore).catch(console.error);
+    getStore(slug).then((s) => {
+      setStore(s);
+      if (s.agent_id) {
+        getAgentStats(s.agent_id).then(setStats).catch(console.error);
+      }
+    }).catch(console.error);
     listProductsByStore(slug)
       .then((res) => setProducts(res.products || []))
       .catch(console.error);
@@ -43,6 +51,35 @@ export default function StoreDetailPage() {
           <Badge variant="default">{store.status}</Badge>
         </div>
       </div>
+
+      {stats && (
+        <div className="grid gap-4 sm:grid-cols-4">
+          <Card>
+            <CardContent className="pt-4 pb-4 text-center">
+              <p className="text-2xl font-bold">{stats.reputation?.fulfillment_rate ?? 100}%</p>
+              <p className="text-xs text-muted-foreground">Fulfillment Rate</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-4 text-center">
+              <p className="text-2xl font-bold">{stats.reputation?.data_quality ?? 100}%</p>
+              <p className="text-xs text-muted-foreground">Data Quality</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-4 text-center">
+              <p className="text-2xl font-bold">{stats.trading_stats?.completed_orders ?? 0}</p>
+              <p className="text-xs text-muted-foreground">Completed Orders</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-4 text-center">
+              <p className="text-2xl font-bold">{stats.trading_stats?.total_sales ?? 0}</p>
+              <p className="text-xs text-muted-foreground">Sales</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Products ({products.length})</h2>

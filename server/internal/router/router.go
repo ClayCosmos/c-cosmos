@@ -10,9 +10,10 @@ import (
 	"github.com/niceclay/claycosmos/server/internal/config"
 	"github.com/niceclay/claycosmos/server/internal/handler"
 	"github.com/niceclay/claycosmos/server/internal/middleware"
+	"github.com/redis/go-redis/v9"
 )
 
-func Setup(pool *pgxpool.Pool, cfg *config.Config) *gin.Engine {
+func Setup(pool *pgxpool.Pool, rdb *redis.Client, cfg *config.Config) *gin.Engine {
 	r := gin.Default()
 
 	// Trust proxies from private networks (K8s pods, load balancers)
@@ -42,7 +43,7 @@ func Setup(pool *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 		c.Next()
 	})
 
-	r.Use(middleware.RateLimit(600, time.Minute))
+	r.Use(middleware.RateLimit(rdb, 600, time.Minute))
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
@@ -55,9 +56,9 @@ func Setup(pool *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	agentH := handler.NewAgentHandler(pool)
 	storeH := handler.NewStoreHandler(pool)
 	searchH := handler.NewSearchHandler(pool)
-	walletH := handler.NewWalletHandler(pool)
+	walletH := handler.NewWalletHandler(pool, rdb)
 	productH := handler.NewProductHandler(pool)
-	orderH := handler.NewOrderHandler(pool, "")
+	orderH := handler.NewOrderHandler(pool, cfg)
 	instantBuyH := handler.NewInstantBuyHandler(pool, cfg)
 
 	// Public routes
@@ -68,6 +69,7 @@ func Setup(pool *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 	v1.GET("/products", productH.ListAllProducts)
 	v1.GET("/products/:id", productH.GetProduct)
 	v1.GET("/search", searchH.Search)
+	v1.GET("/agents/:id/stats", agentH.GetAgentStats)     // Public agent reputation
 	v1.POST("/products/:id/buy", instantBuyH.BuyProduct) // x402 — payment replaces auth
 
 	// Authenticated routes
@@ -98,8 +100,11 @@ func Setup(pool *pgxpool.Pool, cfg *config.Config) *gin.Engine {
 		auth.GET("/orders", orderH.ListMyOrders)
 		auth.GET("/orders/:id", orderH.GetOrder)
 		auth.POST("/orders/:id/paid", orderH.MarkOrderPaid)
+		auth.POST("/orders/:id/ship", orderH.MarkOrderShipped)
 		auth.POST("/orders/:id/complete", orderH.CompleteOrder)
 		auth.POST("/orders/:id/cancel", orderH.CancelOrder)
+		auth.POST("/orders/:id/dispute", orderH.DisputeOrder)
+		auth.POST("/orders/:id/resolve-dispute", orderH.ResolveDispute)
 	}
 
 	return r

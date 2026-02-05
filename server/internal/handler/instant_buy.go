@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -139,6 +141,22 @@ func (h *InstantBuyHandler) BuyProduct(c *gin.Context) {
 		return
 	}
 
+	// --- Idempotency: dedup by payment signature hash ---
+	sigHash := sha256.Sum256(decoded)
+	paymentSigHash := hex.EncodeToString(sigHash[:])
+	existingOrder, err := h.q.GetOrderByPaymentSigHash(c.Request.Context(), pgtype.Text{String: paymentSigHash, Valid: true})
+	if err == nil {
+		// Already processed — return existing order
+		c.JSON(http.StatusOK, InstantBuyResponse{
+			ID:              pgtypeUUIDToString(existingOrder.ID),
+			OrderNo:         existingOrder.OrderNo,
+			TxHash:          existingOrder.TxHash.String,
+			DeliveryContent: existingOrder.DeliveryContent.String,
+			Status:          existingOrder.Status,
+		})
+		return
+	}
+
 	// Match the accepted requirements from the payload
 	matched := matchRequirements(paymentRequired.Accepts, paymentPayload.Accepted)
 	if !matched {
@@ -235,7 +253,7 @@ func (h *InstantBuyHandler) BuyProduct(c *gin.Context) {
 	}
 
 	// Create completed order.
-	orderNo := generateOrderNo()
+	orderNo := GenerateOrderNo()
 	order, err := h.q.CreateInstantOrder(c.Request.Context(), gen.CreateInstantOrderParams{
 		OrderNo:         orderNo,
 		ProductID:       product.ID,
@@ -249,17 +267,40 @@ func (h *InstantBuyHandler) BuyProduct(c *gin.Context) {
 		TxHash:          pgtype.Text{String: settleResp.Transaction, Valid: settleResp.Transaction != ""},
 		DeliveryContent: product.DeliveryContent,
 		ShippingAddress: nil,
+		PaymentSigHash:  pgtype.Text{String: paymentSigHash, Valid: true},
 	})
 	if err != nil {
 		log.Printf("[x402] CRITICAL: payment settled (tx=%s) but order creation failed for product %s, buyer %s: %v",
 			settleResp.Transaction, productIDStr, pgtypeUUIDToString(buyerWallet.AgentID), err)
-		restoreStock()
-		respondError(c, apierr.Internal("failed to create order"))
+		// Record failed settlement for background recovery — do NOT restore stock (money already transferred)
+		stockReserved = false
+		if _, fsErr := h.q.CreateFailedSettlement(c.Request.Context(), gen.CreateFailedSettlementParams{
+			ProductID:       product.ID,
+			BuyerAgentID:    buyerWallet.AgentID,
+			SellerAgentID:   store.AgentID,
+			BuyerWallet:     payerAddr,
+			SellerWallet:    sellerWallet.Address,
+			AmountUsdc:      product.PriceUsdc,
+			TxHash:          settleResp.Transaction,
+			PaymentSigHash:  paymentSigHash,
+			DeliveryContent: product.DeliveryContent,
+			ErrorMessage:    pgtype.Text{String: err.Error(), Valid: true},
+		}); fsErr != nil {
+			log.Printf("[x402] CRITICAL: failed to record failed settlement for product %s: %v", productIDStr, fsErr)
+		}
+		respondError(c, apierr.Internal("payment was processed but order recording failed — our system will resolve this automatically"))
 		return
 	}
 
 	// Order created successfully — payment is settled and recorded, no need to restore stock.
 	stockReserved = false
+
+	// Recalculate agent stats for both buyer and seller
+	for _, agentID := range []pgtype.UUID{buyerWallet.AgentID, store.AgentID} {
+		if err := h.q.RecalculateAgentStats(c.Request.Context(), agentID); err != nil {
+			log.Printf("[x402] failed to recalculate stats: %v", err)
+		}
+	}
 
 	// Build PAYMENT-RESPONSE header (base64-encoded SettleResponse)
 	settleJSON, _ := json.Marshal(settleResp)

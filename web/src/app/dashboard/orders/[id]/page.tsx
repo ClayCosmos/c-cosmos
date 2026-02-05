@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { getOrder, cancelOrder, completeOrder, markOrderPaid, type Order } from "@/lib/api";
+import { getOrder, cancelOrder, completeOrder, markOrderPaid, disputeOrder, resolveDispute, type Order } from "@/lib/api";
 import { useApiKey } from "@/hooks/useApiKey";
 import { getOrderStatusColor, formatDateTime } from "@/lib/utils/status";
 import { Button } from "@/components/ui/button";
@@ -77,6 +77,33 @@ export default function OrderDetailPage() {
       router.push("/dashboard/orders");
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to cancel order");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleDispute() {
+    const reason = prompt("Please describe the reason for your dispute:");
+    if (!reason) return;
+    setActionLoading(true);
+    try {
+      await disputeOrder(apiKey!, orderId, reason);
+      loadOrder();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to open dispute");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleResolve() {
+    if (!confirm("Resolve this dispute? The order will return to paid status.")) return;
+    setActionLoading(true);
+    try {
+      await resolveDispute(apiKey!, orderId);
+      loadOrder();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to resolve dispute");
     } finally {
       setActionLoading(false);
     }
@@ -265,7 +292,7 @@ export default function OrderDetailPage() {
           )}
 
           {/* Delivery Content */}
-          {order.delivery_content && (order.status === "paid" || order.status === "completed") && (
+          {order.delivery_content && (order.status === "paid" || order.status === "completed" || order.status === "disputed") && (
             <div className="p-4 bg-green-50 rounded-lg">
               <h3 className="font-medium text-green-800 mb-2">Delivery Content</h3>
               <pre className="text-sm whitespace-pre-wrap break-all bg-white p-3 rounded border">
@@ -306,14 +333,69 @@ export default function OrderDetailPage() {
             )}
 
             {order.status === "paid" && (
-              <div>
-                <h3 className="font-medium mb-2">Confirm Receipt</h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Once you have received the delivery, confirm to release the payment to the seller.
-                </p>
-                <Button onClick={handleComplete} disabled={actionLoading}>
-                  Confirm Delivery Received
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-medium mb-2">Confirm Receipt</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Once you have received the delivery, confirm to release the payment to the seller.
+                  </p>
+                  <Button onClick={handleComplete} disabled={actionLoading}>
+                    Confirm Delivery Received
+                  </Button>
+                </div>
+                <div>
+                  <h3 className="font-medium mb-2">Open Dispute</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    If there is an issue with the delivery, you can open a dispute.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                    onClick={handleDispute}
+                    disabled={actionLoading}
+                  >
+                    Open Dispute
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {order.status === "disputed" && (
+              <div className="space-y-4">
+                <div className="p-4 bg-orange-50 rounded-lg">
+                  <h3 className="font-medium text-orange-800 mb-2">Order Disputed</h3>
+                  {order.dispute_reason && (
+                    <p className="text-sm text-orange-700 mb-1">
+                      Reason: {order.dispute_reason}
+                    </p>
+                  )}
+                  {order.disputed_at && (
+                    <p className="text-sm text-muted-foreground">
+                      Disputed at: {formatDateTime(order.disputed_at)}
+                    </p>
+                  )}
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Buyer can cancel on-chain to get a refund. Seller can resolve the dispute.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleResolve}
+                  disabled={actionLoading}
+                >
+                  Resolve Dispute
                 </Button>
+              </div>
+            )}
+
+            {order.status === "refunded" && (
+              <div className="text-center py-4">
+                <p className="text-red-600 font-medium">This order has been refunded.</p>
+                {order.dispute_reason && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Dispute reason: {order.dispute_reason}
+                  </p>
+                )}
               </div>
             )}
 

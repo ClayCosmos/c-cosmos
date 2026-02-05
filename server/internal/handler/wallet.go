@@ -1,12 +1,13 @@
 package handler
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -17,15 +18,17 @@ import (
 	"github.com/niceclay/claycosmos/server/internal/db/gen"
 	"github.com/niceclay/claycosmos/server/internal/middleware"
 	"github.com/niceclay/claycosmos/server/pkg/apierr"
+	"github.com/redis/go-redis/v9"
 )
 
 type WalletHandler struct {
 	pool *pgxpool.Pool
 	q    *gen.Queries
+	rdb  *redis.Client
 }
 
-func NewWalletHandler(pool *pgxpool.Pool) *WalletHandler {
-	return &WalletHandler{pool: pool, q: gen.New(pool)}
+func NewWalletHandler(pool *pgxpool.Pool, rdb *redis.Client) *WalletHandler {
+	return &WalletHandler{pool: pool, q: gen.New(pool), rdb: rdb}
 }
 
 // BindWalletRequest initiates wallet binding
@@ -70,17 +73,51 @@ type WalletResponse struct {
 	CreatedAt  time.Time  `json:"created_at"`
 }
 
-// In-memory nonce store with mutex (in production, use Redis)
-var (
-	nonceStore = make(map[string]nonceData)
-	nonceMu    sync.RWMutex
-)
+// noncePayload is stored in Redis as JSON
+type noncePayload struct {
+	AgentID   string `json:"agent_id"`
+	Address   string `json:"address"`
+	Chain     string `json:"chain"`
+	ExpiresAt int64  `json:"expires_at"`
+}
 
-type nonceData struct {
-	AgentID   pgtype.UUID
-	Address   string
-	Chain     string
-	ExpiresAt time.Time
+const nonceTTL = 5 * time.Minute
+
+func nonceKey(nonce string) string {
+	return "nonce:" + nonce
+}
+
+var errRedisUnavailable = fmt.Errorf("redis unavailable")
+
+func (h *WalletHandler) storeNonce(ctx context.Context, nonce string, data noncePayload) error {
+	if h.rdb == nil {
+		return errRedisUnavailable
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	return h.rdb.Set(ctx, nonceKey(nonce), b, nonceTTL).Err()
+}
+
+func (h *WalletHandler) loadNonce(ctx context.Context, nonce string) (noncePayload, error) {
+	if h.rdb == nil {
+		return noncePayload{}, errRedisUnavailable
+	}
+	var p noncePayload
+	b, err := h.rdb.Get(ctx, nonceKey(nonce)).Bytes()
+	if err != nil {
+		return p, err
+	}
+	err = json.Unmarshal(b, &p)
+	return p, err
+}
+
+func (h *WalletHandler) deleteNonce(ctx context.Context, nonce string) {
+	if h.rdb == nil {
+		return
+	}
+	h.rdb.Del(ctx, nonceKey(nonce))
 }
 
 // BindWallet initiates the wallet binding process
@@ -122,20 +159,21 @@ func (h *WalletHandler) BindWallet(c *gin.Context) {
 		return
 	}
 	nonce := hex.EncodeToString(nonceBytes)
-	expiresAt := time.Now().Add(5 * time.Minute)
+	expiresAt := time.Now().Add(nonceTTL)
 
-	// Store nonce
-	nonceMu.Lock()
-	nonceStore[nonce] = nonceData{
-		AgentID:   agent.ID,
+	// Store nonce in Redis
+	agentIDStr := uuidToString(agent.ID)
+	if err := h.storeNonce(c.Request.Context(), nonce, noncePayload{
+		AgentID:   agentIDStr,
 		Address:   address,
 		Chain:     chain,
-		ExpiresAt: expiresAt,
+		ExpiresAt: expiresAt.Unix(),
+	}); err != nil {
+		respondError(c, apierr.Internal("failed to store nonce"))
+		return
 	}
-	nonceMu.Unlock()
 
 	// Generate message to sign
-	agentIDStr := uuidToString(agent.ID)
 	message := generateSignMessage(agentIDStr, address, nonce, expiresAt.Unix())
 
 	c.JSON(http.StatusOK, BindWalletResponse{
@@ -167,31 +205,27 @@ func (h *WalletHandler) VerifyWallet(c *gin.Context) {
 	}
 	address := common.HexToAddress(req.Address).Hex()
 
-	// Verify nonce (with mutex)
-	nonceMu.RLock()
-	data, ok := nonceStore[req.Nonce]
-	nonceMu.RUnlock()
-	if !ok {
+	// Load nonce from Redis
+	data, err := h.loadNonce(c.Request.Context(), req.Nonce)
+	if err != nil {
 		respondError(c, apierr.BadRequest("invalid or expired nonce"))
 		return
 	}
 
-	if time.Now().After(data.ExpiresAt) {
-		nonceMu.Lock()
-		delete(nonceStore, req.Nonce)
-		nonceMu.Unlock()
+	if time.Now().Unix() > data.ExpiresAt {
+		h.deleteNonce(c.Request.Context(), req.Nonce)
 		respondError(c, apierr.BadRequest("nonce expired"))
 		return
 	}
 
-	if data.AgentID != agent.ID || data.Address != address || data.Chain != chain {
+	agentIDStr := uuidToString(agent.ID)
+	if data.AgentID != agentIDStr || data.Address != address || data.Chain != chain {
 		respondError(c, apierr.BadRequest("nonce mismatch"))
 		return
 	}
 
 	// Verify signature
-	agentIDStr := uuidToString(agent.ID)
-	message := generateSignMessage(agentIDStr, address, req.Nonce, data.ExpiresAt.Unix())
+	message := generateSignMessage(agentIDStr, address, req.Nonce, data.ExpiresAt)
 	recoveredAddr, err := recoverAddress(message, req.Signature)
 	if err != nil {
 		respondError(c, apierr.BadRequest("invalid signature: "+err.Error()))
@@ -204,21 +238,19 @@ func (h *WalletHandler) VerifyWallet(c *gin.Context) {
 	}
 
 	// Delete nonce only after successful verification
-	nonceMu.Lock()
-	delete(nonceStore, req.Nonce)
-	nonceMu.Unlock()
+	h.deleteNonce(c.Request.Context(), req.Nonce)
 
 	// Create or update wallet
 	now := pgtype.Timestamptz{Time: time.Now(), Valid: true}
 
 	// Try to get existing wallet first
-	existing, err := h.q.GetWalletByAgentAndChain(c.Request.Context(), gen.GetWalletByAgentAndChainParams{
+	existing, existErr := h.q.GetWalletByAgentAndChain(c.Request.Context(), gen.GetWalletByAgentAndChainParams{
 		AgentID: agent.ID,
 		Chain:   chain,
 	})
 
 	var wallet gen.Wallet
-	if err == nil {
+	if existErr == nil {
 		// Update existing wallet
 		wallet, err = h.q.UpdateWalletVerified(c.Request.Context(), gen.UpdateWalletVerifiedParams{
 			ID:         existing.ID,

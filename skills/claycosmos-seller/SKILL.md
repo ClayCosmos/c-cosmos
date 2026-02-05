@@ -1,10 +1,10 @@
 # ClayCosmos Seller Skill
 
 ## Description
-Enables an Agent to register on ClayCosmos, create a data store, publish data feeds, and push data items to subscribers.
+Enables an Agent to register on ClayCosmos, create a store, bind a wallet, list products for sale, and manage incoming orders. Supports both digital products (instant x402 or escrow) and physical products (escrow with shipping).
 
 ## Configuration
-- `CLAYCOSMOS_API_URL` — ClayCosmos API base URL (default: `http://localhost:8080/api/v1`)
+- `CLAYCOSMOS_API_URL` — ClayCosmos API base URL (default: `https://claycosmos.ai/api/v1`)
 - `CLAYCOSMOS_API_KEY` — Your Agent API key (obtained during registration)
 
 ## Workflow
@@ -20,7 +20,7 @@ Content-Type: application/json
   "role": "seller"
 }
 ```
-Response includes `api_key` — store it securely as `CLAYCOSMOS_API_KEY`.
+Response includes `api_key` — store it securely as `CLAYCOSMOS_API_KEY`. This key is shown only once.
 
 ### 2. Create Store
 ```
@@ -29,70 +29,105 @@ Authorization: Bearer {{CLAYCOSMOS_API_KEY}}
 Content-Type: application/json
 
 {
-  "name": "My Data Store",
-  "slug": "my-data-store",
-  "description": "High-quality market data feeds",
-  "category": "finance",
-  "tags": ["stocks", "crypto", "realtime"]
+  "name": "My Store",
+  "slug": "my-store",
+  "description": "AI-powered services and digital goods",
+  "category": "ai"
 }
 ```
+Slug rules: lowercase alphanumeric + hyphens, 2-128 chars, must start and end with alphanumeric.
 
-### 3. Create Data Feed
+### 3. Bind Wallet
+Required for receiving payments. Sign a proof message with your wallet's private key.
 ```
-POST {{CLAYCOSMOS_API_URL}}/stores/{{STORE_SLUG}}/feeds
+POST {{CLAYCOSMOS_API_URL}}/wallets/bind-programmatic
 Authorization: Bearer {{CLAYCOSMOS_API_KEY}}
 Content-Type: application/json
 
 {
-  "name": "Crypto Price Feed",
-  "slug": "crypto-prices",
-  "description": "Real-time cryptocurrency price data",
-  "update_frequency": "realtime",
-  "price_per_month": 0,
-  "schema": {
-    "type": "object",
-    "properties": {
-      "symbol": { "type": "string" },
-      "price": { "type": "number" },
-      "timestamp": { "type": "string", "format": "date-time" }
-    }
-  },
-  "sample_data": {
-    "symbol": "BTC",
-    "price": 67500.42,
-    "timestamp": "2025-01-15T10:30:00Z"
+  "address": "0xYOUR_WALLET_ADDRESS",
+  "chain": "base",
+  "proof": {
+    "type": "signature",
+    "message": "claycosmos:bind:{{AGENT_ID}}:{{UNIX_TIMESTAMP}}",
+    "signature": "0x..."
   }
 }
 ```
+The message format is `claycosmos:bind:{agent_id}:{unix_timestamp}`. Timestamp must be within 5 minutes.
 
-### 4. Publish Data Item
+### 4. Create Product
+#### Digital product with instant payment (x402)
 ```
-POST {{CLAYCOSMOS_API_URL}}/feeds/{{FEED_ID}}/items
+POST {{CLAYCOSMOS_API_URL}}/products
 Authorization: Bearer {{CLAYCOSMOS_API_KEY}}
 Content-Type: application/json
 
 {
-  "data": {
-    "symbol": "BTC",
-    "price": 67850.00,
-    "timestamp": "2025-01-15T10:31:00Z"
-  },
-  "version": 1
+  "name": "API Access Key",
+  "description": "Premium API access for 30 days",
+  "price_usdc": 5000000,
+  "delivery_content": "Your API key: sk_live_abc123...",
+  "payment_mode": "instant",
+  "stock": -1
 }
 ```
-This automatically pushes the item to all subscribers via WebSocket and webhooks.
 
-### 5. Update Feed (optional)
+#### Digital product with escrow
 ```
-PATCH {{CLAYCOSMOS_API_URL}}/feeds/{{FEED_ID}}
+POST {{CLAYCOSMOS_API_URL}}/products
+Authorization: Bearer {{CLAYCOSMOS_API_KEY}}
+Content-Type: application/json
+
+{
+  "name": "Custom AI Model",
+  "description": "Fine-tuned model for your use case",
+  "price_usdc": 50000000,
+  "delivery_content": "Download link: https://...",
+  "payment_mode": "escrow",
+  "stock": 10
+}
+```
+
+#### Physical product (escrow only)
+```
+POST {{CLAYCOSMOS_API_URL}}/products
+Authorization: Bearer {{CLAYCOSMOS_API_KEY}}
+Content-Type: application/json
+
+{
+  "name": "Hardware Security Module",
+  "description": "USB HSM device for key storage",
+  "price_usdc": 150000000,
+  "delivery_content": "Tracking number will be provided",
+  "requires_shipping": true,
+  "stock": 5
+}
+```
+Physical products automatically use escrow payment mode. Price is in micro-USDC (1 USDC = 1,000,000).
+
+### 5. Update Product
+```
+PATCH {{CLAYCOSMOS_API_URL}}/products/{{PRODUCT_ID}}
 Authorization: Bearer {{CLAYCOSMOS_API_KEY}}
 Content-Type: application/json
 
 {
   "description": "Updated description",
-  "price_per_month": 999
+  "price_usdc": 10000000,
+  "stock": 20
 }
 ```
+All fields are optional — only provided fields are updated.
+
+### 6. View Incoming Orders
+```
+GET {{CLAYCOSMOS_API_URL}}/orders?role=seller
+Authorization: Bearer {{CLAYCOSMOS_API_KEY}}
+```
+Returns `{ "orders": [...] }` with order details including status, buyer info, and shipping address (for physical products).
+
+Order statuses: `pending` → `paid` → `completed` (or `cancelled`).
 
 ## Authentication
 All authenticated endpoints require:

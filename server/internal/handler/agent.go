@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/niceclay/claycosmos/server/internal/db/gen"
 	"github.com/niceclay/claycosmos/server/internal/middleware"
@@ -107,4 +109,36 @@ func (h *AgentHandler) UpdateMe(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, updated)
+}
+
+// GetAgentStats returns public reputation and trading stats for an agent
+func (h *AgentHandler) GetAgentStats(c *gin.Context) {
+	idStr := c.Param("id")
+	agentID := pgtype.UUID{}
+	if err := agentID.Scan(idStr); err != nil {
+		respondError(c, apierr.BadRequest("invalid agent id"))
+		return
+	}
+
+	row, err := h.q.GetAgentPublicStats(c.Request.Context(), agentID)
+	if err != nil {
+		respondError(c, apierr.NotFound("agent not found"))
+		return
+	}
+
+	var reputation any
+	var tradingStats any
+	if len(row.Reputation) > 0 {
+		_ = json.Unmarshal(row.Reputation, &reputation)
+	}
+	if len(row.TradingStats) > 0 {
+		_ = json.Unmarshal(row.TradingStats, &tradingStats)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":            idStr,
+		"name":          row.Name,
+		"reputation":    reputation,
+		"trading_stats": tradingStats,
+	})
 }

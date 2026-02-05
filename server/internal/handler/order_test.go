@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/niceclay/claycosmos/server/internal/config"
 	"github.com/niceclay/claycosmos/server/internal/handler"
 	"github.com/niceclay/claycosmos/server/internal/middleware"
 )
@@ -74,9 +75,9 @@ func setupTestRouter(pool *pgxpool.Pool) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 
-	orderH := handler.NewOrderHandler(pool, "0x1234567890123456789012345678901234567890")
+	orderH := handler.NewOrderHandler(pool, &config.Config{EscrowContract: "0x1234567890123456789012345678901234567890"})
 	productH := handler.NewProductHandler(pool)
-	walletH := handler.NewWalletHandler(pool)
+	walletH := handler.NewWalletHandler(pool, nil)
 
 	v1 := r.Group("/api/v1")
 
@@ -97,6 +98,8 @@ func setupTestRouter(pool *pgxpool.Pool) *gin.Engine {
 		auth.POST("/orders/:id/paid", orderH.MarkOrderPaid)
 		auth.POST("/orders/:id/complete", orderH.CompleteOrder)
 		auth.POST("/orders/:id/cancel", orderH.CancelOrder)
+		auth.POST("/orders/:id/dispute", orderH.DisputeOrder)
+		auth.POST("/orders/:id/resolve-dispute", orderH.ResolveDispute)
 	}
 
 	return r
@@ -109,7 +112,7 @@ func TestOrderFlow(t *testing.T) {
 
 	// This is a basic structure test - full integration would need proper auth setup
 	t.Run("Order handler exists", func(t *testing.T) {
-		h := handler.NewOrderHandler(testPool, "0x1234")
+		h := handler.NewOrderHandler(testPool, &config.Config{EscrowContract: "0x1234"})
 		if h == nil {
 			t.Error("OrderHandler should not be nil")
 		}
@@ -123,7 +126,7 @@ func TestOrderFlow(t *testing.T) {
 	})
 
 	t.Run("WalletHandler exists", func(t *testing.T) {
-		h := handler.NewWalletHandler(testPool)
+		h := handler.NewWalletHandler(testPool, nil)
 		if h == nil {
 			t.Error("WalletHandler should not be nil")
 		}

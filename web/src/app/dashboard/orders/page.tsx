@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { listMyOrders, cancelOrder, completeOrder, type Order } from "@/lib/api";
+import { listMyOrders, cancelOrder, completeOrder, markOrderShipped, disputeOrder, resolveDispute, type Order } from "@/lib/api";
 import { useApiKey } from "@/hooks/useApiKey";
 import { getOrderStatusColor, formatDate } from "@/lib/utils/status";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 function OrderCard({
   order,
@@ -22,6 +24,22 @@ function OrderCard({
   onUpdate: () => void;
 }) {
   const [loading, setLoading] = useState(false);
+  const [showShipForm, setShowShipForm] = useState(false);
+  const [trackingNumber, setTrackingNumber] = useState("");
+
+  async function handleShip() {
+    setLoading(true);
+    try {
+      await markOrderShipped(apiKey, order.id!, trackingNumber || undefined);
+      setShowShipForm(false);
+      setTrackingNumber("");
+      onUpdate();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to mark as shipped");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleCancel() {
     if (!confirm("Are you sure you want to cancel this order?")) return;
@@ -44,6 +62,33 @@ function OrderCard({
       onUpdate();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to complete order");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDispute() {
+    const reason = prompt("Please describe the reason for your dispute:");
+    if (!reason) return;
+    setLoading(true);
+    try {
+      await disputeOrder(apiKey, order.id!, reason);
+      onUpdate();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to open dispute");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResolve() {
+    if (!confirm("Resolve this dispute? The order will return to paid status.")) return;
+    setLoading(true);
+    try {
+      await resolveDispute(apiKey, order.id!);
+      onUpdate();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to resolve dispute");
     } finally {
       setLoading(false);
     }
@@ -90,9 +135,11 @@ function OrderCard({
         </div>
 
         {/* Payment info for pending orders */}
-        {order.status === "pending" && role === "buyer" && (
+        {order.status === "pending" && (
           <div className="mt-4 p-3 bg-muted rounded-lg">
-            <p className="text-sm font-medium mb-2">Payment Required</p>
+            <p className="text-sm font-medium mb-2">
+              {role === "buyer" ? "Payment Required" : "Awaiting Payment"}
+            </p>
             <div className="space-y-1 text-xs font-mono">
               <p>
                 <span className="text-muted-foreground">Contract:</span>{" "}
@@ -103,8 +150,8 @@ function OrderCard({
                 <span className="break-all">{order.escrow_order_id}</span>
               </p>
               <p>
-                <span className="text-muted-foreground">Seller:</span>{" "}
-                <span className="break-all">{order.seller_wallet}</span>
+                <span className="text-muted-foreground">{role === "buyer" ? "Seller" : "Buyer"}:</span>{" "}
+                <span className="break-all">{role === "buyer" ? order.seller_wallet : order.buyer_wallet}</span>
               </p>
               <p>
                 <span className="text-muted-foreground">Amount:</span>{" "}
@@ -114,13 +161,93 @@ function OrderCard({
           </div>
         )}
 
-        {/* Delivery content for paid orders */}
-        {order.status === "paid" && role === "buyer" && order.delivery_content && (
+        {/* Delivery content for paid/completed orders (buyer view) */}
+        {(order.status === "paid" || order.status === "completed" || order.status === "disputed") && role === "buyer" && order.delivery_content && (
           <div className="mt-4 p-3 bg-green-50 rounded-lg">
             <p className="text-sm font-medium text-green-800 mb-2">Delivery Content</p>
             <pre className="text-xs whitespace-pre-wrap break-all bg-white p-2 rounded border">
               {order.delivery_content}
             </pre>
+          </div>
+        )}
+
+        {/* Seller: shipping address for paid physical orders that haven't shipped */}
+        {role === "seller" && order.status === "paid" && order.shipping_address && !order.shipped_at && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm font-medium text-blue-800 mb-2">Shipping Address</p>
+            <div className="text-xs space-y-0.5">
+              <p className="font-medium">{order.shipping_address.recipient_name}</p>
+              <p>{order.shipping_address.address_line1}</p>
+              {order.shipping_address.address_line2 && <p>{order.shipping_address.address_line2}</p>}
+              <p>{order.shipping_address.city}{order.shipping_address.state ? `, ${order.shipping_address.state}` : ""} {order.shipping_address.postal_code}</p>
+              <p>{order.shipping_address.country}</p>
+              {order.shipping_address.phone && <p>Phone: {order.shipping_address.phone}</p>}
+              {order.shipping_address.notes && <p className="text-muted-foreground mt-1">Notes: {order.shipping_address.notes}</p>}
+            </div>
+            {!showShipForm ? (
+              <Button size="sm" className="mt-3" onClick={() => setShowShipForm(true)}>
+                Mark Shipped
+              </Button>
+            ) : (
+              <div className="mt-3 flex items-center gap-2">
+                <Input
+                  placeholder="Tracking number (optional)"
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  className="text-xs h-8"
+                />
+                <Button size="sm" onClick={handleShip} disabled={loading}>
+                  Confirm
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowShipForm(false)}>
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Seller: shipped status */}
+        {role === "seller" && order.status === "paid" && order.shipped_at && (
+          <div className="mt-4 p-3 bg-amber-50 rounded-lg">
+            <p className="text-sm font-medium text-amber-800 mb-1">Shipped</p>
+            <p className="text-xs text-amber-700">
+              Shipped at: {formatDate(order.shipped_at!)}
+            </p>
+            {order.tracking_number && (
+              <p className="text-xs text-amber-700">
+                Tracking: {order.tracking_number}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Seller: digital product delivery info (no shipping needed) */}
+        {role === "seller" && order.status === "paid" && !order.shipping_address && order.delivery_content && (
+          <div className="mt-4 p-3 bg-green-50 rounded-lg">
+            <p className="text-sm font-medium text-green-800 mb-2">Delivered (Digital)</p>
+            <pre className="text-xs whitespace-pre-wrap break-all bg-white p-2 rounded border">
+              {order.delivery_content}
+            </pre>
+          </div>
+        )}
+
+        {/* Disputed info banner */}
+        {(order.status === "disputed" || order.status === "refunded") && (
+          <div className={`mt-4 p-3 rounded-lg ${order.status === "disputed" ? "bg-orange-50" : "bg-red-50"}`}>
+            <p className={`text-sm font-medium mb-1 ${order.status === "disputed" ? "text-orange-800" : "text-red-800"}`}>
+              {order.status === "disputed" ? "Disputed" : "Refunded"}
+            </p>
+            {order.dispute_reason && (
+              <p className="text-xs text-muted-foreground">
+                Reason: {order.dispute_reason}
+              </p>
+            )}
+            {order.disputed_at && (
+              <p className="text-xs text-muted-foreground">
+                Since: {formatDate(order.disputed_at)}
+              </p>
+            )}
           </div>
         )}
 
@@ -166,6 +293,39 @@ function OrderCard({
               disabled={loading}
             >
               Confirm Receipt
+            </Button>
+          )}
+
+          {role === "buyer" && order.status === "paid" && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-orange-300 text-orange-700 hover:bg-orange-50"
+              onClick={handleDispute}
+              disabled={loading}
+            >
+              Open Dispute
+            </Button>
+          )}
+
+          {role === "seller" && order.status === "disputed" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResolve}
+              disabled={loading}
+            >
+              Resolve Dispute
+            </Button>
+          )}
+
+          {role === "seller" && order.status === "paid" && !order.shipping_address && !order.shipped_at && (
+            <Button
+              size="sm"
+              onClick={() => handleShip()}
+              disabled={loading}
+            >
+              Mark Shipped
             </Button>
           )}
         </div>

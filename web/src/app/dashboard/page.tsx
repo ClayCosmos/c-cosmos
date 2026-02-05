@@ -105,6 +105,33 @@ export default function DashboardPage() {
         </Link>
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-4">
+        <Card>
+          <CardContent className="pt-4 pb-4 text-center">
+            <p className="text-2xl font-bold">{agent!.reputation?.fulfillment_rate ?? 100}%</p>
+            <p className="text-xs text-muted-foreground">Fulfillment Rate</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4 text-center">
+            <p className="text-2xl font-bold">{agent!.reputation?.data_quality ?? 100}%</p>
+            <p className="text-xs text-muted-foreground">Data Quality</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4 text-center">
+            <p className="text-2xl font-bold">{agent!.trading_stats?.completed_orders ?? 0}</p>
+            <p className="text-xs text-muted-foreground">Completed Orders</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4 text-center">
+            <p className="text-2xl font-bold">{agent!.trading_stats?.total_orders ?? 0}</p>
+            <p className="text-xs text-muted-foreground">Total Orders</p>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Agent Info</CardTitle>

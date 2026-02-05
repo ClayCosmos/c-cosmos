@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   listMyProducts,
   createProduct,
+  updateProduct,
   deleteProduct,
   type ProductDetail,
 } from "@/lib/api";
@@ -24,7 +25,7 @@ export default function ProductsPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Form state
+  // Create form state
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [priceUsd, setPriceUsd] = useState("");
@@ -34,6 +35,20 @@ export default function ProductsPage() {
   const [externalUrl, setExternalUrl] = useState("");
   const [requiresShipping, setRequiresShipping] = useState(false);
   const [paymentMode, setPaymentMode] = useState("escrow");
+
+  // Edit state
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editPriceUsd, setEditPriceUsd] = useState("");
+  const [editDeliveryContent, setEditDeliveryContent] = useState("");
+  const [editStock, setEditStock] = useState("");
+  const [editImageUrls, setEditImageUrls] = useState("");
+  const [editExternalUrl, setEditExternalUrl] = useState("");
+  const [editRequiresShipping, setEditRequiresShipping] = useState(false);
+  const [editPaymentMode, setEditPaymentMode] = useState("escrow");
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
 
   const loadProducts = useCallback(async () => {
     if (!apiKey) return;
@@ -53,6 +68,64 @@ export default function ProductsPage() {
       loadProducts();
     }
   }, [isConnected, loadProducts]);
+
+  function startEdit(product: ProductDetail) {
+    setEditingProductId(product.id!);
+    setEditName(product.name ?? "");
+    setEditDescription(product.description ?? "");
+    setEditPriceUsd(product.price_usd?.toFixed(2) ?? "");
+    setEditDeliveryContent("");
+    setEditStock(String(product.stock ?? -1));
+    setEditImageUrls((product.image_urls ?? []).join("\n"));
+    setEditExternalUrl(product.external_url ?? "");
+    setEditRequiresShipping(product.requires_shipping ?? false);
+    setEditPaymentMode(product.payment_mode ?? "escrow");
+    setEditError("");
+  }
+
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    setEditError("");
+    setEditLoading(true);
+
+    try {
+      const priceUsdc = Math.round(parseFloat(editPriceUsd) * 1_000_000);
+      if (isNaN(priceUsdc) || priceUsdc <= 0) {
+        throw new Error("Invalid price");
+      }
+
+      const parsedImageUrls = editImageUrls
+        .split("\n")
+        .map((u) => u.trim())
+        .filter(Boolean);
+
+      const data: Parameters<typeof updateProduct>[2] = {
+        name: editName,
+        description: editDescription || undefined,
+        price_usdc: priceUsdc,
+        stock: editStock ? parseInt(editStock, 10) : undefined,
+        image_urls: parsedImageUrls.length > 0 ? parsedImageUrls : undefined,
+        external_url: editExternalUrl || undefined,
+        requires_shipping: editRequiresShipping || undefined,
+        payment_mode: editPaymentMode,
+      };
+
+      if (editDeliveryContent) {
+        data.delivery_content = editDeliveryContent;
+      }
+
+      const updated = await updateProduct(apiKey!, editingProductId!, data);
+
+      setProducts((prev) =>
+        prev.map((p) => (p.id === editingProductId ? updated : p))
+      );
+      setEditingProductId(null);
+    } catch (e) {
+      setEditError(e instanceof Error ? e.message : "Failed to update product");
+    } finally {
+      setEditLoading(false);
+    }
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -282,64 +355,211 @@ export default function ProductsPage() {
           products.map((product) => (
             <Card key={product.id}>
               <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  {product.image_urls && product.image_urls.length > 0 && (
-                    <Image
-                      src={product.image_urls[0]}
-                      alt={product.name ?? ""}
-                      width={64}
-                      height={64}
-                      unoptimized
-                      className="h-16 w-16 rounded object-cover flex-shrink-0"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium">{product.name}</h3>
-                      <Badge
-                        variant={product.status === "active" ? "default" : "secondary"}
+                {editingProductId === product.id ? (
+                  <form onSubmit={handleUpdate} className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium">Edit Product</h3>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingProductId(null)}
                       >
-                        {product.status}
-                      </Badge>
-                      <Badge variant="outline">
-                        {product.requires_shipping ? "Physical" : "Digital"}
-                      </Badge>
-                      <Badge variant={product.payment_mode === "instant" ? "default" : "outline"}>
-                        {product.payment_mode === "instant" ? "x402" : "Escrow"}
-                      </Badge>
+                        Cancel
+                      </Button>
                     </div>
-                    {product.description && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {product.description}
-                      </p>
-                    )}
-                    <p className="text-lg font-semibold text-primary mt-2">
-                      ${product.price_usd?.toFixed(2)} USDC
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Stock: {product.stock === -1 ? "Unlimited" : product.stock}
-                    </p>
-                    {product.external_url && (
-                      <a
-                        href={product.external_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline mt-1 inline-block"
+                    <div>
+                      <label className="text-sm font-medium">Name</label>
+                      <Input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Description</label>
+                      <Textarea
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        rows={2}
+                      />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="text-sm font-medium">
+                          Price (USDC)
+                        </label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          value={editPriceUsd}
+                          onChange={(e) => setEditPriceUsd(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Stock</label>
+                        <Input
+                          type="number"
+                          value={editStock}
+                          onChange={(e) => setEditStock(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Image URLs</label>
+                      <Textarea
+                        value={editImageUrls}
+                        onChange={(e) => setEditImageUrls(e.target.value)}
+                        placeholder="One URL per line"
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">External URL</label>
+                      <Input
+                        value={editExternalUrl}
+                        onChange={(e) => setEditExternalUrl(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={`edit-shipping-${product.id}`}
+                        checked={editRequiresShipping}
+                        onChange={(e) => {
+                          setEditRequiresShipping(e.target.checked);
+                          if (e.target.checked) setEditPaymentMode("escrow");
+                        }}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                      <label
+                        htmlFor={`edit-shipping-${product.id}`}
+                        className="text-sm font-medium"
                       >
-                        External link
-                      </a>
+                        Requires Shipping
+                      </label>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Payment Mode</label>
+                      <select
+                        value={editPaymentMode}
+                        onChange={(e) => setEditPaymentMode(e.target.value)}
+                        disabled={editRequiresShipping}
+                        className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="escrow">Escrow (multi-step)</option>
+                        <option value="instant">Instant (x402 protocol)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">
+                        Delivery Content
+                      </label>
+                      <Textarea
+                        value={editDeliveryContent}
+                        onChange={(e) => setEditDeliveryContent(e.target.value)}
+                        placeholder="Leave empty to keep current content"
+                        rows={3}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Leave empty to keep the current delivery content unchanged.
+                      </p>
+                    </div>
+                    {editError && (
+                      <p className="text-sm text-destructive">{editError}</p>
                     )}
+                    <div className="flex gap-2">
+                      <Button type="submit" size="sm" disabled={editLoading}>
+                        {editLoading ? "Saving..." : "Save"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingProductId(null)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="flex items-start justify-between gap-4">
+                    {product.image_urls && product.image_urls.length > 0 && (
+                      <Image
+                        src={product.image_urls[0]}
+                        alt={product.name ?? ""}
+                        width={64}
+                        height={64}
+                        unoptimized
+                        className="h-16 w-16 rounded object-cover flex-shrink-0"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium">{product.name}</h3>
+                        <Badge
+                          variant={
+                            product.status === "active" ? "default" : "secondary"
+                          }
+                        >
+                          {product.status}
+                        </Badge>
+                        <Badge variant="outline">
+                          {product.requires_shipping ? "Physical" : "Digital"}
+                        </Badge>
+                        <Badge
+                          variant={
+                            product.payment_mode === "instant"
+                              ? "default"
+                              : "outline"
+                          }
+                        >
+                          {product.payment_mode === "instant" ? "x402" : "Escrow"}
+                        </Badge>
+                      </div>
+                      {product.description && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {product.description}
+                        </p>
+                      )}
+                      <p className="text-lg font-semibold text-primary mt-2">
+                        ${product.price_usd?.toFixed(2)} USDC
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Stock:{" "}
+                        {product.stock === -1 ? "Unlimited" : product.stock}
+                      </p>
+                      {product.external_url && (
+                        <a
+                          href={product.external_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline mt-1 inline-block"
+                        >
+                          External link
+                        </a>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => startEdit(product)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(product.id!)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(product.id!)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           ))

@@ -14,8 +14,8 @@ INSERT INTO orders (
     buyer_wallet, seller_wallet, amount_usdc,
     escrow_order_id, escrow_contract, payment_mode,
     status, tx_hash, delivery_content, delivered_at,
-    completed_at, deadline, shipping_address
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'instant', 'completed', $10, $11, now(), now(), now(), $12)
+    completed_at, deadline, shipping_address, payment_sig_hash
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'instant', 'completed', $10, $11, now(), now(), now(), $12, $13)
 RETURNING *;
 
 -- name: GetOrderByID :one
@@ -97,3 +97,36 @@ SELECT
     COALESCE(SUM(amount_usdc) FILTER (WHERE status = 'completed'), 0) as total_volume
 FROM orders
 WHERE buyer_agent_id = $1 OR seller_agent_id = $1;
+
+-- name: GetOrderByPaymentSigHash :one
+SELECT * FROM orders WHERE payment_sig_hash = $1;
+
+-- name: MarkOrderShipped :one
+UPDATE orders SET
+    shipped_at = now(),
+    tracking_number = $2,
+    updated_at = now()
+WHERE id = $1 RETURNING *;
+
+-- name: UpdateOrderDisputed :one
+UPDATE orders SET
+    status = 'disputed',
+    disputed_at = now(),
+    dispute_reason = $2,
+    updated_at = now()
+WHERE id = $1 AND status = 'paid'
+RETURNING *;
+
+-- name: ResolveDispute :one
+UPDATE orders SET
+    status = 'paid',
+    updated_at = now()
+WHERE id = $1 AND status = 'disputed'
+RETURNING *;
+
+-- name: UpdateOrderRefunded :one
+UPDATE orders SET
+    status = 'refunded',
+    updated_at = now()
+WHERE id = $1 AND status = 'disputed'
+RETURNING *;

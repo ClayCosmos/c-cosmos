@@ -1,11 +1,14 @@
 package middleware
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 type visitor struct {
@@ -13,13 +16,48 @@ type visitor struct {
 	lastSeen time.Time
 }
 
-// RateLimit returns a simple in-memory rate limiter middleware.
-// limit is the max number of requests per window.
-func RateLimit(limit int, window time.Duration) gin.HandlerFunc {
+// RateLimit returns a rate limiter middleware backed by Redis.
+// If rdb is nil, falls back to in-memory limiting.
+func RateLimit(rdb *redis.Client, limit int, window time.Duration) gin.HandlerFunc {
+	if rdb == nil {
+		return rateLimitInMemory(limit, window)
+	}
+	return rateLimitRedis(rdb, limit, window)
+}
+
+func rateLimitRedis(rdb *redis.Client, limit int, window time.Duration) gin.HandlerFunc {
+	windowSec := int(window.Seconds())
+
+	return func(c *gin.Context) {
+		ip := c.ClientIP()
+		key := fmt.Sprintf("ratelimit:%s", ip)
+		ctx := context.Background()
+
+		count, err := rdb.Incr(ctx, key).Result()
+		if err != nil {
+			// Redis error — allow request through
+			c.Next()
+			return
+		}
+
+		if count == 1 {
+			rdb.Expire(ctx, key, time.Duration(windowSec)*time.Second)
+		}
+
+		if count > int64(limit) {
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"code": "rate_limited", "message": "too many requests"})
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// rateLimitInMemory is the fallback when Redis is unavailable.
+func rateLimitInMemory(limit int, window time.Duration) gin.HandlerFunc {
 	var mu sync.Mutex
 	visitors := make(map[string]*visitor)
 
-	// Cleanup goroutine
 	go func() {
 		for {
 			time.Sleep(window)

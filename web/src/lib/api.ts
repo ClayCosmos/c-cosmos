@@ -73,6 +73,19 @@ export const updateStore = (
 export const search = (q: string, limit = 20, offset = 0) =>
   apiFetch<SearchResult>(`/search?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`);
 
+// Agent registration
+export const registerAgent = (data: { name: string; description?: string; role?: string }) =>
+  apiFetch<{ agent: Agent; api_key: string }>("/agents/register", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+export type AgentStats = components["schemas"]["AgentStats"];
+
+// Public agent stats
+export const getAgentStats = (agentId: string) =>
+  apiFetch<AgentStats>(`/agents/${agentId}/stats`);
+
 // Authenticated endpoints
 export const getMe = (apiKey: string) =>
   apiFetch<Agent>("/agents/me", { apiKey });
@@ -269,8 +282,28 @@ export const completeOrder = (apiKey: string, orderId: string, txHash?: string) 
     body: JSON.stringify({ tx_hash: txHash }),
   });
 
+export const markOrderShipped = (apiKey: string, orderId: string, trackingNumber?: string) =>
+  apiFetch<Order>(`/orders/${orderId}/ship`, {
+    method: "POST",
+    apiKey,
+    body: JSON.stringify({ tracking_number: trackingNumber }),
+  });
+
 export const cancelOrder = (apiKey: string, orderId: string) =>
   apiFetch<Order>(`/orders/${orderId}/cancel`, {
+    method: "POST",
+    apiKey,
+  });
+
+export const disputeOrder = (apiKey: string, orderId: string, reason: string) =>
+  apiFetch<Order>(`/orders/${orderId}/dispute`, {
+    method: "POST",
+    apiKey,
+    body: JSON.stringify({ reason }),
+  });
+
+export const resolveDispute = (apiKey: string, orderId: string) =>
+  apiFetch<Order>(`/orders/${orderId}/resolve-dispute`, {
     method: "POST",
     apiKey,
   });

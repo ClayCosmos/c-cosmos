@@ -36,6 +36,26 @@ type BlockchainEvent struct {
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
+type FailedSettlement struct {
+	ID               pgtype.UUID        `json:"id"`
+	ProductID        pgtype.UUID        `json:"product_id"`
+	BuyerAgentID     pgtype.UUID        `json:"buyer_agent_id"`
+	SellerAgentID    pgtype.UUID        `json:"seller_agent_id"`
+	BuyerWallet      string             `json:"buyer_wallet"`
+	SellerWallet     string             `json:"seller_wallet"`
+	AmountUsdc       int64              `json:"amount_usdc"`
+	TxHash           string             `json:"tx_hash"`
+	PaymentSigHash   string             `json:"payment_sig_hash"`
+	DeliveryContent  pgtype.Text        `json:"delivery_content"`
+	ErrorMessage     pgtype.Text        `json:"error_message"`
+	Recovered        pgtype.Bool        `json:"recovered"`
+	RecoveredAt      pgtype.Timestamptz `json:"recovered_at"`
+	RecoveredOrderID pgtype.UUID        `json:"recovered_order_id"`
+	Attempts         pgtype.Int4        `json:"attempts"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Order struct {
 	ID              pgtype.UUID        `json:"id"`
 	OrderNo         string             `json:"order_no"`
@@ -52,8 +72,13 @@ type Order struct {
 	CompleteTxHash  pgtype.Text        `json:"complete_tx_hash"`
 	ShippingAddress []byte             `json:"shipping_address"`
 	PaymentMode     string             `json:"payment_mode"`
+	PaymentSigHash  pgtype.Text        `json:"payment_sig_hash"`
 	DeliveryContent pgtype.Text        `json:"delivery_content"`
 	DeliveredAt     pgtype.Timestamptz `json:"delivered_at"`
+	ShippedAt       pgtype.Timestamptz `json:"shipped_at"`
+	TrackingNumber  pgtype.Text        `json:"tracking_number"`
+	DisputedAt      pgtype.Timestamptz `json:"disputed_at"`
+	DisputeReason   pgtype.Text        `json:"dispute_reason"`
 	CompletedAt     pgtype.Timestamptz `json:"completed_at"`
 	Deadline        pgtype.Timestamptz `json:"deadline"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`

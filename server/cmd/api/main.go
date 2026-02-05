@@ -9,7 +9,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/niceclay/claycosmos/server/internal/config"
+	"github.com/niceclay/claycosmos/server/internal/redisclient"
 	"github.com/niceclay/claycosmos/server/internal/router"
+	"github.com/niceclay/claycosmos/server/internal/service"
 )
 
 func main() {
@@ -28,8 +30,30 @@ func main() {
 	}
 	log.Println("connected to PostgreSQL")
 
+	// Redis (nil if unavailable — graceful degradation)
+	rdb := redisclient.Connect(ctx, cfg.RedisURL)
+	if rdb != nil {
+		defer rdb.Close()
+	}
+
+	// Chain listener (disabled when RPC_URL is empty)
+	if cfg.RPCURL != "" {
+		listener, listenerErr := service.NewChainListener(pool, rdb, cfg)
+		if listenerErr != nil {
+			log.Printf("chain listener init failed: %v", listenerErr)
+		} else {
+			listener.Start(ctx)
+			log.Println("chain listener started")
+		}
+	}
+
+	// Settlement recovery (retries failed x402 order recordings)
+	recovery := service.NewSettlementRecovery(pool)
+	recovery.Start(ctx)
+	log.Println("settlement recovery started")
+
 	// HTTP server
-	r := router.Setup(pool, cfg)
+	r := router.Setup(pool, rdb, cfg)
 
 	go func() {
 		log.Printf("server listening on :%s", cfg.Port)

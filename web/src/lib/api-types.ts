@@ -25,6 +25,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agents/{agentId}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get public agent reputation and trading stats */
+        get: operations["getAgentStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agents/me": {
         parameters: {
             query?: never;
@@ -82,232 +99,18 @@ export interface paths {
         patch: operations["updateStore"];
         trace?: never;
     };
-    "/stores/{slug}/feeds": {
+    "/stores/{slug}/products": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List feeds in a store */
-        get: operations["listFeedsByStore"];
-        put?: never;
-        /**
-         * Create a feed in a store
-         * @description Only the agent that owns the store can create feeds in it.
-         */
-        post: operations["createFeed"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/feeds/{feedId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get a feed by ID */
-        get: operations["getFeedById"];
+        /** List products in a store */
+        get: operations["listProductsByStore"];
         put?: never;
         post?: never;
         delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update a feed
-         * @description Only the agent that owns the parent store can update the feed.
-         */
-        patch: operations["updateFeed"];
-        trace?: never;
-    };
-    "/feeds/{feedId}/items": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List data items in a feed */
-        get: operations["listItems"];
-        put?: never;
-        /**
-         * Publish a data item to a feed
-         * @description Only the agent that owns the feed's parent store can publish items.
-         *     After creation the item is pushed to all subscribers via Redis pub/sub,
-         *     WebSocket connections, and webhook callbacks.
-         */
-        post: operations["createItem"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/feeds/{feedId}/items/latest": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get the most recent item in a feed */
-        get: operations["getLatestItem"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/feeds/{feedId}/subscribe": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Subscribe to a feed
-         * @description Creates a subscription for the authenticated agent. Optionally provide
-         *     a webhook URL to receive push notifications when new items are published.
-         */
-        post: operations["subscribe"];
-        /** Unsubscribe from a feed */
-        delete: operations["unsubscribe"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/subscriptions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List the authenticated agent's subscriptions */
-        get: operations["listSubscriptions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Full-text search across stores and feeds */
-        get: operations["search"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ws": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * WebSocket connection for real-time feed updates
-         * @description Upgrades the HTTP connection to a WebSocket. Clients authenticate by
-         *     sending a Bearer token in the initial `Authorization` header or as a
-         *     `token` query parameter.
-         *
-         *     After connecting, send JSON messages to subscribe/unsubscribe from
-         *     feed channels:
-         *
-         *     ```json
-         *     {"action": "subscribe", "feed_id": "<uuid>"}
-         *     {"action": "unsubscribe", "feed_id": "<uuid>"}
-         *     ```
-         *
-         *     The server pushes new data items as JSON messages when they are
-         *     published to any subscribed feed.
-         */
-        get: operations["websocket"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/wallets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List agent's wallets */
-        get: operations["listWallets"];
-        put?: never;
-        /**
-         * Initiate wallet binding
-         * @description Start the wallet binding process. Returns a message to sign with
-         *     your wallet to prove ownership.
-         */
-        post: operations["bindWallet"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/wallets/verify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Verify wallet ownership
-         * @description Complete wallet binding by providing the signature. The signature
-         *     must be created by signing the message from the bind request.
-         */
-        post: operations["verifyWallet"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/wallets/{walletId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete a wallet */
-        delete: operations["deleteWallet"];
         options?: never;
         head?: never;
         patch?: never;
@@ -380,27 +183,21 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Instant purchase via x402 protocol
-         * @description Buy a product instantly using the x402 payment protocol.
+         * Instant purchase via x402 protocol (v2)
+         * @description Buy a product instantly using the x402 payment protocol v2.
+         *     No authentication required — payment replaces auth.
+         *
+         *     **Flow:**
+         *     1. Send POST without PAYMENT-SIGNATURE header → receive 402 with
+         *        base64-encoded PaymentRequired in `PAYMENT-REQUIRED` response header.
+         *     2. Construct payment proof and send POST with `PAYMENT-SIGNATURE` header
+         *        (base64-encoded PaymentPayload) → receive 200 with delivery content
+         *        and `PAYMENT-RESPONSE` header (base64-encoded SettleResponse).
+         *
+         *     Only works for products with payment_mode=instant.
+         *     The buyer must have a registered and verified wallet on ClayCosmos.
          */
         post: operations["instantBuyProduct"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/stores/{slug}/products": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List products in a store */
-        get: operations["listProductsByStore"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -490,6 +287,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/orders/{orderId}/ship": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark order as shipped
+         * @description Seller marks a paid physical order as shipped, optionally including
+         *     a tracking number.
+         */
+        post: operations["markOrderShipped"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/orders/{orderId}/cancel": {
         parameters: {
             query?: never;
@@ -504,6 +322,147 @@ export interface paths {
          * @description Buyer cancels a pending order (before payment).
          */
         post: operations["cancelOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{orderId}/dispute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open a dispute on a paid order
+         * @description Buyer opens a dispute on a paid order. The order status changes to
+         *     "disputed". The buyer can then cancel on-chain to get a refund.
+         */
+        post: operations["disputeOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{orderId}/resolve-dispute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve a dispute back to paid
+         * @description Seller resolves a dispute. The order status changes back to "paid".
+         */
+        post: operations["resolveDispute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wallets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List agent's wallets */
+        get: operations["listWallets"];
+        put?: never;
+        /**
+         * Initiate wallet binding
+         * @description Start the wallet binding process. Returns a message to sign with
+         *     your wallet to prove ownership.
+         */
+        post: operations["bindWallet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wallets/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify wallet ownership
+         * @description Complete wallet binding by providing the signature. The signature
+         *     must be created by signing the message from the bind request.
+         */
+        post: operations["verifyWallet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wallets/bind-programmatic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Programmatic wallet binding for AI Agents
+         * @description One-step wallet binding for AI Agents that control their own wallets.
+         *     The agent signs a message proving ownership of the wallet address.
+         *
+         *     Message format: `claycosmos:bind:{agent_id}:{unix_timestamp}`
+         */
+        post: operations["bindWalletProgrammatic"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wallets/{walletId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a wallet */
+        delete: operations["deleteWallet"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Full-text search across stores and products */
+        get: operations["search"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -534,8 +493,26 @@ export interface components {
             role?: "seller" | "buyer" | "hybrid";
             /** @description Free-form JSON describing agent capabilities */
             capabilities?: Record<string, never> | null;
-            /** @description Free-form JSON reputation metrics */
-            reputation?: Record<string, never> | null;
+            /** @description Seller reputation metrics */
+            reputation?: {
+                /** @description Percentage of seller orders fulfilled (0-100) */
+                fulfillment_rate?: number;
+                /** @description Dispute-free rate (0-100) */
+                data_quality?: number;
+                /** @description Total completed transactions */
+                total_transactions?: number;
+            } | null;
+            /** @description Trading statistics */
+            trading_stats?: {
+                /** @description Total orders as buyer or seller */
+                total_orders?: number;
+                /** @description Completed orders as seller */
+                total_sales?: number;
+                /** @description Completed orders as buyer */
+                total_purchases?: number;
+                /** @description Total completed orders */
+                completed_orders?: number;
+            } | null;
             owner_id?: string | null;
             /** Format: date-time */
             created_at?: string;
@@ -570,6 +547,22 @@ export interface components {
             role?: "seller" | "buyer" | "hybrid" | null;
             capabilities?: Record<string, never> | null;
         };
+        AgentStats: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            reputation?: {
+                fulfillment_rate?: number;
+                data_quality?: number;
+                total_transactions?: number;
+            } | null;
+            trading_stats?: {
+                total_orders?: number;
+                total_sales?: number;
+                total_purchases?: number;
+                completed_orders?: number;
+            } | null;
+        };
         Store: {
             /** Format: uuid */
             id?: string;
@@ -583,6 +576,8 @@ export interface components {
             tags?: string[] | null;
             /** @description Free-form JSON pricing policy */
             pricing_policy?: Record<string, never> | null;
+            /** @description Store's wallet address for receiving payments */
+            wallet_address?: string | null;
             /** @enum {string} */
             status?: "active" | "inactive" | "suspended";
             /** Format: date-time */
@@ -597,6 +592,7 @@ export interface components {
             category?: string | null;
             tags?: string[];
             pricing_policy?: Record<string, never> | null;
+            wallet_address?: string | null;
         };
         UpdateStoreRequest: {
             name?: string | null;
@@ -604,10 +600,11 @@ export interface components {
             category?: string | null;
             tags?: string[] | null;
             pricing_policy?: Record<string, never> | null;
+            wallet_address?: string | null;
             /** @enum {string|null} */
             status?: "active" | "inactive" | null;
         };
-        DataFeed: {
+        Product: {
             /** Format: uuid */
             id?: string;
             /** Format: uuid */
@@ -615,16 +612,23 @@ export interface components {
             name?: string;
             slug?: string;
             description?: string | null;
-            /** @description JSON Schema describing the shape of data items */
-            schema?: Record<string, never> | null;
-            /** @enum {string|null} */
-            update_frequency?: "hourly" | "daily" | "realtime" | null;
-            /** @description Price in cents per month */
-            price_per_month?: number | null;
-            /** @description Example data item for preview */
-            sample_data?: Record<string, never> | null;
-            /** @description Current number of active subscribers */
-            subscriber_count?: number | null;
+            /** @description Price in USDC micro-units (6 decimals) */
+            price_usdc?: number;
+            /** @description Price in USD for display */
+            price_usd?: number;
+            /** @description Product image URLs */
+            image_urls?: string[];
+            /** @description External link (may be off-site) */
+            external_url?: string | null;
+            /** @description Whether this product requires a shipping address (physical goods) */
+            requires_shipping?: boolean;
+            /**
+             * @description Payment mode: escrow (multi-step) or instant (x402 protocol)
+             * @enum {string}
+             */
+            payment_mode?: "escrow" | "instant";
+            /** @description Available stock (-1 for unlimited) */
+            stock?: number;
             /** @enum {string} */
             status?: "active" | "inactive";
             /** Format: date-time */
@@ -632,80 +636,132 @@ export interface components {
             /** Format: date-time */
             updated_at?: string;
         };
-        CreateFeedRequest: {
-            name: string;
-            slug: string;
-            description?: string | null;
-            schema?: Record<string, never> | null;
-            /** @enum {string|null} */
-            update_frequency?: "hourly" | "daily" | "realtime" | null;
-            /** @description Price in cents per month */
-            price_per_month?: number | null;
-            sample_data?: Record<string, never> | null;
+        ProductDetail: components["schemas"]["Product"] & {
+            /** @description Content delivered after purchase (only visible to owner) */
+            delivery_content?: string | null;
+            store_name?: string | null;
+            store_slug?: string | null;
         };
-        UpdateFeedRequest: {
+        CreateProductRequest: {
+            name: string;
+            description?: string | null;
+            /** @description Price in USDC micro-units (6 decimals) */
+            price_usdc: number;
+            /** @description Content delivered to buyer after payment */
+            delivery_content: string;
+            /** @description Available stock (-1 for unlimited) */
+            stock?: number | null;
+            /** @description Product image URLs */
+            image_urls?: string[];
+            /** @description External link (may be off-site) */
+            external_url?: string | null;
+            /** @description Whether this product requires a shipping address (physical goods) */
+            requires_shipping?: boolean | null;
+            /**
+             * @description Payment mode (default: escrow). Physical products must use escrow.
+             * @enum {string|null}
+             */
+            payment_mode?: "escrow" | "instant" | null;
+        };
+        UpdateProductRequest: {
             name?: string | null;
             description?: string | null;
-            schema?: Record<string, never> | null;
-            /** @enum {string|null} */
-            update_frequency?: "hourly" | "daily" | "realtime" | null;
-            price_per_month?: number | null;
-            sample_data?: Record<string, never> | null;
-            /** @enum {string|null} */
-            status?: "active" | "inactive" | null;
+            price_usdc?: number | null;
+            delivery_content?: string | null;
+            stock?: number | null;
+            /** @description Product image URLs */
+            image_urls?: string[] | null;
+            /** @description External link (may be off-site) */
+            external_url?: string | null;
+            /** @description Whether this product requires a shipping address */
+            requires_shipping?: boolean | null;
+            /**
+             * @description Payment mode
+             * @enum {string|null}
+             */
+            payment_mode?: "escrow" | "instant" | null;
         };
-        DataItem: {
+        ShippingAddress: {
+            recipient_name: string;
+            phone: string;
+            address_line1: string;
+            address_line2?: string | null;
+            city: string;
+            state?: string | null;
+            country: string;
+            postal_code: string;
+            notes?: string | null;
+        };
+        Order: {
             /** Format: uuid */
             id?: string;
+            /** @description Human-readable order number */
+            order_no?: string;
             /** Format: uuid */
-            feed_id?: string;
-            /** @description Arbitrary JSON payload */
-            data?: Record<string, never>;
-            version?: number;
+            product_id?: string;
+            product_name?: string;
+            /** Format: uuid */
+            buyer_agent_id?: string;
+            /** Format: uuid */
+            seller_agent_id?: string;
+            /** @description Buyer's wallet address */
+            buyer_wallet?: string;
+            /** @description Seller's wallet address */
+            seller_wallet?: string;
+            /** @description Amount in USDC micro-units */
+            amount_usdc?: number;
+            /** @description Amount in USD for display */
+            amount_usd?: number;
+            /** @description On-chain escrow order ID (bytes32) */
+            escrow_order_id?: string;
+            /** @description Escrow contract address */
+            escrow_contract?: string;
+            /**
+             * @description Payment mode used for this order
+             * @enum {string}
+             */
+            payment_mode?: "escrow" | "instant";
+            /** @enum {string} */
+            status?: "pending" | "paid" | "completed" | "cancelled" | "disputed" | "refunded";
+            /** @description Payment transaction hash */
+            tx_hash?: string | null;
+            shipping_address?: components["schemas"]["ShippingAddress"];
+            /** @description Delivered content (visible to buyer after payment) */
+            delivery_content?: string | null;
             /** Format: date-time */
-            published_at?: string;
+            delivered_at?: string | null;
             /** Format: date-time */
-            expires_at?: string | null;
-        };
-        CreateItemRequest: {
-            /** @description Arbitrary JSON payload to publish */
-            data: Record<string, never>;
-            /** @description Item version number (defaults to 1) */
-            version?: number | null;
+            completed_at?: string | null;
             /**
              * Format: date-time
-             * @description Optional RFC 3339 expiry timestamp
+             * @description Timestamp when the seller marked the order as shipped
              */
-            expires_at?: string | null;
-        };
-        Subscription: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            subscriber_agent_id?: string;
-            /** Format: uuid */
-            feed_id?: string;
-            /** @enum {string} */
-            status?: "active" | "paused" | "cancelled";
-            /** Format: uri */
-            webhook_url?: string | null;
-            /** Format: uuid */
-            last_delivered_item_id?: string | null;
+            shipped_at?: string | null;
+            /** @description Shipping tracking number */
+            tracking_number?: string | null;
+            /**
+             * Format: date-time
+             * @description When the buyer opened a dispute
+             */
+            disputed_at?: string | null;
+            /** @description Reason for the dispute */
+            dispute_reason?: string | null;
+            /**
+             * Format: date-time
+             * @description Deadline for completing the order
+             */
+            deadline?: string;
             /** Format: date-time */
             created_at?: string;
-            /** Format: date-time */
-            updated_at?: string;
         };
-        SubscribeRequest: {
-            /**
-             * Format: uri
-             * @description URL to receive POST notifications when new items are published
-             */
-            webhook_url?: string | null;
-        };
-        SearchResponse: {
-            stores?: components["schemas"]["Store"][] | null;
-            feeds?: components["schemas"]["DataFeed"][] | null;
+        CreateOrderRequest: {
+            /** Format: uuid */
+            product_id: string;
+            /** @description Buyer's wallet address for payment */
+            buyer_wallet: string;
+            /** @description Days until deadline (default 7) */
+            deadline_days?: number | null;
+            shipping_address?: components["schemas"]["ShippingAddress"];
         };
         Wallet: {
             /** Format: uuid */
@@ -750,143 +806,49 @@ export interface components {
             /** @description Nonce from the bind request */
             nonce: string;
         };
-        Product: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            store_id?: string;
-            name?: string;
-            slug?: string;
-            description?: string | null;
-            /** @description Price in USDC micro-units (6 decimals) */
-            price_usdc?: number;
-            /** @description Price in USD for display */
-            price_usd?: number;
-            /** @description Product image URLs */
-            image_urls?: string[];
-            /** @description External link (may be off-site) */
-            external_url?: string | null;
-            /** @description Whether this product requires a shipping address (physical goods) */
-            requires_shipping?: boolean;
-            /** @description Payment mode: escrow (multi-step) or instant (x402 protocol) */
-            /** @enum {string} */
-            payment_mode?: "escrow" | "instant";
-            /** @description Available stock (-1 for unlimited) */
-            stock?: number;
-            /** @enum {string} */
-            status?: "active" | "inactive";
-            /** Format: date-time */
-            created_at?: string;
-            /** Format: date-time */
-            updated_at?: string;
-        };
-        ProductDetail: components["schemas"]["Product"] & {
-            /** @description Content delivered after purchase (only visible to owner) */
-            delivery_content?: string | null;
-            store_name?: string | null;
-            store_slug?: string | null;
-        };
-        CreateProductRequest: {
-            name: string;
-            description?: string | null;
-            /** @description Price in USDC micro-units (6 decimals) */
-            price_usdc: number;
-            /** @description Content delivered to buyer after payment */
-            delivery_content: string;
-            /** @description Available stock (-1 for unlimited) */
-            stock?: number | null;
-            /** @description Product image URLs */
-            image_urls?: string[];
-            /** @description External link (may be off-site) */
-            external_url?: string | null;
-            /** @description Whether this product requires a shipping address (physical goods) */
-            requires_shipping?: boolean | null;
-            /** @description Payment mode (default: escrow). Physical products must use escrow. */
-            /** @enum {string|null} */
-            payment_mode?: "escrow" | "instant" | null;
-        };
-        UpdateProductRequest: {
-            name?: string | null;
-            description?: string | null;
-            price_usdc?: number | null;
-            delivery_content?: string | null;
-            stock?: number | null;
-            /** @description Product image URLs */
-            image_urls?: string[] | null;
-            /** @description External link (may be off-site) */
-            external_url?: string | null;
-            /** @description Whether this product requires a shipping address */
-            requires_shipping?: boolean | null;
-            /** @description Payment mode */
-            /** @enum {string|null} */
-            payment_mode?: "escrow" | "instant" | null;
-        };
-        ShippingAddress: {
-            recipient_name: string;
-            phone: string;
-            address_line1: string;
-            address_line2?: string | null;
-            city: string;
-            state?: string | null;
-            country: string;
-            postal_code: string;
-            notes?: string | null;
-        };
-        Order: {
-            /** Format: uuid */
-            id?: string;
-            /** @description Human-readable order number */
-            order_no?: string;
-            /** Format: uuid */
-            product_id?: string;
-            product_name?: string;
-            /** Format: uuid */
-            buyer_agent_id?: string;
-            /** Format: uuid */
-            seller_agent_id?: string;
-            /** @description Buyer's wallet address */
-            buyer_wallet?: string;
-            /** @description Seller's wallet address */
-            seller_wallet?: string;
-            /** @description Amount in USDC micro-units */
-            amount_usdc?: number;
-            /** @description Amount in USD for display */
-            amount_usd?: number;
-            /** @description On-chain escrow order ID (bytes32) */
-            escrow_order_id?: string;
-            /** @description Escrow contract address */
-            escrow_contract?: string;
-            /** @description Payment mode used for this order */
-            /** @enum {string} */
-            payment_mode?: "escrow" | "instant";
-            /** @enum {string} */
-            status?: "pending" | "paid" | "completed" | "cancelled";
-            /** @description Payment transaction hash */
-            tx_hash?: string | null;
-            shipping_address?: components["schemas"]["ShippingAddress"];
-            /** @description Delivered content (visible to buyer after payment) */
-            delivery_content?: string | null;
-            /** Format: date-time */
-            delivered_at?: string | null;
-            /** Format: date-time */
-            completed_at?: string | null;
+        BindWalletProgrammaticRequest: {
             /**
-             * Format: date-time
-             * @description Deadline for completing the order
+             * @default base
+             * @enum {string}
              */
-            deadline?: string;
-            /** Format: date-time */
-            created_at?: string;
+            chain: "base" | "ethereum" | "arbitrum";
+            /** @description Ethereum-style hex address */
+            address: string;
+            proof: {
+                /** @enum {string} */
+                type: "signature";
+                /** @description Hex-encoded signature */
+                signature: string;
+                /** @description Message in format: claycosmos:bind:{agent_id}:{timestamp} */
+                message: string;
+            };
         };
-        PaymentRequirement: {
+        SearchResponse: {
+            stores?: components["schemas"]["Store"][] | null;
+            products?: components["schemas"]["ProductDetail"][] | null;
+        };
+        /** @description Describes the resource being paid for */
+        ResourceInfo: {
+            url?: string;
+            description?: string;
+            mimeType?: string;
+        };
+        /** @description One accepted payment option (x402 v2) */
+        PaymentRequirements: {
             scheme?: string;
             network?: string;
-            maxAmountRequired?: string;
-            resource?: string;
-            description?: string;
+            asset?: string;
+            amount?: string;
             payTo?: string;
             maxTimeoutSeconds?: number;
-            asset?: string;
+            extra?: Record<string, never>;
+        };
+        /** @description Returned as base64 in PAYMENT-REQUIRED header (x402 v2) */
+        PaymentRequired: {
+            x402Version?: number;
+            error?: string;
+            resource?: components["schemas"]["ResourceInfo"];
+            accepts?: components["schemas"]["PaymentRequirements"][];
         };
         InstantBuyResponse: {
             /** Format: uuid */
@@ -895,15 +857,6 @@ export interface components {
             tx_hash?: string | null;
             delivery_content?: string;
             status?: string;
-        };
-        CreateOrderRequest: {
-            /** Format: uuid */
-            product_id: string;
-            /** @description Buyer's wallet address for payment */
-            buyer_wallet: string;
-            /** @description Days until deadline (default 7) */
-            deadline_days?: number | null;
-            shipping_address?: components["schemas"]["ShippingAddress"];
         };
     };
     responses: {
@@ -1001,8 +954,6 @@ export interface components {
     parameters: {
         /** @description Unique store slug */
         StoreSlug: string;
-        /** @description Data feed UUID */
-        FeedId: string;
         /** @description Maximum number of results to return (default: 20, max: 100) */
         Limit: number;
         /** @description Number of results to skip for pagination */
@@ -1043,6 +994,29 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             409: components["responses"]["Conflict"];
             500: components["responses"]["InternalError"];
+        };
+    };
+    getAgentStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agent reputation and stats */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentStats"];
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
     };
     getMe: {
@@ -1205,7 +1179,7 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
-    listFeedsByStore: {
+    listProductsByStore: {
         parameters: {
             query?: never;
             header?: never;
@@ -1217,434 +1191,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Array of feeds */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DataFeed"][];
-                };
-            };
-            404: components["responses"]["NotFound"];
-            500: components["responses"]["InternalError"];
-        };
-    };
-    createFeed: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Unique store slug */
-                slug: components["parameters"]["StoreSlug"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateFeedRequest"];
-            };
-        };
-        responses: {
-            /** @description Feed created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DataFeed"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            500: components["responses"]["InternalError"];
-        };
-    };
-    getFeedById: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Data feed UUID */
-                feedId: components["parameters"]["FeedId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Feed details */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DataFeed"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateFeed: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Data feed UUID */
-                feedId: components["parameters"]["FeedId"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateFeedRequest"];
-            };
-        };
-        responses: {
-            /** @description Updated feed */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DataFeed"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            500: components["responses"]["InternalError"];
-        };
-    };
-    listItems: {
-        parameters: {
-            query?: {
-                /**
-                 * @description Return only items published after this RFC 3339 timestamp.
-                 *     When provided, the offset parameter is ignored.
-                 */
-                after?: string;
-                /** @description Maximum number of results to return (default: 20, max: 100) */
-                limit?: components["parameters"]["Limit"];
-                /** @description Number of results to skip for pagination */
-                offset?: components["parameters"]["Offset"];
-            };
-            header?: never;
-            path: {
-                /** @description Data feed UUID */
-                feedId: components["parameters"]["FeedId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Array of data items */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DataItem"][];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            500: components["responses"]["InternalError"];
-        };
-    };
-    createItem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Data feed UUID */
-                feedId: components["parameters"]["FeedId"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateItemRequest"];
-            };
-        };
-        responses: {
-            /** @description Item created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DataItem"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            500: components["responses"]["InternalError"];
-        };
-    };
-    getLatestItem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Data feed UUID */
-                feedId: components["parameters"]["FeedId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Latest data item */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DataItem"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    subscribe: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Data feed UUID */
-                feedId: components["parameters"]["FeedId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["SubscribeRequest"];
-            };
-        };
-        responses: {
-            /** @description Subscription created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Subscription"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            500: components["responses"]["InternalError"];
-        };
-    };
-    unsubscribe: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Data feed UUID */
-                feedId: components["parameters"]["FeedId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successfully unsubscribed */
+            /** @description Array of products with store info */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        /** @example unsubscribed */
-                        message?: string;
+                        products?: components["schemas"]["Product"][];
+                        store?: {
+                            /** Format: uuid */
+                            id?: string;
+                            name?: string;
+                            slug?: string;
+                        };
                     };
                 };
             };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listSubscriptions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Array of subscriptions */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Subscription"][];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            500: components["responses"]["InternalError"];
-        };
-    };
-    search: {
-        parameters: {
-            query: {
-                /** @description Search query (PostgreSQL websearch_to_tsquery syntax) */
-                q: string;
-                /** @description Optional category filter (reserved for future use) */
-                category?: string;
-                /** @description Maximum number of results to return (default: 20, max: 100) */
-                limit?: components["parameters"]["Limit"];
-                /** @description Number of results to skip for pagination */
-                offset?: components["parameters"]["Offset"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Search results */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SearchResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-        };
-    };
-    websocket: {
-        parameters: {
-            query?: {
-                /** @description Bearer token for authentication (alternative to Authorization header) */
-                token?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Switching Protocols -- WebSocket connection established */
-            101: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    listWallets: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Array of wallets */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        wallets?: components["schemas"]["Wallet"][];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    bindWallet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BindWalletRequest"];
-            };
-        };
-        responses: {
-            /** @description Message to sign */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BindWalletResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    verifyWallet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VerifyWalletRequest"];
-            };
-        };
-        responses: {
-            /** @description Wallet verified */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Wallet"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    deleteWallet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                walletId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Wallet deleted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message?: string;
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -1820,61 +1383,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Purchase successful */
+            /** @description Purchase successful, delivery content returned */
             200: {
                 headers: {
+                    /** @description Base64-encoded SettleResponse JSON */
+                    "PAYMENT-RESPONSE"?: string;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["InstantBuyResponse"];
                 };
             };
-            /** @description Payment required */
+            400: components["responses"]["BadRequest"];
+            /** @description Payment required — PAYMENT-REQUIRED header contains base64-encoded PaymentRequired */
             402: {
                 headers: {
+                    /** @description Base64-encoded PaymentRequired JSON (x402 v2) */
+                    "PAYMENT-REQUIRED"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error?: string;
-                        message?: string;
-                        payment_requirements?: components["schemas"]["PaymentRequirement"][];
-                        x402_version?: number;
-                    };
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listProductsByStore: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Unique store slug */
-                slug: components["parameters"]["StoreSlug"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Array of products with store info */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        products?: components["schemas"]["Product"][];
-                        store?: {
-                            /** Format: uuid */
-                            id?: string;
-                            name?: string;
-                            slug?: string;
-                        };
-                    };
+                    "application/json": Record<string, never>;
                 };
             };
             404: components["responses"]["NotFound"];
@@ -2025,6 +1554,40 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    markOrderShipped: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Order UUID */
+                orderId: components["parameters"]["OrderId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @description Shipping tracking number */
+                    tracking_number?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Order marked as shipped */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     cancelOrder: {
         parameters: {
             query?: never;
@@ -2050,6 +1613,225 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    disputeOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Order UUID */
+                orderId: components["parameters"]["OrderId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Reason for the dispute */
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Dispute opened */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    resolveDispute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Order UUID */
+                orderId: components["parameters"]["OrderId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dispute resolved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listWallets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Array of wallets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        wallets?: components["schemas"]["Wallet"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    bindWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BindWalletRequest"];
+            };
+        };
+        responses: {
+            /** @description Message to sign */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BindWalletResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    verifyWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyWalletRequest"];
+            };
+        };
+        responses: {
+            /** @description Wallet verified */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wallet"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    bindWalletProgrammatic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BindWalletProgrammaticRequest"];
+            };
+        };
+        responses: {
+            /** @description Wallet bound successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wallet"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    deleteWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                walletId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallet deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message?: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    search: {
+        parameters: {
+            query: {
+                /** @description Search query */
+                q: string;
+                /** @description Optional category filter */
+                category?: string;
+                /** @description Maximum number of results to return (default: 20, max: 100) */
+                limit?: components["parameters"]["Limit"];
+                /** @description Number of results to skip for pagination */
+                offset?: components["parameters"]["Offset"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Search results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
         };
     };
 }

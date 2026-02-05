@@ -9,8 +9,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { registerAgent } from "@/lib/api";
 
 type Role = "human" | "agent";
 type AgentTab = "skill" | "manual";
@@ -18,6 +21,50 @@ type AgentTab = "skill" | "manual";
 export default function GetStartedPage() {
   const [role, setRole] = useState<Role>("agent");
   const [agentTab, setAgentTab] = useState<AgentTab>("skill");
+
+  // Registration form state
+  const [regName, setRegName] = useState("");
+  const [regDescription, setRegDescription] = useState("");
+  const [regRole, setRegRole] = useState("hybrid");
+  const [regLoading, setRegLoading] = useState(false);
+  const [regError, setRegError] = useState("");
+  const [regResult, setRegResult] = useState<{
+    agent: { name?: string };
+    api_key: string;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault();
+    setRegError("");
+    setRegLoading(true);
+    try {
+      const result = await registerAgent({
+        name: regName,
+        description: regDescription || undefined,
+        role: regRole,
+      });
+      setRegResult(result);
+    } catch (err) {
+      setRegError(err instanceof Error ? err.message : "Registration failed");
+    } finally {
+      setRegLoading(false);
+    }
+  }
+
+  function handleCopyKey() {
+    if (regResult?.api_key) {
+      navigator.clipboard.writeText(regResult.api_key);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
+  function handleSaveToLocalStorage() {
+    if (regResult?.api_key) {
+      localStorage.setItem("claycosmos_api_key", regResult.api_key);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
@@ -213,47 +260,140 @@ export default function GetStartedPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Human Quickstart</CardTitle>
-              <CardDescription>
-                Explore the marketplace and subscribe to data feeds.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ol className="list-decimal space-y-4 pl-5">
-                <li>
-                  <span className="font-medium">Browse stores</span> — Head to
-                  the{" "}
-                  <Link
-                    href="/stores"
-                    className="text-primary underline underline-offset-4"
-                  >
-                    Stores
-                  </Link>{" "}
-                  page to discover data providers and see what feeds are
-                  available.
-                </li>
-                <li>
-                  <span className="font-medium">Explore feeds</span> — Open any
-                  store to view its feeds, schemas, sample data, and pricing.
-                </li>
-                <li>
-                  <span className="font-medium">
-                    Subscribe via Dashboard
-                  </span>{" "}
-                  — Use the{" "}
-                  <Link
-                    href="/dashboard"
-                    className="text-primary underline underline-offset-4"
-                  >
-                    Dashboard
-                  </Link>{" "}
-                  to manage your subscriptions and monitor incoming data.
-                </li>
-              </ol>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Human Quickstart</CardTitle>
+                <CardDescription>
+                  Browse products and trade with agents on ClayCosmos.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ol className="list-decimal space-y-4 pl-5">
+                  <li>
+                    <span className="font-medium">Browse stores</span> — Head to
+                    the{" "}
+                    <Link
+                      href="/stores"
+                      className="text-primary underline underline-offset-4"
+                    >
+                      Stores
+                    </Link>{" "}
+                    page to discover sellers and see what products are
+                    available.
+                  </li>
+                  <li>
+                    <span className="font-medium">Explore products</span> — Open
+                    any store to view its products, pricing, and payment options.
+                  </li>
+                  <li>
+                    <span className="font-medium">
+                      Register below
+                    </span>{" "}
+                    — Create an agent account to start placing orders and managing
+                    purchases via the{" "}
+                    <Link
+                      href="/dashboard"
+                      className="text-primary underline underline-offset-4"
+                    >
+                      Dashboard
+                    </Link>
+                    .
+                  </li>
+                </ol>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Register</CardTitle>
+                <CardDescription>
+                  Create an account to start buying and selling on ClayCosmos.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {regResult ? (
+                  <div className="space-y-4">
+                    <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
+                      <p className="font-medium text-green-800 dark:text-green-200">
+                        Registration successful!
+                      </p>
+                      <p className="mt-1 text-sm text-green-700 dark:text-green-300">
+                        Welcome, <strong>{regResult.agent.name}</strong>. Save your
+                        API key below — it won&apos;t be shown again.
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Your API Key</label>
+                      <div className="mt-1 flex gap-2">
+                        <code className="flex-1 rounded-md border bg-muted px-3 py-2 text-sm break-all">
+                          {regResult.api_key}
+                        </code>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCopyKey}
+                        >
+                          {copied ? "Copied!" : "Copy"}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSaveToLocalStorage}
+                      >
+                        Save to browser (auto-connect)
+                      </Button>
+                      <Button asChild size="sm">
+                        <Link href="/dashboard">Go to Dashboard</Link>
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleRegister} className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Name *</label>
+                      <Input
+                        value={regName}
+                        onChange={(e) => setRegName(e.target.value)}
+                        placeholder="my-agent"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Description</label>
+                      <Textarea
+                        value={regDescription}
+                        onChange={(e) => setRegDescription(e.target.value)}
+                        placeholder="What does your agent do?"
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Role</label>
+                      <select
+                        value={regRole}
+                        onChange={(e) => setRegRole(e.target.value)}
+                        className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="buyer">Buyer</option>
+                        <option value="seller">Seller</option>
+                        <option value="hybrid">Hybrid (buy &amp; sell)</option>
+                      </select>
+                    </div>
+                    {regError && (
+                      <p className="text-sm text-destructive">{regError}</p>
+                    )}
+                    <Button type="submit" disabled={regLoading}>
+                      {regLoading ? "Registering..." : "Register"}
+                    </Button>
+                  </form>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </div>

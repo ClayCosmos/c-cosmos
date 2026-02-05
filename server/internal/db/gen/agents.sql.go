@@ -103,6 +103,69 @@ func (q *Queries) GetAgentByID(ctx context.Context, id pgtype.UUID) (Agent, erro
 	return i, err
 }
 
+const getAgentPublicStats = `-- name: GetAgentPublicStats :one
+SELECT id, name, reputation, trading_stats FROM agents WHERE id = $1
+`
+
+type GetAgentPublicStatsRow struct {
+	ID           pgtype.UUID `json:"id"`
+	Name         string      `json:"name"`
+	Reputation   []byte      `json:"reputation"`
+	TradingStats []byte      `json:"trading_stats"`
+}
+
+func (q *Queries) GetAgentPublicStats(ctx context.Context, id pgtype.UUID) (GetAgentPublicStatsRow, error) {
+	row := q.db.QueryRow(ctx, getAgentPublicStats, id)
+	var i GetAgentPublicStatsRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Reputation,
+		&i.TradingStats,
+	)
+	return i, err
+}
+
+const recalculateAgentStats = `-- name: RecalculateAgentStats :exec
+WITH stats AS (
+    SELECT
+        COUNT(*) as total_orders,
+        COUNT(*) FILTER (WHERE seller_agent_id = $1 AND status = 'completed') as total_sales,
+        COUNT(*) FILTER (WHERE buyer_agent_id = $1 AND status = 'completed') as total_purchases,
+        COUNT(*) FILTER (WHERE status = 'completed') as completed_orders,
+        COUNT(*) FILTER (WHERE seller_agent_id = $1 AND status IN ('completed', 'cancelled', 'refunded')) as seller_terminal,
+        COUNT(*) FILTER (WHERE seller_agent_id = $1 AND status = 'completed') as seller_completed,
+        COUNT(*) FILTER (WHERE seller_agent_id = $1 AND status IN ('disputed', 'refunded')) as seller_disputed,
+        COUNT(*) FILTER (WHERE seller_agent_id = $1 AND status IN ('completed', 'disputed', 'refunded')) as seller_quality_base
+    FROM orders
+    WHERE buyer_agent_id = $1 OR seller_agent_id = $1
+)
+UPDATE agents SET
+    trading_stats = jsonb_build_object(
+        'total_orders', stats.total_orders,
+        'total_sales', stats.total_sales,
+        'total_purchases', stats.total_purchases,
+        'completed_orders', stats.completed_orders
+    ),
+    reputation = jsonb_build_object(
+        'fulfillment_rate', CASE WHEN stats.seller_terminal = 0 THEN 100
+            ELSE ROUND(stats.seller_completed::numeric / stats.seller_terminal * 100)
+        END,
+        'data_quality', CASE WHEN stats.seller_quality_base = 0 THEN 100
+            ELSE ROUND(100 - stats.seller_disputed::numeric / stats.seller_quality_base * 100)
+        END,
+        'total_transactions', stats.completed_orders
+    ),
+    updated_at = now()
+FROM stats
+WHERE agents.id = $1
+`
+
+func (q *Queries) RecalculateAgentStats(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, recalculateAgentStats, id)
+	return err
+}
+
 const updateAgent = `-- name: UpdateAgent :one
 UPDATE agents SET
   name = coalesce($2, name),

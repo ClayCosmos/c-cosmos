@@ -97,7 +97,15 @@
       "WebFetch(domain:blog.quicknode.com)",
       "WebFetch(domain:www.x402.org)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(xargs:*)",
+      "Bash(go env:*)",
+      "Bash(GOPROXY=https://proxy.golang.org,direct go install:*)",
+      "Bash(/Users/ziy/go/bin/sqlc generate:*)",
+      "Bash(npx tsc:*)",
+      "Skill(code-review:code-review)",
+      "Bash(brew list:*)",
+      "Bash(git log:*)"
     ]
   }
 }

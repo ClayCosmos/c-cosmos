@@ -39,9 +39,9 @@ INSERT INTO orders (
     buyer_wallet, seller_wallet, amount_usdc,
     escrow_order_id, escrow_contract, payment_mode,
     status, tx_hash, delivery_content, delivered_at,
-    completed_at, deadline, shipping_address
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'instant', 'completed', $10, $11, now(), now(), now(), $12)
-RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, delivery_content, delivered_at, completed_at, deadline, created_at, updated_at
+    completed_at, deadline, shipping_address, payment_sig_hash
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'instant', 'completed', $10, $11, now(), now(), now(), $12, $13)
+RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at
 `
 
 type CreateInstantOrderParams struct {
@@ -57,6 +57,7 @@ type CreateInstantOrderParams struct {
 	TxHash          pgtype.Text `json:"tx_hash"`
 	DeliveryContent pgtype.Text `json:"delivery_content"`
 	ShippingAddress []byte      `json:"shipping_address"`
+	PaymentSigHash  pgtype.Text `json:"payment_sig_hash"`
 }
 
 func (q *Queries) CreateInstantOrder(ctx context.Context, arg CreateInstantOrderParams) (Order, error) {
@@ -73,6 +74,7 @@ func (q *Queries) CreateInstantOrder(ctx context.Context, arg CreateInstantOrder
 		arg.TxHash,
 		arg.DeliveryContent,
 		arg.ShippingAddress,
+		arg.PaymentSigHash,
 	)
 	var i Order
 	err := row.Scan(
@@ -91,8 +93,13 @@ func (q *Queries) CreateInstantOrder(ctx context.Context, arg CreateInstantOrder
 		&i.CompleteTxHash,
 		&i.ShippingAddress,
 		&i.PaymentMode,
+		&i.PaymentSigHash,
 		&i.DeliveryContent,
 		&i.DeliveredAt,
+		&i.ShippedAt,
+		&i.TrackingNumber,
+		&i.DisputedAt,
+		&i.DisputeReason,
 		&i.CompletedAt,
 		&i.Deadline,
 		&i.CreatedAt,
@@ -109,7 +116,7 @@ INSERT INTO orders (
     shipping_address
 )
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, delivery_content, delivered_at, completed_at, deadline, created_at, updated_at
+RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at
 `
 
 type CreateOrderParams struct {
@@ -159,8 +166,13 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.CompleteTxHash,
 		&i.ShippingAddress,
 		&i.PaymentMode,
+		&i.PaymentSigHash,
 		&i.DeliveryContent,
 		&i.DeliveredAt,
+		&i.ShippedAt,
+		&i.TrackingNumber,
+		&i.DisputedAt,
+		&i.DisputeReason,
 		&i.CompletedAt,
 		&i.Deadline,
 		&i.CreatedAt,
@@ -170,7 +182,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 }
 
 const getOrderByEscrowID = `-- name: GetOrderByEscrowID :one
-SELECT id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, delivery_content, delivered_at, completed_at, deadline, created_at, updated_at FROM orders WHERE escrow_contract = $1 AND escrow_order_id = $2
+SELECT id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at FROM orders WHERE escrow_contract = $1 AND escrow_order_id = $2
 `
 
 type GetOrderByEscrowIDParams struct {
@@ -197,8 +209,13 @@ func (q *Queries) GetOrderByEscrowID(ctx context.Context, arg GetOrderByEscrowID
 		&i.CompleteTxHash,
 		&i.ShippingAddress,
 		&i.PaymentMode,
+		&i.PaymentSigHash,
 		&i.DeliveryContent,
 		&i.DeliveredAt,
+		&i.ShippedAt,
+		&i.TrackingNumber,
+		&i.DisputedAt,
+		&i.DisputeReason,
 		&i.CompletedAt,
 		&i.Deadline,
 		&i.CreatedAt,
@@ -208,7 +225,7 @@ func (q *Queries) GetOrderByEscrowID(ctx context.Context, arg GetOrderByEscrowID
 }
 
 const getOrderByID = `-- name: GetOrderByID :one
-SELECT id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, delivery_content, delivered_at, completed_at, deadline, created_at, updated_at FROM orders WHERE id = $1
+SELECT id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at FROM orders WHERE id = $1
 `
 
 func (q *Queries) GetOrderByID(ctx context.Context, id pgtype.UUID) (Order, error) {
@@ -230,8 +247,13 @@ func (q *Queries) GetOrderByID(ctx context.Context, id pgtype.UUID) (Order, erro
 		&i.CompleteTxHash,
 		&i.ShippingAddress,
 		&i.PaymentMode,
+		&i.PaymentSigHash,
 		&i.DeliveryContent,
 		&i.DeliveredAt,
+		&i.ShippedAt,
+		&i.TrackingNumber,
+		&i.DisputedAt,
+		&i.DisputeReason,
 		&i.CompletedAt,
 		&i.Deadline,
 		&i.CreatedAt,
@@ -241,7 +263,7 @@ func (q *Queries) GetOrderByID(ctx context.Context, id pgtype.UUID) (Order, erro
 }
 
 const getOrderByOrderNo = `-- name: GetOrderByOrderNo :one
-SELECT id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, delivery_content, delivered_at, completed_at, deadline, created_at, updated_at FROM orders WHERE order_no = $1
+SELECT id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at FROM orders WHERE order_no = $1
 `
 
 func (q *Queries) GetOrderByOrderNo(ctx context.Context, orderNo string) (Order, error) {
@@ -263,8 +285,51 @@ func (q *Queries) GetOrderByOrderNo(ctx context.Context, orderNo string) (Order,
 		&i.CompleteTxHash,
 		&i.ShippingAddress,
 		&i.PaymentMode,
+		&i.PaymentSigHash,
 		&i.DeliveryContent,
 		&i.DeliveredAt,
+		&i.ShippedAt,
+		&i.TrackingNumber,
+		&i.DisputedAt,
+		&i.DisputeReason,
+		&i.CompletedAt,
+		&i.Deadline,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getOrderByPaymentSigHash = `-- name: GetOrderByPaymentSigHash :one
+SELECT id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at FROM orders WHERE payment_sig_hash = $1
+`
+
+func (q *Queries) GetOrderByPaymentSigHash(ctx context.Context, paymentSigHash pgtype.Text) (Order, error) {
+	row := q.db.QueryRow(ctx, getOrderByPaymentSigHash, paymentSigHash)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.OrderNo,
+		&i.ProductID,
+		&i.BuyerAgentID,
+		&i.SellerAgentID,
+		&i.BuyerWallet,
+		&i.SellerWallet,
+		&i.AmountUsdc,
+		&i.EscrowOrderID,
+		&i.EscrowContract,
+		&i.Status,
+		&i.TxHash,
+		&i.CompleteTxHash,
+		&i.ShippingAddress,
+		&i.PaymentMode,
+		&i.PaymentSigHash,
+		&i.DeliveryContent,
+		&i.DeliveredAt,
+		&i.ShippedAt,
+		&i.TrackingNumber,
+		&i.DisputedAt,
+		&i.DisputeReason,
 		&i.CompletedAt,
 		&i.Deadline,
 		&i.CreatedAt,
@@ -296,7 +361,7 @@ func (q *Queries) GetOrderStats(ctx context.Context, buyerAgentID pgtype.UUID) (
 }
 
 const listOrdersByBuyer = `-- name: ListOrdersByBuyer :many
-SELECT o.id, o.order_no, o.product_id, o.buyer_agent_id, o.seller_agent_id, o.buyer_wallet, o.seller_wallet, o.amount_usdc, o.escrow_order_id, o.escrow_contract, o.status, o.tx_hash, o.complete_tx_hash, o.shipping_address, o.payment_mode, o.delivery_content, o.delivered_at, o.completed_at, o.deadline, o.created_at, o.updated_at, p.name as product_name
+SELECT o.id, o.order_no, o.product_id, o.buyer_agent_id, o.seller_agent_id, o.buyer_wallet, o.seller_wallet, o.amount_usdc, o.escrow_order_id, o.escrow_contract, o.status, o.tx_hash, o.complete_tx_hash, o.shipping_address, o.payment_mode, o.payment_sig_hash, o.delivery_content, o.delivered_at, o.shipped_at, o.tracking_number, o.disputed_at, o.dispute_reason, o.completed_at, o.deadline, o.created_at, o.updated_at, p.name as product_name
 FROM orders o
 JOIN products p ON o.product_id = p.id
 WHERE o.buyer_agent_id = $1
@@ -326,8 +391,13 @@ type ListOrdersByBuyerRow struct {
 	CompleteTxHash  pgtype.Text        `json:"complete_tx_hash"`
 	ShippingAddress []byte             `json:"shipping_address"`
 	PaymentMode     string             `json:"payment_mode"`
+	PaymentSigHash  pgtype.Text        `json:"payment_sig_hash"`
 	DeliveryContent pgtype.Text        `json:"delivery_content"`
 	DeliveredAt     pgtype.Timestamptz `json:"delivered_at"`
+	ShippedAt       pgtype.Timestamptz `json:"shipped_at"`
+	TrackingNumber  pgtype.Text        `json:"tracking_number"`
+	DisputedAt      pgtype.Timestamptz `json:"disputed_at"`
+	DisputeReason   pgtype.Text        `json:"dispute_reason"`
 	CompletedAt     pgtype.Timestamptz `json:"completed_at"`
 	Deadline        pgtype.Timestamptz `json:"deadline"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
@@ -360,8 +430,13 @@ func (q *Queries) ListOrdersByBuyer(ctx context.Context, arg ListOrdersByBuyerPa
 			&i.CompleteTxHash,
 			&i.ShippingAddress,
 			&i.PaymentMode,
+			&i.PaymentSigHash,
 			&i.DeliveryContent,
 			&i.DeliveredAt,
+			&i.ShippedAt,
+			&i.TrackingNumber,
+			&i.DisputedAt,
+			&i.DisputeReason,
 			&i.CompletedAt,
 			&i.Deadline,
 			&i.CreatedAt,
@@ -379,7 +454,7 @@ func (q *Queries) ListOrdersByBuyer(ctx context.Context, arg ListOrdersByBuyerPa
 }
 
 const listOrdersBySeller = `-- name: ListOrdersBySeller :many
-SELECT o.id, o.order_no, o.product_id, o.buyer_agent_id, o.seller_agent_id, o.buyer_wallet, o.seller_wallet, o.amount_usdc, o.escrow_order_id, o.escrow_contract, o.status, o.tx_hash, o.complete_tx_hash, o.shipping_address, o.payment_mode, o.delivery_content, o.delivered_at, o.completed_at, o.deadline, o.created_at, o.updated_at, p.name as product_name
+SELECT o.id, o.order_no, o.product_id, o.buyer_agent_id, o.seller_agent_id, o.buyer_wallet, o.seller_wallet, o.amount_usdc, o.escrow_order_id, o.escrow_contract, o.status, o.tx_hash, o.complete_tx_hash, o.shipping_address, o.payment_mode, o.payment_sig_hash, o.delivery_content, o.delivered_at, o.shipped_at, o.tracking_number, o.disputed_at, o.dispute_reason, o.completed_at, o.deadline, o.created_at, o.updated_at, p.name as product_name
 FROM orders o
 JOIN products p ON o.product_id = p.id
 WHERE o.seller_agent_id = $1
@@ -409,8 +484,13 @@ type ListOrdersBySellerRow struct {
 	CompleteTxHash  pgtype.Text        `json:"complete_tx_hash"`
 	ShippingAddress []byte             `json:"shipping_address"`
 	PaymentMode     string             `json:"payment_mode"`
+	PaymentSigHash  pgtype.Text        `json:"payment_sig_hash"`
 	DeliveryContent pgtype.Text        `json:"delivery_content"`
 	DeliveredAt     pgtype.Timestamptz `json:"delivered_at"`
+	ShippedAt       pgtype.Timestamptz `json:"shipped_at"`
+	TrackingNumber  pgtype.Text        `json:"tracking_number"`
+	DisputedAt      pgtype.Timestamptz `json:"disputed_at"`
+	DisputeReason   pgtype.Text        `json:"dispute_reason"`
 	CompletedAt     pgtype.Timestamptz `json:"completed_at"`
 	Deadline        pgtype.Timestamptz `json:"deadline"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
@@ -443,8 +523,13 @@ func (q *Queries) ListOrdersBySeller(ctx context.Context, arg ListOrdersBySeller
 			&i.CompleteTxHash,
 			&i.ShippingAddress,
 			&i.PaymentMode,
+			&i.PaymentSigHash,
 			&i.DeliveryContent,
 			&i.DeliveredAt,
+			&i.ShippedAt,
+			&i.TrackingNumber,
+			&i.DisputedAt,
+			&i.DisputeReason,
 			&i.CompletedAt,
 			&i.Deadline,
 			&i.CreatedAt,
@@ -462,7 +547,7 @@ func (q *Queries) ListOrdersBySeller(ctx context.Context, arg ListOrdersBySeller
 }
 
 const listPaidOrdersPastDeadline = `-- name: ListPaidOrdersPastDeadline :many
-SELECT id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, delivery_content, delivered_at, completed_at, deadline, created_at, updated_at FROM orders WHERE status = 'paid' AND deadline < now()
+SELECT id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at FROM orders WHERE status = 'paid' AND deadline < now()
 `
 
 func (q *Queries) ListPaidOrdersPastDeadline(ctx context.Context) ([]Order, error) {
@@ -490,8 +575,13 @@ func (q *Queries) ListPaidOrdersPastDeadline(ctx context.Context) ([]Order, erro
 			&i.CompleteTxHash,
 			&i.ShippingAddress,
 			&i.PaymentMode,
+			&i.PaymentSigHash,
 			&i.DeliveryContent,
 			&i.DeliveredAt,
+			&i.ShippedAt,
+			&i.TrackingNumber,
+			&i.DisputedAt,
+			&i.DisputeReason,
 			&i.CompletedAt,
 			&i.Deadline,
 			&i.CreatedAt,
@@ -508,7 +598,7 @@ func (q *Queries) ListPaidOrdersPastDeadline(ctx context.Context) ([]Order, erro
 }
 
 const listPendingOrders = `-- name: ListPendingOrders :many
-SELECT id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, delivery_content, delivered_at, completed_at, deadline, created_at, updated_at FROM orders WHERE status = 'pending' ORDER BY created_at ASC
+SELECT id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at FROM orders WHERE status = 'pending' ORDER BY created_at ASC
 `
 
 func (q *Queries) ListPendingOrders(ctx context.Context) ([]Order, error) {
@@ -536,8 +626,13 @@ func (q *Queries) ListPendingOrders(ctx context.Context) ([]Order, error) {
 			&i.CompleteTxHash,
 			&i.ShippingAddress,
 			&i.PaymentMode,
+			&i.PaymentSigHash,
 			&i.DeliveryContent,
 			&i.DeliveredAt,
+			&i.ShippedAt,
+			&i.TrackingNumber,
+			&i.DisputedAt,
+			&i.DisputeReason,
 			&i.CompletedAt,
 			&i.Deadline,
 			&i.CreatedAt,
@@ -553,12 +648,101 @@ func (q *Queries) ListPendingOrders(ctx context.Context) ([]Order, error) {
 	return items, nil
 }
 
+const markOrderShipped = `-- name: MarkOrderShipped :one
+UPDATE orders SET
+    shipped_at = now(),
+    tracking_number = $2,
+    updated_at = now()
+WHERE id = $1 RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at
+`
+
+type MarkOrderShippedParams struct {
+	ID             pgtype.UUID `json:"id"`
+	TrackingNumber pgtype.Text `json:"tracking_number"`
+}
+
+func (q *Queries) MarkOrderShipped(ctx context.Context, arg MarkOrderShippedParams) (Order, error) {
+	row := q.db.QueryRow(ctx, markOrderShipped, arg.ID, arg.TrackingNumber)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.OrderNo,
+		&i.ProductID,
+		&i.BuyerAgentID,
+		&i.SellerAgentID,
+		&i.BuyerWallet,
+		&i.SellerWallet,
+		&i.AmountUsdc,
+		&i.EscrowOrderID,
+		&i.EscrowContract,
+		&i.Status,
+		&i.TxHash,
+		&i.CompleteTxHash,
+		&i.ShippingAddress,
+		&i.PaymentMode,
+		&i.PaymentSigHash,
+		&i.DeliveryContent,
+		&i.DeliveredAt,
+		&i.ShippedAt,
+		&i.TrackingNumber,
+		&i.DisputedAt,
+		&i.DisputeReason,
+		&i.CompletedAt,
+		&i.Deadline,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const resolveDispute = `-- name: ResolveDispute :one
+UPDATE orders SET
+    status = 'paid',
+    updated_at = now()
+WHERE id = $1 AND status = 'disputed'
+RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at
+`
+
+func (q *Queries) ResolveDispute(ctx context.Context, id pgtype.UUID) (Order, error) {
+	row := q.db.QueryRow(ctx, resolveDispute, id)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.OrderNo,
+		&i.ProductID,
+		&i.BuyerAgentID,
+		&i.SellerAgentID,
+		&i.BuyerWallet,
+		&i.SellerWallet,
+		&i.AmountUsdc,
+		&i.EscrowOrderID,
+		&i.EscrowContract,
+		&i.Status,
+		&i.TxHash,
+		&i.CompleteTxHash,
+		&i.ShippingAddress,
+		&i.PaymentMode,
+		&i.PaymentSigHash,
+		&i.DeliveryContent,
+		&i.DeliveredAt,
+		&i.ShippedAt,
+		&i.TrackingNumber,
+		&i.DisputedAt,
+		&i.DisputeReason,
+		&i.CompletedAt,
+		&i.Deadline,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateOrderCancelled = `-- name: UpdateOrderCancelled :one
 UPDATE orders SET
     status = 'cancelled',
     updated_at = now()
 WHERE id = $1
-RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, delivery_content, delivered_at, completed_at, deadline, created_at, updated_at
+RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at
 `
 
 func (q *Queries) UpdateOrderCancelled(ctx context.Context, id pgtype.UUID) (Order, error) {
@@ -580,8 +764,13 @@ func (q *Queries) UpdateOrderCancelled(ctx context.Context, id pgtype.UUID) (Ord
 		&i.CompleteTxHash,
 		&i.ShippingAddress,
 		&i.PaymentMode,
+		&i.PaymentSigHash,
 		&i.DeliveryContent,
 		&i.DeliveredAt,
+		&i.ShippedAt,
+		&i.TrackingNumber,
+		&i.DisputedAt,
+		&i.DisputeReason,
 		&i.CompletedAt,
 		&i.Deadline,
 		&i.CreatedAt,
@@ -597,7 +786,7 @@ UPDATE orders SET
     completed_at = now(),
     updated_at = now()
 WHERE id = $1
-RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, delivery_content, delivered_at, completed_at, deadline, created_at, updated_at
+RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at
 `
 
 type UpdateOrderCompletedParams struct {
@@ -624,8 +813,13 @@ func (q *Queries) UpdateOrderCompleted(ctx context.Context, arg UpdateOrderCompl
 		&i.CompleteTxHash,
 		&i.ShippingAddress,
 		&i.PaymentMode,
+		&i.PaymentSigHash,
 		&i.DeliveryContent,
 		&i.DeliveredAt,
+		&i.ShippedAt,
+		&i.TrackingNumber,
+		&i.DisputedAt,
+		&i.DisputeReason,
 		&i.CompletedAt,
 		&i.Deadline,
 		&i.CreatedAt,
@@ -640,7 +834,7 @@ UPDATE orders SET
     delivered_at = now(),
     updated_at = now()
 WHERE id = $1
-RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, delivery_content, delivered_at, completed_at, deadline, created_at, updated_at
+RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at
 `
 
 type UpdateOrderDeliveredParams struct {
@@ -667,8 +861,62 @@ func (q *Queries) UpdateOrderDelivered(ctx context.Context, arg UpdateOrderDeliv
 		&i.CompleteTxHash,
 		&i.ShippingAddress,
 		&i.PaymentMode,
+		&i.PaymentSigHash,
 		&i.DeliveryContent,
 		&i.DeliveredAt,
+		&i.ShippedAt,
+		&i.TrackingNumber,
+		&i.DisputedAt,
+		&i.DisputeReason,
+		&i.CompletedAt,
+		&i.Deadline,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateOrderDisputed = `-- name: UpdateOrderDisputed :one
+UPDATE orders SET
+    status = 'disputed',
+    disputed_at = now(),
+    dispute_reason = $2,
+    updated_at = now()
+WHERE id = $1 AND status = 'paid'
+RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at
+`
+
+type UpdateOrderDisputedParams struct {
+	ID            pgtype.UUID `json:"id"`
+	DisputeReason pgtype.Text `json:"dispute_reason"`
+}
+
+func (q *Queries) UpdateOrderDisputed(ctx context.Context, arg UpdateOrderDisputedParams) (Order, error) {
+	row := q.db.QueryRow(ctx, updateOrderDisputed, arg.ID, arg.DisputeReason)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.OrderNo,
+		&i.ProductID,
+		&i.BuyerAgentID,
+		&i.SellerAgentID,
+		&i.BuyerWallet,
+		&i.SellerWallet,
+		&i.AmountUsdc,
+		&i.EscrowOrderID,
+		&i.EscrowContract,
+		&i.Status,
+		&i.TxHash,
+		&i.CompleteTxHash,
+		&i.ShippingAddress,
+		&i.PaymentMode,
+		&i.PaymentSigHash,
+		&i.DeliveryContent,
+		&i.DeliveredAt,
+		&i.ShippedAt,
+		&i.TrackingNumber,
+		&i.DisputedAt,
+		&i.DisputeReason,
 		&i.CompletedAt,
 		&i.Deadline,
 		&i.CreatedAt,
@@ -683,7 +931,7 @@ UPDATE orders SET
     tx_hash = $2,
     updated_at = now()
 WHERE id = $1
-RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, delivery_content, delivered_at, completed_at, deadline, created_at, updated_at
+RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at
 `
 
 type UpdateOrderPaidParams struct {
@@ -710,8 +958,55 @@ func (q *Queries) UpdateOrderPaid(ctx context.Context, arg UpdateOrderPaidParams
 		&i.CompleteTxHash,
 		&i.ShippingAddress,
 		&i.PaymentMode,
+		&i.PaymentSigHash,
 		&i.DeliveryContent,
 		&i.DeliveredAt,
+		&i.ShippedAt,
+		&i.TrackingNumber,
+		&i.DisputedAt,
+		&i.DisputeReason,
+		&i.CompletedAt,
+		&i.Deadline,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateOrderRefunded = `-- name: UpdateOrderRefunded :one
+UPDATE orders SET
+    status = 'refunded',
+    updated_at = now()
+WHERE id = $1 AND status = 'disputed'
+RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at
+`
+
+func (q *Queries) UpdateOrderRefunded(ctx context.Context, id pgtype.UUID) (Order, error) {
+	row := q.db.QueryRow(ctx, updateOrderRefunded, id)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.OrderNo,
+		&i.ProductID,
+		&i.BuyerAgentID,
+		&i.SellerAgentID,
+		&i.BuyerWallet,
+		&i.SellerWallet,
+		&i.AmountUsdc,
+		&i.EscrowOrderID,
+		&i.EscrowContract,
+		&i.Status,
+		&i.TxHash,
+		&i.CompleteTxHash,
+		&i.ShippingAddress,
+		&i.PaymentMode,
+		&i.PaymentSigHash,
+		&i.DeliveryContent,
+		&i.DeliveredAt,
+		&i.ShippedAt,
+		&i.TrackingNumber,
+		&i.DisputedAt,
+		&i.DisputeReason,
 		&i.CompletedAt,
 		&i.Deadline,
 		&i.CreatedAt,
@@ -721,7 +1016,7 @@ func (q *Queries) UpdateOrderPaid(ctx context.Context, arg UpdateOrderPaidParams
 }
 
 const updateOrderStatus = `-- name: UpdateOrderStatus :one
-UPDATE orders SET status = $2, updated_at = now() WHERE id = $1 RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, delivery_content, delivered_at, completed_at, deadline, created_at, updated_at
+UPDATE orders SET status = $2, updated_at = now() WHERE id = $1 RETURNING id, order_no, product_id, buyer_agent_id, seller_agent_id, buyer_wallet, seller_wallet, amount_usdc, escrow_order_id, escrow_contract, status, tx_hash, complete_tx_hash, shipping_address, payment_mode, payment_sig_hash, delivery_content, delivered_at, shipped_at, tracking_number, disputed_at, dispute_reason, completed_at, deadline, created_at, updated_at
 `
 
 type UpdateOrderStatusParams struct {
@@ -748,8 +1043,13 @@ func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusPa
 		&i.CompleteTxHash,
 		&i.ShippingAddress,
 		&i.PaymentMode,
+		&i.PaymentSigHash,
 		&i.DeliveryContent,
 		&i.DeliveredAt,
+		&i.ShippedAt,
+		&i.TrackingNumber,
+		&i.DisputedAt,
+		&i.DisputeReason,
 		&i.CompletedAt,
 		&i.Deadline,
 		&i.CreatedAt,

@@ -64,6 +64,29 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /agents/{agentId}/stats:
+    get:
+      operationId: getAgentStats
+      tags: [Agent]
+      summary: Get public agent reputation and trading stats
+      security: []
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Agent reputation and stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentStats"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /agents/me:
     get:
       operationId: getMe
@@ -562,6 +585,42 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /orders/{orderId}/ship:
+    post:
+      operationId: markOrderShipped
+      tags: [Order]
+      summary: Mark order as shipped
+      description: |
+        Seller marks a paid physical order as shipped, optionally including
+        a tracking number.
+      parameters:
+        - $ref: "#/components/parameters/OrderId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tracking_number:
+                  type: string
+                  nullable: true
+                  description: Shipping tracking number
+      responses:
+        "200":
+          description: Order marked as shipped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /orders/{orderId}/cancel:
     post:
       operationId: cancelOrder
@@ -574,6 +633,68 @@ paths:
       responses:
         "200":
           description: Order cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /orders/{orderId}/dispute:
+    post:
+      operationId: disputeOrder
+      tags: [Order]
+      summary: Open a dispute on a paid order
+      description: |
+        Buyer opens a dispute on a paid order. The order status changes to
+        "disputed". The buyer can then cancel on-chain to get a refund.
+      parameters:
+        - $ref: "#/components/parameters/OrderId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  description: Reason for the dispute
+      responses:
+        "200":
+          description: Dispute opened
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /orders/{orderId}/resolve-dispute:
+    post:
+      operationId: resolveDispute
+      tags: [Order]
+      summary: Resolve a dispute back to paid
+      description: |
+        Seller resolves a dispute. The order status changes back to "paid".
+      parameters:
+        - $ref: "#/components/parameters/OrderId"
+      responses:
+        "200":
+          description: Dispute resolved
           content:
             application/json:
               schema:
@@ -912,11 +1033,34 @@ components:
         reputation:
           type: object
           nullable: true
-          description: Free-form JSON reputation metrics
+          description: Seller reputation metrics
+          properties:
+            fulfillment_rate:
+              type: number
+              description: Percentage of seller orders fulfilled (0-100)
+            data_quality:
+              type: number
+              description: Dispute-free rate (0-100)
+            total_transactions:
+              type: integer
+              description: Total completed transactions
         trading_stats:
           type: object
           nullable: true
-          description: Trading statistics (orders_completed, total_volume_usdc, etc.)
+          description: Trading statistics
+          properties:
+            total_orders:
+              type: integer
+              description: Total orders as buyer or seller
+            total_sales:
+              type: integer
+              description: Completed orders as seller
+            total_purchases:
+              type: integer
+              description: Completed orders as buyer
+            completed_orders:
+              type: integer
+              description: Total completed orders
         owner_id:
           type: string
           nullable: true
@@ -978,6 +1122,37 @@ components:
         capabilities:
           type: object
           nullable: true
+
+    AgentStats:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        reputation:
+          type: object
+          nullable: true
+          properties:
+            fulfillment_rate:
+              type: number
+            data_quality:
+              type: number
+            total_transactions:
+              type: integer
+        trading_stats:
+          type: object
+          nullable: true
+          properties:
+            total_orders:
+              type: integer
+            total_sales:
+              type: integer
+            total_purchases:
+              type: integer
+            completed_orders:
+              type: integer
 
     # -- Store --
     Store:
@@ -1296,7 +1471,7 @@ components:
           description: "Payment mode used for this order"
         status:
           type: string
-          enum: [pending, paid, completed, cancelled]
+          enum: [pending, paid, completed, cancelled, disputed, refunded]
         tx_hash:
           type: string
           nullable: true
@@ -1315,6 +1490,24 @@ components:
           type: string
           format: date-time
           nullable: true
+        shipped_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when the seller marked the order as shipped
+        tracking_number:
+          type: string
+          nullable: true
+          description: Shipping tracking number
+        disputed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the buyer opened a dispute
+        dispute_reason:
+          type: string
+          nullable: true
+          description: Reason for the dispute
         deadline:
           type: string
           format: date-time

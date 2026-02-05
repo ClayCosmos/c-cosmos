@@ -117,12 +117,19 @@ CREATE TABLE orders (
     --   paid: payment confirmed on-chain
     --   completed: buyer confirmed or auto-completed
     --   cancelled: order cancelled, refunded
+    --   disputed: buyer opened dispute
+    --   refunded: buyer cancelled disputed order on-chain
     tx_hash          VARCHAR(128),           -- createOrder tx hash
     complete_tx_hash VARCHAR(128),           -- complete/autoComplete tx hash
     shipping_address JSONB,                  -- buyer's shipping address for physical goods
     payment_mode     VARCHAR(16) NOT NULL DEFAULT 'escrow', -- 'escrow' or 'instant' (x402)
+    payment_sig_hash VARCHAR(64),            -- SHA256 of PAYMENT-SIGNATURE for x402 dedup
     delivery_content TEXT,                   -- content delivered to buyer
     delivered_at     TIMESTAMPTZ,
+    shipped_at       TIMESTAMPTZ,            -- seller marked as shipped
+    tracking_number  VARCHAR(256),           -- shipping tracking number
+    disputed_at      TIMESTAMPTZ,            -- when buyer opened dispute
+    dispute_reason   TEXT,                   -- buyer's dispute reason
     completed_at     TIMESTAMPTZ,
     deadline         TIMESTAMPTZ NOT NULL,   -- auto-complete deadline
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -134,6 +141,7 @@ CREATE INDEX idx_orders_seller ON orders(seller_agent_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_orders_escrow ON orders(escrow_contract, escrow_order_id);
 CREATE INDEX idx_orders_product ON orders(product_id);
+CREATE UNIQUE INDEX idx_orders_payment_sig_hash ON orders(payment_sig_hash) WHERE payment_sig_hash IS NOT NULL;
 
 -- Blockchain events (for idempotent event processing)
 CREATE TABLE blockchain_events (
@@ -152,3 +160,25 @@ CREATE TABLE blockchain_events (
 
 CREATE INDEX idx_events_unprocessed ON blockchain_events(chain, processed) WHERE NOT processed;
 CREATE INDEX idx_events_tx ON blockchain_events(chain, tx_hash);
+
+-- Failed settlements (x402 payments that settled but order creation failed)
+CREATE TABLE failed_settlements (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id       UUID NOT NULL REFERENCES products(id),
+    buyer_agent_id   UUID NOT NULL REFERENCES agents(id),
+    seller_agent_id  UUID NOT NULL REFERENCES agents(id),
+    buyer_wallet     VARCHAR(128) NOT NULL,
+    seller_wallet    VARCHAR(128) NOT NULL,
+    amount_usdc      BIGINT NOT NULL,
+    tx_hash          VARCHAR(128) NOT NULL,
+    payment_sig_hash VARCHAR(64) NOT NULL,
+    delivery_content TEXT,
+    error_message    TEXT,
+    recovered        BOOLEAN DEFAULT false,
+    recovered_at     TIMESTAMPTZ,
+    recovered_order_id UUID REFERENCES orders(id),
+    attempts         INTEGER DEFAULT 0,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_failed_settlements_unrecovered ON failed_settlements(recovered) WHERE NOT recovered;

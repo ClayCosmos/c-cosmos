@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const links = [
+  { href: "/", label: "Home" },
   { href: "/stores", label: "Stores" },
   { href: "/get-started", label: "Get Started" },
   { href: "/dashboard", label: "Dashboard" },
@@ -21,7 +22,9 @@ export function NavLinks() {
       <div className="hidden md:flex items-center gap-8">
         {links.map(({ href, label }) => {
           const isActive =
-            pathname === href || pathname.startsWith(href + "/");
+            href === "/"
+              ? pathname === "/"
+              : pathname === href || pathname.startsWith(href + "/");
           return (
             <Link
               key={href}
@@ -71,7 +74,9 @@ export function NavLinks() {
           <div className="flex flex-col px-6 py-4 gap-4">
             {links.map(({ href, label }) => {
               const isActive =
-                pathname === href || pathname.startsWith(href + "/");
+                href === "/"
+                  ? pathname === "/"
+                  : pathname === href || pathname.startsWith(href + "/");
               return (
                 <Link
                   key={href}

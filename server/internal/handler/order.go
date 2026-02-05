@@ -1,16 +1,21 @@
 package handler
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/niceclay/claycosmos/server/internal/config"
 	"github.com/niceclay/claycosmos/server/internal/db/gen"
 	"github.com/niceclay/claycosmos/server/internal/middleware"
 	"github.com/niceclay/claycosmos/server/pkg/apierr"
@@ -27,13 +32,30 @@ type OrderHandler struct {
 	pool           *pgxpool.Pool
 	q              *gen.Queries
 	escrowContract string
+	ethClient      *ethclient.Client
+	contractAddr   common.Address
 }
 
-func NewOrderHandler(pool *pgxpool.Pool, escrowContract string) *OrderHandler {
+func NewOrderHandler(pool *pgxpool.Pool, cfg *config.Config) *OrderHandler {
+	escrowContract := cfg.EscrowContract
 	if escrowContract == "" {
 		escrowContract = EscrowContractBaseSepolia
 	}
-	return &OrderHandler{pool: pool, q: gen.New(pool), escrowContract: escrowContract}
+	h := &OrderHandler{
+		pool:           pool,
+		q:              gen.New(pool),
+		escrowContract: escrowContract,
+		contractAddr:   common.HexToAddress(escrowContract),
+	}
+	if cfg.RPCURL != "" {
+		client, err := ethclient.Dial(cfg.RPCURL)
+		if err != nil {
+			log.Printf("order handler: failed to connect to RPC: %v (tx verification disabled)", err)
+		} else {
+			h.ethClient = client
+		}
+	}
+	return h
 }
 
 type ShippingAddress struct {
@@ -74,6 +96,10 @@ type OrderResponse struct {
 	ShippingAddress *ShippingAddress `json:"shipping_address,omitempty"`
 	DeliveryContent string           `json:"delivery_content,omitempty"`
 	DeliveredAt     *string          `json:"delivered_at,omitempty"`
+	ShippedAt       *string          `json:"shipped_at,omitempty"`
+	TrackingNumber  string           `json:"tracking_number,omitempty"`
+	DisputedAt      *string          `json:"disputed_at,omitempty"`
+	DisputeReason   string           `json:"dispute_reason,omitempty"`
 	CompletedAt     *string          `json:"completed_at,omitempty"`
 	Deadline        time.Time        `json:"deadline"`
 	CreatedAt       time.Time        `json:"created_at"`
@@ -137,7 +163,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	}
 
 	// Generate order number
-	orderNo := generateOrderNo()
+	orderNo := GenerateOrderNo()
 
 	// Generate escrow order ID (bytes32)
 	escrowOrderID := generateEscrowOrderID()
@@ -189,6 +215,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
+	h.recalculateStats(c.Request.Context(), order.BuyerAgentID, order.SellerAgentID)
 	c.JSON(http.StatusCreated, toOrderResponse(order, product.Name))
 }
 
@@ -221,7 +248,7 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 	resp := toOrderResponse(order, product.Name)
 
 	// Only show delivery content to buyer after payment
-	if order.BuyerAgentID == agent.ID && (order.Status == "paid" || order.Status == "completed") {
+	if order.BuyerAgentID == agent.ID && (order.Status == "paid" || order.Status == "completed" || order.Status == "disputed") {
 		resp.DeliveryContent = order.DeliveryContent.String
 	}
 
@@ -303,6 +330,11 @@ func (h *OrderHandler) MarkOrderPaid(c *gin.Context) {
 		return
 	}
 
+	if apiErr := h.verifyTxReceipt(c.Request.Context(), req.TxHash); apiErr != nil {
+		respondError(c, apiErr)
+		return
+	}
+
 	// Update order status
 	updated, err := h.q.UpdateOrderPaid(c.Request.Context(), gen.UpdateOrderPaidParams{
 		ID:     orderID,
@@ -368,12 +400,66 @@ func (h *OrderHandler) CompleteOrder(c *gin.Context) {
 	}
 	_ = c.ShouldBindJSON(&req)
 
+	if req.TxHash != "" {
+		if apiErr := h.verifyTxReceipt(c.Request.Context(), req.TxHash); apiErr != nil {
+			respondError(c, apiErr)
+			return
+		}
+	}
+
 	updated, err := h.q.UpdateOrderCompleted(c.Request.Context(), gen.UpdateOrderCompletedParams{
 		ID:             orderID,
 		CompleteTxHash: pgtype.Text{String: req.TxHash, Valid: req.TxHash != ""},
 	})
 	if err != nil {
 		respondError(c, apierr.Internal("failed to complete order"))
+		return
+	}
+
+	h.recalculateStats(c.Request.Context(), order.BuyerAgentID, order.SellerAgentID)
+	product, _ := h.q.GetProductByID(c.Request.Context(), order.ProductID)
+	c.JSON(http.StatusOK, toOrderResponse(updated, product.Name))
+}
+
+// MarkOrderShipped marks an order as shipped (seller only, after payment)
+func (h *OrderHandler) MarkOrderShipped(c *gin.Context) {
+	agent := middleware.GetAgent(c.Request.Context())
+	orderIDStr := c.Param("id")
+
+	orderID := pgtype.UUID{}
+	if err := orderID.Scan(orderIDStr); err != nil {
+		respondError(c, apierr.BadRequest("invalid order id"))
+		return
+	}
+
+	var req struct {
+		TrackingNumber string `json:"tracking_number"`
+	}
+	_ = c.ShouldBindJSON(&req)
+
+	order, err := h.q.GetOrderByID(c.Request.Context(), orderID)
+	if err != nil {
+		respondError(c, apierr.NotFound("order not found"))
+		return
+	}
+
+	// Only seller can mark as shipped
+	if order.SellerAgentID != agent.ID {
+		respondError(c, apierr.Forbidden("only seller can mark order as shipped"))
+		return
+	}
+
+	if order.Status != "paid" {
+		respondError(c, apierr.BadRequest("order must be paid before shipping"))
+		return
+	}
+
+	updated, err := h.q.MarkOrderShipped(c.Request.Context(), gen.MarkOrderShippedParams{
+		ID:             orderID,
+		TrackingNumber: pgtype.Text{String: req.TrackingNumber, Valid: req.TrackingNumber != ""},
+	})
+	if err != nil {
+		respondError(c, apierr.Internal("failed to mark order as shipped"))
 		return
 	}
 
@@ -414,13 +500,101 @@ func (h *OrderHandler) CancelOrder(c *gin.Context) {
 		return
 	}
 
+	h.recalculateStats(c.Request.Context(), order.BuyerAgentID, order.SellerAgentID)
+	product, _ := h.q.GetProductByID(c.Request.Context(), order.ProductID)
+	c.JSON(http.StatusOK, toOrderResponse(updated, product.Name))
+}
+
+// DisputeOrder opens a dispute on a paid order (buyer only)
+func (h *OrderHandler) DisputeOrder(c *gin.Context) {
+	agent := middleware.GetAgent(c.Request.Context())
+	orderIDStr := c.Param("id")
+
+	orderID := pgtype.UUID{}
+	if err := orderID.Scan(orderIDStr); err != nil {
+		respondError(c, apierr.BadRequest("invalid order id"))
+		return
+	}
+
+	var req struct {
+		Reason string `json:"reason" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, apierr.BadRequest(err.Error()))
+		return
+	}
+
+	order, err := h.q.GetOrderByID(c.Request.Context(), orderID)
+	if err != nil {
+		respondError(c, apierr.NotFound("order not found"))
+		return
+	}
+
+	if order.BuyerAgentID != agent.ID {
+		respondError(c, apierr.Forbidden("only buyer can dispute order"))
+		return
+	}
+
+	if order.Status != "paid" {
+		respondError(c, apierr.BadRequest("can only dispute paid orders"))
+		return
+	}
+
+	updated, err := h.q.UpdateOrderDisputed(c.Request.Context(), gen.UpdateOrderDisputedParams{
+		ID:            orderID,
+		DisputeReason: pgtype.Text{String: req.Reason, Valid: true},
+	})
+	if err != nil {
+		respondError(c, apierr.Internal("failed to dispute order"))
+		return
+	}
+
+	h.recalculateStats(c.Request.Context(), order.BuyerAgentID, order.SellerAgentID)
+	product, _ := h.q.GetProductByID(c.Request.Context(), order.ProductID)
+	c.JSON(http.StatusOK, toOrderResponse(updated, product.Name))
+}
+
+// ResolveDispute resolves a dispute back to paid (seller only)
+func (h *OrderHandler) ResolveDispute(c *gin.Context) {
+	agent := middleware.GetAgent(c.Request.Context())
+	orderIDStr := c.Param("id")
+
+	orderID := pgtype.UUID{}
+	if err := orderID.Scan(orderIDStr); err != nil {
+		respondError(c, apierr.BadRequest("invalid order id"))
+		return
+	}
+
+	order, err := h.q.GetOrderByID(c.Request.Context(), orderID)
+	if err != nil {
+		respondError(c, apierr.NotFound("order not found"))
+		return
+	}
+
+	if order.SellerAgentID != agent.ID {
+		respondError(c, apierr.Forbidden("only seller can resolve dispute"))
+		return
+	}
+
+	if order.Status != "disputed" {
+		respondError(c, apierr.BadRequest("order is not disputed"))
+		return
+	}
+
+	updated, err := h.q.ResolveDispute(c.Request.Context(), orderID)
+	if err != nil {
+		respondError(c, apierr.Internal("failed to resolve dispute"))
+		return
+	}
+
+	h.recalculateStats(c.Request.Context(), order.BuyerAgentID, order.SellerAgentID)
 	product, _ := h.q.GetProductByID(c.Request.Context(), order.ProductID)
 	c.JSON(http.StatusOK, toOrderResponse(updated, product.Name))
 }
 
 // Helper functions
 
-func generateOrderNo() string {
+func GenerateOrderNo() string {
 	now := time.Now()
 	randBytes := make([]byte, 4)
 	_, _ = rand.Read(randBytes)
@@ -472,9 +646,23 @@ func toOrderResponse(o gen.Order, productName string) OrderResponse {
 		t := o.DeliveredAt.Time.Format(time.RFC3339)
 		resp.DeliveredAt = &t
 	}
+	if o.ShippedAt.Valid {
+		t := o.ShippedAt.Time.Format(time.RFC3339)
+		resp.ShippedAt = &t
+	}
+	if o.TrackingNumber.Valid {
+		resp.TrackingNumber = o.TrackingNumber.String
+	}
 	if o.CompletedAt.Valid {
 		t := o.CompletedAt.Time.Format(time.RFC3339)
 		resp.CompletedAt = &t
+	}
+	if o.DisputedAt.Valid {
+		t := o.DisputedAt.Time.Format(time.RFC3339)
+		resp.DisputedAt = &t
+	}
+	if o.DisputeReason.Valid {
+		resp.DisputeReason = o.DisputeReason.String
 	}
 
 	return resp
@@ -508,10 +696,54 @@ func toOrderResponseFromRow(o gen.ListOrdersByBuyerRow) OrderResponse {
 		t := o.DeliveredAt.Time.Format(time.RFC3339)
 		resp.DeliveredAt = &t
 	}
+	if o.ShippedAt.Valid {
+		t := o.ShippedAt.Time.Format(time.RFC3339)
+		resp.ShippedAt = &t
+	}
+	if o.TrackingNumber.Valid {
+		resp.TrackingNumber = o.TrackingNumber.String
+	}
 	if o.CompletedAt.Valid {
 		t := o.CompletedAt.Time.Format(time.RFC3339)
 		resp.CompletedAt = &t
 	}
+	if o.DisputedAt.Valid {
+		t := o.DisputedAt.Time.Format(time.RFC3339)
+		resp.DisputedAt = &t
+	}
+	if o.DisputeReason.Valid {
+		resp.DisputeReason = o.DisputeReason.String
+	}
 
 	return resp
+}
+
+func (h *OrderHandler) recalculateStats(ctx context.Context, agentIDs ...pgtype.UUID) {
+	for _, id := range agentIDs {
+		if err := h.q.RecalculateAgentStats(ctx, id); err != nil {
+			log.Printf("failed to recalculate stats for agent: %v", err)
+		}
+	}
+}
+
+func (h *OrderHandler) verifyTxReceipt(ctx context.Context, txHashHex string) *apierr.APIError {
+	if h.ethClient == nil {
+		return nil // skip verification when RPC not configured
+	}
+	txHash := common.HexToHash(txHashHex)
+	receipt, err := h.ethClient.TransactionReceipt(ctx, txHash)
+	if err != nil {
+		return apierr.BadRequest("transaction not found or not yet mined")
+	}
+	if receipt.Status != 1 {
+		return apierr.BadRequest("transaction reverted on-chain")
+	}
+	tx, _, err := h.ethClient.TransactionByHash(ctx, txHash)
+	if err != nil {
+		return apierr.BadRequest("failed to fetch transaction")
+	}
+	if tx.To() == nil || *tx.To() != h.contractAddr {
+		return apierr.BadRequest("transaction is not to the escrow contract")
+	}
+	return nil
 }

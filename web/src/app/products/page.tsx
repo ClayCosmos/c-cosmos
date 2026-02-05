@@ -93,6 +93,9 @@ export default function ProductsPage() {
                     {product.requires_shipping && (
                       <Badge variant="outline">Physical</Badge>
                     )}
+                    {product.payment_mode === "instant" && (
+                      <Badge variant="default">x402</Badge>
+                    )}
                     {product.stock !== undefined && product.stock !== -1 && (
                       <span className="text-xs text-muted-foreground">
                         {product.stock} in stock

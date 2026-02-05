@@ -4,7 +4,24 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { getProduct, createOrder, listWallets, type ProductDetail, type Wallet, type Order, type ShippingAddress } from "@/lib/api";
+import {
+  getProduct,
+  createOrder,
+  listWallets,
+  getPaymentRequirements,
+  submitInstantPayment,
+  type ProductDetail,
+  type Wallet,
+  type Order,
+  type ShippingAddress,
+  type InstantBuyResponse,
+} from "@/lib/api";
+import {
+  connectWallet,
+  ensureChain,
+  signTransferWithAuthorization,
+  buildPaymentPayload,
+} from "@/lib/x402";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useApiKey } from "@/hooks/useApiKey";
@@ -35,6 +52,14 @@ export default function ProductDetailPage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [order, setOrder] = useState<Order | null>(null);
 
+  // Instant buy state
+  const [instantOrder, setInstantOrder] = useState<InstantBuyResponse | null>(null);
+  type InstantBuyStep = "idle" | "connecting" | "signing" | "submitting" | "success" | "error";
+  const [instantStep, setInstantStep] = useState<InstantBuyStep>("idle");
+  const [instantError, setInstantError] = useState("");
+  const [instantNetwork, setInstantNetwork] = useState("");
+  const [hasEthereum, setHasEthereum] = useState(false);
+
   // Shipping address state
   const [shippingAddr, setShippingAddr] = useState<ShippingAddress>({
     recipient_name: "",
@@ -64,6 +89,10 @@ export default function ProductDetailPage() {
   useEffect(() => {
     loadProduct();
   }, [loadProduct]);
+
+  useEffect(() => {
+    setHasEthereum(!!window.ethereum);
+  }, []);
 
   useEffect(() => {
     if (isConnected && apiKey) {
@@ -106,6 +135,45 @@ export default function ProductDetailPage() {
       setError(e instanceof Error ? e.message : "Failed to create order");
     } finally {
       setCheckoutLoading(false);
+    }
+  }
+
+  async function handleInstantBuy() {
+    setInstantError("");
+    try {
+      // Step 1: Get payment requirements (402)
+      setInstantStep("connecting");
+      const payReq = await getPaymentRequirements(productId);
+      const requirements = payReq.accepts?.[0];
+      if (!requirements) throw new Error("No payment requirements returned");
+
+      // Connect wallet and switch chain
+      const account = await connectWallet();
+      if (requirements.network) {
+        setInstantNetwork(requirements.network);
+        await ensureChain(requirements.network);
+      }
+
+      // Step 2: Sign EIP-3009 authorization
+      setInstantStep("signing");
+      const authResult = await signTransferWithAuthorization({
+        from: account,
+        to: requirements.payTo!,
+        value: requirements.amount!,
+        network: requirements.network!,
+        maxTimeoutSeconds: requirements.maxTimeoutSeconds ?? 60,
+      });
+
+      // Step 3: Submit signed payment
+      setInstantStep("submitting");
+      const payloadB64 = buildPaymentPayload(payReq, requirements, authResult);
+      const result = await submitInstantPayment(productId, payloadB64);
+
+      setInstantOrder(result);
+      setInstantStep("success");
+    } catch (e) {
+      setInstantError(e instanceof Error ? e.message : "Instant buy failed");
+      setInstantStep("error");
     }
   }
 
@@ -204,6 +272,68 @@ export default function ProductDetailPage() {
               </Link>
               <Link href="/dashboard/orders">
                 <Button variant="outline">All Orders</Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Instant buy completed successfully
+  if (instantOrder) {
+    const explorerBase = instantNetwork === "base"
+      ? "https://basescan.org/tx/"
+      : "https://sepolia.basescan.org/tx/";
+    return (
+      <div className="mx-auto max-w-6xl px-6 py-12 space-y-6">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-green-600">Purchase Complete!</h1>
+          <p className="text-muted-foreground mt-2">
+            Your instant purchase was successful. Here is your delivery content.
+          </p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Order Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-sm text-muted-foreground">Order Number</p>
+                <p className="font-mono">{instantOrder.order_no}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Status</p>
+                <Badge variant="default">{instantOrder.status}</Badge>
+              </div>
+            </div>
+
+            {instantOrder.tx_hash && (
+              <div>
+                <p className="text-sm text-muted-foreground">Transaction</p>
+                <a
+                  href={`${explorerBase}${instantOrder.tx_hash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline font-mono text-sm break-all"
+                >
+                  {instantOrder.tx_hash}
+                </a>
+              </div>
+            )}
+
+            <div className="border-t pt-4">
+              <p className="text-sm font-semibold mb-2">Delivery Content</p>
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="whitespace-pre-wrap text-sm">{instantOrder.delivery_content}</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Link href="/products">
+                <Button variant="outline">Back to Products</Button>
               </Link>
             </div>
           </CardContent>
@@ -337,34 +467,46 @@ export default function ProductDetailPage() {
                 </p>
               ) : product.payment_mode === "instant" ? (
                 <>
-                  <div className="p-3 bg-muted rounded-lg space-y-2">
-                    <h3 className="text-sm font-semibold">x402 Instant Purchase</h3>
-                    <p className="text-xs text-muted-foreground">
-                      This product supports instant purchase via the x402 protocol.
-                      AI Agents can buy it in a single HTTP request.
-                    </p>
-                    <div className="space-y-1 text-xs font-mono">
-                      <p>
-                        <span className="text-muted-foreground">Endpoint:</span>{" "}
-                        <code className="bg-background px-1 rounded">
-                          POST /api/v1/products/{product.id}/buy
-                        </code>
+                  {!hasEthereum ? (
+                    <div className="p-3 bg-muted rounded-lg space-y-2">
+                      <h3 className="text-sm font-semibold">MetaMask Required</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Install MetaMask to buy this product instantly with your browser wallet.
                       </p>
-                      <p>
-                        <span className="text-muted-foreground">Price:</span>{" "}
-                        ${product.price_usd?.toFixed(2)} USDC ({product.price_usdc?.toLocaleString()} micro-units)
-                      </p>
-                      <p>
-                        <span className="text-muted-foreground">Network:</span>{" "}
-                        Base Sepolia
-                      </p>
+                      <a
+                        href="https://metamask.io/download/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary text-xs hover:underline"
+                      >
+                        Get MetaMask
+                      </a>
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      {instantError && (
+                        <p className="text-sm text-destructive">{instantError}</p>
+                      )}
+                      <Button
+                        className="w-full"
+                        size="lg"
+                        onClick={handleInstantBuy}
+                        disabled={instantStep !== "idle" && instantStep !== "error"}
+                      >
+                        {instantStep === "connecting"
+                          ? "Connecting Wallet..."
+                          : instantStep === "signing"
+                            ? "Confirm in Wallet..."
+                            : instantStep === "submitting"
+                              ? "Processing Payment..."
+                              : instantStep === "error"
+                                ? "Try Again"
+                                : "Buy Instantly"}
+                      </Button>
+                    </>
+                  )}
                   <p className="text-xs text-muted-foreground text-center">
-                    No API key needed. Send a POST request — the first call returns
-                    402 with payment requirements in the PAYMENT-REQUIRED header.
-                    Include your payment proof in the PAYMENT-SIGNATURE header to
-                    complete the purchase.
+                    Pay with USDC via the x402 protocol. No API key needed.
                   </p>
                 </>
               ) : (

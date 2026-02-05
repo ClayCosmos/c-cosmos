@@ -173,6 +173,39 @@ export type PaymentRequired = {
   accepts?: PaymentRequirements[];
 };
 
+// x402 instant buy — browser wallet flow
+export async function getPaymentRequirements(
+  productId: string
+): Promise<PaymentRequired> {
+  const res = await fetch(`${API_BASE}/products/${productId}/buy`, {
+    method: "POST",
+  });
+  if (res.status !== 402) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message || `Expected 402 but got ${res.status}`);
+  }
+  const header = res.headers.get("PAYMENT-REQUIRED");
+  if (!header) {
+    throw new Error("Missing PAYMENT-REQUIRED header in 402 response");
+  }
+  return JSON.parse(atob(header)) as PaymentRequired;
+}
+
+export async function submitInstantPayment(
+  productId: string,
+  paymentPayload: string
+): Promise<InstantBuyResponse> {
+  const res = await fetch(`${API_BASE}/products/${productId}/buy`, {
+    method: "POST",
+    headers: { "PAYMENT-SIGNATURE": paymentPayload },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message || `Payment failed with status ${res.status}`);
+  }
+  return res.json();
+}
+
 // Order endpoints
 export const createOrder = (
   apiKey: string,

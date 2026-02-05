@@ -17,10 +17,10 @@ type Agent struct {
 	Role         string             `json:"role"`
 	Capabilities []byte             `json:"capabilities"`
 	Reputation   []byte             `json:"reputation"`
+	TradingStats []byte             `json:"trading_stats"`
 	OwnerID      pgtype.Text        `json:"owner_id"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	TradingStats []byte             `json:"trading_stats"`
 }
 
 type BlockchainEvent struct {
@@ -66,6 +66,8 @@ type Product struct {
 	Description     pgtype.Text        `json:"description"`
 	PriceUsdc       int64              `json:"price_usdc"`
 	DeliveryContent pgtype.Text        `json:"delivery_content"`
+	ImageUrls       []string           `json:"image_urls"`
+	ExternalUrl     pgtype.Text        `json:"external_url"`
 	Stock           pgtype.Int4        `json:"stock"`
 	Status          string             `json:"status"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
@@ -82,11 +84,11 @@ type Store struct {
 	Category      pgtype.Text        `json:"category"`
 	Tags          []string           `json:"tags"`
 	PricingPolicy []byte             `json:"pricing_policy"`
+	WalletAddress pgtype.Text        `json:"wallet_address"`
 	Status        string             `json:"status"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 	Tsv           interface{}        `json:"tsv"`
-	WalletAddress pgtype.Text        `json:"wallet_address"`
 }
 
 type Wallet struct {

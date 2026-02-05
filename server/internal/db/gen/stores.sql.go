@@ -14,7 +14,7 @@ import (
 const createStore = `-- name: CreateStore :one
 INSERT INTO stores (agent_id, name, slug, description, category, tags, pricing_policy)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, agent_id, name, slug, description, category, tags, pricing_policy, status, created_at, updated_at, tsv, wallet_address
+RETURNING id, agent_id, name, slug, description, category, tags, pricing_policy, wallet_address, status, created_at, updated_at, tsv
 `
 
 type CreateStoreParams struct {
@@ -47,17 +47,17 @@ func (q *Queries) CreateStore(ctx context.Context, arg CreateStoreParams) (Store
 		&i.Category,
 		&i.Tags,
 		&i.PricingPolicy,
+		&i.WalletAddress,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Tsv,
-		&i.WalletAddress,
 	)
 	return i, err
 }
 
 const getStoreByAgent = `-- name: GetStoreByAgent :one
-SELECT id, agent_id, name, slug, description, category, tags, pricing_policy, status, created_at, updated_at, tsv, wallet_address FROM stores WHERE agent_id = $1 LIMIT 1
+SELECT id, agent_id, name, slug, description, category, tags, pricing_policy, wallet_address, status, created_at, updated_at, tsv FROM stores WHERE agent_id = $1 LIMIT 1
 `
 
 func (q *Queries) GetStoreByAgent(ctx context.Context, agentID pgtype.UUID) (Store, error) {
@@ -72,17 +72,17 @@ func (q *Queries) GetStoreByAgent(ctx context.Context, agentID pgtype.UUID) (Sto
 		&i.Category,
 		&i.Tags,
 		&i.PricingPolicy,
+		&i.WalletAddress,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Tsv,
-		&i.WalletAddress,
 	)
 	return i, err
 }
 
 const getStoreByID = `-- name: GetStoreByID :one
-SELECT id, agent_id, name, slug, description, category, tags, pricing_policy, status, created_at, updated_at, tsv, wallet_address FROM stores WHERE id = $1
+SELECT id, agent_id, name, slug, description, category, tags, pricing_policy, wallet_address, status, created_at, updated_at, tsv FROM stores WHERE id = $1
 `
 
 func (q *Queries) GetStoreByID(ctx context.Context, id pgtype.UUID) (Store, error) {
@@ -97,17 +97,17 @@ func (q *Queries) GetStoreByID(ctx context.Context, id pgtype.UUID) (Store, erro
 		&i.Category,
 		&i.Tags,
 		&i.PricingPolicy,
+		&i.WalletAddress,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Tsv,
-		&i.WalletAddress,
 	)
 	return i, err
 }
 
 const getStoreBySlug = `-- name: GetStoreBySlug :one
-SELECT id, agent_id, name, slug, description, category, tags, pricing_policy, status, created_at, updated_at, tsv, wallet_address FROM stores WHERE slug = $1
+SELECT id, agent_id, name, slug, description, category, tags, pricing_policy, wallet_address, status, created_at, updated_at, tsv FROM stores WHERE slug = $1
 `
 
 func (q *Queries) GetStoreBySlug(ctx context.Context, slug string) (Store, error) {
@@ -122,17 +122,17 @@ func (q *Queries) GetStoreBySlug(ctx context.Context, slug string) (Store, error
 		&i.Category,
 		&i.Tags,
 		&i.PricingPolicy,
+		&i.WalletAddress,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Tsv,
-		&i.WalletAddress,
 	)
 	return i, err
 }
 
 const listStores = `-- name: ListStores :many
-SELECT id, agent_id, name, slug, description, category, tags, pricing_policy, status, created_at, updated_at, tsv, wallet_address FROM stores WHERE status = 'active' ORDER BY created_at DESC LIMIT $1 OFFSET $2
+SELECT id, agent_id, name, slug, description, category, tags, pricing_policy, wallet_address, status, created_at, updated_at, tsv FROM stores WHERE status = 'active' ORDER BY created_at DESC LIMIT $1 OFFSET $2
 `
 
 type ListStoresParams struct {
@@ -158,11 +158,11 @@ func (q *Queries) ListStores(ctx context.Context, arg ListStoresParams) ([]Store
 			&i.Category,
 			&i.Tags,
 			&i.PricingPolicy,
+			&i.WalletAddress,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Tsv,
-			&i.WalletAddress,
 		); err != nil {
 			return nil, err
 		}
@@ -175,7 +175,7 @@ func (q *Queries) ListStores(ctx context.Context, arg ListStoresParams) ([]Store
 }
 
 const listStoresByAgent = `-- name: ListStoresByAgent :many
-SELECT id, agent_id, name, slug, description, category, tags, pricing_policy, status, created_at, updated_at, tsv, wallet_address FROM stores WHERE agent_id = $1 ORDER BY created_at DESC
+SELECT id, agent_id, name, slug, description, category, tags, pricing_policy, wallet_address, status, created_at, updated_at, tsv FROM stores WHERE agent_id = $1 ORDER BY created_at DESC
 `
 
 func (q *Queries) ListStoresByAgent(ctx context.Context, agentID pgtype.UUID) ([]Store, error) {
@@ -196,11 +196,11 @@ func (q *Queries) ListStoresByAgent(ctx context.Context, agentID pgtype.UUID) ([
 			&i.Category,
 			&i.Tags,
 			&i.PricingPolicy,
+			&i.WalletAddress,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Tsv,
-			&i.WalletAddress,
 		); err != nil {
 			return nil, err
 		}
@@ -213,7 +213,7 @@ func (q *Queries) ListStoresByAgent(ctx context.Context, agentID pgtype.UUID) ([
 }
 
 const listStoresByCategory = `-- name: ListStoresByCategory :many
-SELECT id, agent_id, name, slug, description, category, tags, pricing_policy, status, created_at, updated_at, tsv, wallet_address FROM stores WHERE status = 'active' AND category = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3
+SELECT id, agent_id, name, slug, description, category, tags, pricing_policy, wallet_address, status, created_at, updated_at, tsv FROM stores WHERE status = 'active' AND category = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3
 `
 
 type ListStoresByCategoryParams struct {
@@ -240,11 +240,11 @@ func (q *Queries) ListStoresByCategory(ctx context.Context, arg ListStoresByCate
 			&i.Category,
 			&i.Tags,
 			&i.PricingPolicy,
+			&i.WalletAddress,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Tsv,
-			&i.WalletAddress,
 		); err != nil {
 			return nil, err
 		}
@@ -266,7 +266,7 @@ UPDATE stores SET
   status = coalesce($8, status),
   updated_at = now()
 WHERE slug = $1 AND agent_id = $2
-RETURNING id, agent_id, name, slug, description, category, tags, pricing_policy, status, created_at, updated_at, tsv, wallet_address
+RETURNING id, agent_id, name, slug, description, category, tags, pricing_policy, wallet_address, status, created_at, updated_at, tsv
 `
 
 type UpdateStoreParams struct {
@@ -301,11 +301,11 @@ func (q *Queries) UpdateStore(ctx context.Context, arg UpdateStoreParams) (Store
 		&i.Category,
 		&i.Tags,
 		&i.PricingPolicy,
+		&i.WalletAddress,
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Tsv,
-		&i.WalletAddress,
 	)
 	return i, err
 }

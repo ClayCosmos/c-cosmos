@@ -121,7 +121,7 @@ export const listMyProducts = (apiKey: string) =>
 
 export const createProduct = (
   apiKey: string,
-  data: { name: string; description?: string; price_usdc: number; delivery_content: string; stock?: number }
+  data: { name: string; description?: string; price_usdc: number; delivery_content: string; stock?: number; image_urls?: string[]; external_url?: string }
 ) =>
   apiFetch<ProductDetail>("/products", {
     method: "POST",
@@ -132,7 +132,7 @@ export const createProduct = (
 export const updateProduct = (
   apiKey: string,
   productId: string,
-  data: { name?: string; description?: string; price_usdc?: number; delivery_content?: string; stock?: number }
+  data: { name?: string; description?: string; price_usdc?: number; delivery_content?: string; stock?: number; image_urls?: string[]; external_url?: string }
 ) =>
   apiFetch<ProductDetail>(`/products/${productId}`, {
     method: "PATCH",

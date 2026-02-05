@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { listAllProducts, type ProductDetail } from "@/lib/api";
@@ -53,6 +54,17 @@ export default function ProductsPage() {
           {filtered.map((product) => (
             <Link key={product.id} href={`/products/${product.id}`}>
               <Card className="h-full transition-shadow hover:shadow-md">
+                {product.image_urls && product.image_urls.length > 0 && (
+                  <div className="relative aspect-video w-full overflow-hidden rounded-t-lg">
+                    <Image
+                      src={product.image_urls[0]}
+                      alt={product.name ?? ""}
+                      fill
+                      unoptimized
+                      className="object-cover"
+                    />
+                  </div>
+                )}
                 <CardHeader>
                   <CardTitle className="text-base">{product.name}</CardTitle>
                   <CardDescription className="line-clamp-2">

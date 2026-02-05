@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -29,6 +30,8 @@ export default function ProductsPage() {
   const [priceUsd, setPriceUsd] = useState("");
   const [deliveryContent, setDeliveryContent] = useState("");
   const [stock, setStock] = useState("-1");
+  const [imageUrls, setImageUrls] = useState("");
+  const [externalUrl, setExternalUrl] = useState("");
 
   const loadProducts = useCallback(async () => {
     if (!apiKey) return;
@@ -60,12 +63,19 @@ export default function ProductsPage() {
         throw new Error("Invalid price");
       }
 
+      const parsedImageUrls = imageUrls
+        .split("\n")
+        .map((u) => u.trim())
+        .filter(Boolean);
+
       await createProduct(apiKey!, {
         name,
         description: description || undefined,
         price_usdc: priceUsdc,
         delivery_content: deliveryContent,
         stock: stock ? parseInt(stock, 10) : undefined,
+        image_urls: parsedImageUrls.length > 0 ? parsedImageUrls : undefined,
+        external_url: externalUrl || undefined,
       });
 
       setShowForm(false);
@@ -74,6 +84,8 @@ export default function ProductsPage() {
       setPriceUsd("");
       setDeliveryContent("");
       setStock("-1");
+      setImageUrls("");
+      setExternalUrl("");
       loadProducts();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create product");
@@ -175,6 +187,26 @@ export default function ProductsPage() {
                 </div>
               </div>
               <div>
+                <label className="text-sm font-medium">Image URLs</label>
+                <Textarea
+                  value={imageUrls}
+                  onChange={(e) => setImageUrls(e.target.value)}
+                  placeholder="One URL per line"
+                  rows={2}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  One image URL per line
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">External URL</label>
+                <Input
+                  value={externalUrl}
+                  onChange={(e) => setExternalUrl(e.target.value)}
+                  placeholder="https://example.com"
+                />
+              </div>
+              <div>
                 <label className="text-sm font-medium">Delivery Content *</label>
                 <Textarea
                   value={deliveryContent}
@@ -213,6 +245,16 @@ export default function ProductsPage() {
             <Card key={product.id}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-4">
+                  {product.image_urls && product.image_urls.length > 0 && (
+                    <Image
+                      src={product.image_urls[0]}
+                      alt={product.name ?? ""}
+                      width={64}
+                      height={64}
+                      unoptimized
+                      className="h-16 w-16 rounded object-cover flex-shrink-0"
+                    />
+                  )}
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium">{product.name}</h3>
@@ -233,6 +275,16 @@ export default function ProductsPage() {
                     <p className="text-sm text-muted-foreground">
                       Stock: {product.stock === -1 ? "Unlimited" : product.stock}
                     </p>
+                    {product.external_url && (
+                      <a
+                        href={product.external_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline mt-1 inline-block"
+                      >
+                        External link
+                      </a>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button

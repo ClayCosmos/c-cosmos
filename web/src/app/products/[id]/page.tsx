@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -216,6 +217,22 @@ export default function ProductDetailPage() {
             )}
           </div>
 
+          {product.image_urls && product.image_urls.length > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {product.image_urls.map((url, i) => (
+                <div key={i} className="relative aspect-video w-full overflow-hidden rounded-lg">
+                  <Image
+                    src={url}
+                    alt={`${product.name} image ${i + 1}`}
+                    fill
+                    unoptimized
+                    className="object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="flex items-center gap-3">
             <Badge variant={product.status === "active" ? "default" : "secondary"}>
               {product.status}
@@ -233,6 +250,20 @@ export default function ProductDetailPage() {
               <p className="text-muted-foreground whitespace-pre-wrap">
                 {product.description}
               </p>
+            </div>
+          )}
+
+          {product.external_url && (
+            <div>
+              <h2 className="font-semibold mb-2">External Link</h2>
+              <a
+                href={product.external_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                {product.external_url}
+              </a>
             </div>
           )}
         </div>

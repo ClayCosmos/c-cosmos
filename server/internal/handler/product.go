@@ -26,19 +26,23 @@ func NewProductHandler(pool *pgxpool.Pool) *ProductHandler {
 }
 
 type CreateProductRequest struct {
-	Name            string `json:"name" binding:"required,max=256"`
-	Description     string `json:"description"`
-	PriceUSDC       int64  `json:"price_usdc" binding:"required,min=1"`
-	DeliveryContent string `json:"delivery_content" binding:"required"`
-	Stock           *int32 `json:"stock"`
+	Name            string   `json:"name" binding:"required,max=256"`
+	Description     string   `json:"description"`
+	PriceUSDC       int64    `json:"price_usdc" binding:"required,min=1"`
+	DeliveryContent string   `json:"delivery_content" binding:"required"`
+	Stock           *int32   `json:"stock"`
+	ImageURLs       []string `json:"image_urls"`
+	ExternalURL     string   `json:"external_url"`
 }
 
 type UpdateProductRequest struct {
-	Name            *string `json:"name"`
-	Description     *string `json:"description"`
-	PriceUSDC       *int64  `json:"price_usdc"`
-	DeliveryContent *string `json:"delivery_content"`
-	Stock           *int32  `json:"stock"`
+	Name            *string   `json:"name"`
+	Description     *string   `json:"description"`
+	PriceUSDC       *int64    `json:"price_usdc"`
+	DeliveryContent *string   `json:"delivery_content"`
+	Stock           *int32    `json:"stock"`
+	ImageURLs       *[]string `json:"image_urls"`
+	ExternalURL     *string   `json:"external_url"`
 }
 
 type ProductResponse struct {
@@ -49,6 +53,8 @@ type ProductResponse struct {
 	Description string    `json:"description"`
 	PriceUSDC   int64     `json:"price_usdc"`
 	PriceUSD    float64   `json:"price_usd"`
+	ImageURLs   []string  `json:"image_urls"`
+	ExternalURL string    `json:"external_url,omitempty"`
 	Stock       int32     `json:"stock"`
 	Status      string    `json:"status"`
 	CreatedAt   time.Time `json:"created_at"`
@@ -99,6 +105,8 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		Description:     pgtype.Text{String: req.Description, Valid: req.Description != ""},
 		PriceUsdc:       req.PriceUSDC,
 		DeliveryContent: pgtype.Text{String: req.DeliveryContent, Valid: true},
+		ImageUrls:       req.ImageURLs,
+		ExternalUrl:     pgtype.Text{String: req.ExternalURL, Valid: req.ExternalURL != ""},
 		Stock:           pgtype.Int4{Int32: stock, Valid: true},
 		Status:          "active",
 	})
@@ -183,6 +191,10 @@ func (h *ProductHandler) ListAllProducts(c *gin.Context) {
 
 	resp := make([]ProductDetailResponse, len(products))
 	for i, p := range products {
+		imageURLs := p.ImageUrls
+		if imageURLs == nil {
+			imageURLs = []string{}
+		}
 		resp[i] = ProductDetailResponse{
 			ProductResponse: ProductResponse{
 				ID:          pgtypeUUIDToString(p.ID),
@@ -192,6 +204,8 @@ func (h *ProductHandler) ListAllProducts(c *gin.Context) {
 				Description: p.Description.String,
 				PriceUSDC:   p.PriceUsdc,
 				PriceUSD:    float64(p.PriceUsdc) / 1_000_000,
+				ImageURLs:   imageURLs,
+				ExternalURL: p.ExternalUrl.String,
 				Stock:       p.Stock.Int32,
 				Status:      p.Status,
 				CreatedAt:   p.CreatedAt.Time,
@@ -272,6 +286,12 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	if req.DeliveryContent != nil {
 		params.DeliveryContent = pgtype.Text{String: *req.DeliveryContent, Valid: true}
 	}
+	if req.ImageURLs != nil {
+		params.ImageUrls = *req.ImageURLs
+	}
+	if req.ExternalURL != nil {
+		params.ExternalUrl = pgtype.Text{String: *req.ExternalURL, Valid: true}
+	}
 	if req.Stock != nil {
 		params.Stock = pgtype.Int4{Int32: *req.Stock, Valid: true}
 	}
@@ -337,6 +357,10 @@ func pgtypeUUIDToString(u pgtype.UUID) string {
 }
 
 func toProductResp(p gen.Product) ProductResponse {
+	imageURLs := p.ImageUrls
+	if imageURLs == nil {
+		imageURLs = []string{}
+	}
 	return ProductResponse{
 		ID:          pgtypeUUIDToString(p.ID),
 		StoreID:     pgtypeUUIDToString(p.StoreID),
@@ -345,6 +369,8 @@ func toProductResp(p gen.Product) ProductResponse {
 		Description: p.Description.String,
 		PriceUSDC:   p.PriceUsdc,
 		PriceUSD:    float64(p.PriceUsdc) / 1_000_000,
+		ImageURLs:   imageURLs,
+		ExternalURL: p.ExternalUrl.String,
 		Stock:       p.Stock.Int32,
 		Status:      p.Status,
 		CreatedAt:   p.CreatedAt.Time,

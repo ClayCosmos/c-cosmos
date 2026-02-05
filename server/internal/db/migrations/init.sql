@@ -77,6 +77,8 @@ CREATE TABLE products (
     description      TEXT,
     price_usdc       BIGINT NOT NULL,        -- in smallest unit (1 USDC = 1000000)
     delivery_content TEXT,                   -- content delivered after payment
+    image_urls       TEXT[],                 -- product image URLs
+    external_url     TEXT,                   -- external link (may be off-site)
     stock            INTEGER DEFAULT -1,     -- -1 = unlimited
     status           VARCHAR(16) NOT NULL DEFAULT 'active',
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),

@@ -84,7 +84,9 @@
       "Bash(find:*)",
       "Bash(forge build:*)",
       "Bash(~/.foundry/bin/forge build:*)",
-      "Bash(~/.foundry/bin/forge test:*)"
+      "Bash(~/.foundry/bin/forge test:*)",
+      "Bash(sqlc version:*)",
+      "Bash(./node_modules/.bin/openapi-typescript:*)"
     ]
   }
 }

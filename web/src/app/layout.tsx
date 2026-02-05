@@ -47,6 +47,17 @@ export default function RootLayout({
             <NavLinks />
           </div>
         </nav>
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-sm text-center py-2 px-4">
+          Testnet Mode — Transactions use Base Sepolia test network.{" "}
+          <a
+            href="https://sepolia.basescan.org/address/0x42f8E9D601911aA7ED415A9657a5F955E1D443c3"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-amber-900"
+          >
+            View Contract
+          </a>
+        </div>
         <main className="flex-1">{children}</main>
         <footer className="border-t bg-secondary/50">
           <div className="mx-auto max-w-6xl px-6 py-12">

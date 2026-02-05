@@ -84,7 +84,7 @@ export default function OrderDetailPage() {
 
   if (authLoading) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-12">
+      <div className="mx-auto max-w-6xl px-6 py-12">
         <p className="text-muted-foreground">Loading...</p>
       </div>
     );
@@ -92,7 +92,7 @@ export default function OrderDetailPage() {
 
   if (!isConnected) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-12">
+      <div className="mx-auto max-w-6xl px-6 py-12">
         <p className="text-muted-foreground">
           Please <Link href="/dashboard" className="text-primary hover:underline">connect</Link> your API key first.
         </p>
@@ -102,7 +102,7 @@ export default function OrderDetailPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-12">
+      <div className="mx-auto max-w-6xl px-6 py-12">
         <p className="text-muted-foreground">Loading order...</p>
       </div>
     );
@@ -110,7 +110,7 @@ export default function OrderDetailPage() {
 
   if (error || !order) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-12 space-y-4">
+      <div className="mx-auto max-w-6xl px-6 py-12 space-y-4">
         <p className="text-destructive">{error || "Order not found"}</p>
         <Link href="/dashboard/orders">
           <Button variant="outline">Back to Orders</Button>
@@ -121,7 +121,7 @@ export default function OrderDetailPage() {
 
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 px-6 py-12">
+    <div className="mx-auto max-w-6xl space-y-6 px-6 py-12">
       <div className="flex items-center gap-4">
         <Link href="/dashboard/orders">
           <Button variant="ghost" size="sm">

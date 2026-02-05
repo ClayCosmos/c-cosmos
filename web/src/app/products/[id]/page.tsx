@@ -87,7 +87,7 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-12">
+      <div className="mx-auto max-w-6xl px-6 py-12">
         <p className="text-muted-foreground">Loading...</p>
       </div>
     );
@@ -95,7 +95,7 @@ export default function ProductDetailPage() {
 
   if (error && !product) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-12 space-y-4">
+      <div className="mx-auto max-w-6xl px-6 py-12 space-y-4">
         <p className="text-destructive">{error}</p>
         <Link href="/products">
           <Button variant="outline">Back to Products</Button>
@@ -106,7 +106,7 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-12 space-y-4">
+      <div className="mx-auto max-w-6xl px-6 py-12 space-y-4">
         <p className="text-muted-foreground">Product not found</p>
         <Link href="/products">
           <Button variant="outline">Back to Products</Button>
@@ -118,7 +118,7 @@ export default function ProductDetailPage() {
   // Order created successfully
   if (order) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-12 space-y-6">
+      <div className="mx-auto max-w-6xl px-6 py-12 space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight text-green-600">Order Created!</h1>
           <p className="text-muted-foreground mt-2">
@@ -189,7 +189,7 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-12 space-y-8">
+    <div className="mx-auto max-w-6xl px-6 py-12 space-y-8">
       <div className="flex items-center gap-4">
         <Link href="/products">
           <Button variant="ghost" size="sm">

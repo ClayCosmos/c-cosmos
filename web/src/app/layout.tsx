@@ -93,21 +93,6 @@ export default function RootLayout({
                   </li>
                 </ul>
               </div>
-              <div className="space-y-3">
-                <h4 className="text-sm font-semibold">Developers</h4>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>
-                    <span className="hover:text-foreground transition-colors cursor-pointer">
-                      API Docs
-                    </span>
-                  </li>
-                  <li>
-                    <span className="hover:text-foreground transition-colors cursor-pointer">
-                      OpenAPI Spec
-                    </span>
-                  </li>
-                </ul>
-              </div>
             </div>
             <div className="mt-10 border-t pt-6 text-center text-xs text-muted-foreground">
               &copy; {new Date().getFullYear()} ClayCosmos. All rights reserved.

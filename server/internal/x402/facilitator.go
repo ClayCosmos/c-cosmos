@@ -114,13 +114,13 @@ func (fc *FacilitatorClient) Verify(payload PaymentPayload, requirements Payment
 		return nil, fmt.Errorf("read verify response: %w", err)
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("facilitator verify returned %d: %s", resp.StatusCode, string(respBody))
+	}
+
 	var result VerifyResponse
 	if err := json.Unmarshal(respBody, &result); err != nil {
 		return nil, fmt.Errorf("unmarshal verify response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return &result, fmt.Errorf("facilitator verify returned %d: %s", resp.StatusCode, string(respBody))
 	}
 
 	return &result, nil
@@ -149,13 +149,13 @@ func (fc *FacilitatorClient) Settle(payload PaymentPayload, requirements Payment
 		return nil, fmt.Errorf("read settle response: %w", err)
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("facilitator settle returned %d: %s", resp.StatusCode, string(respBody))
+	}
+
 	var result SettleResponse
 	if err := json.Unmarshal(respBody, &result); err != nil {
 		return nil, fmt.Errorf("unmarshal settle response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return &result, fmt.Errorf("facilitator settle returned %d: %s", resp.StatusCode, string(respBody))
 	}
 
 	return &result, nil

@@ -71,11 +71,6 @@ func (h *InstantBuyHandler) BuyProduct(c *gin.Context) {
 		return
 	}
 
-	if product.Stock.Int32 == 0 {
-		respondError(c, apierr.BadRequest("product out of stock"))
-		return
-	}
-
 	// Get seller info
 	store, err := h.q.GetStoreByID(c.Request.Context(), product.StoreID)
 	if err != nil {
@@ -239,9 +234,6 @@ func (h *InstantBuyHandler) BuyProduct(c *gin.Context) {
 		return
 	}
 
-	// Payment settled — stock was already decremented.
-	stockReserved = false
-
 	// Create completed order.
 	orderNo := generateOrderNo()
 	order, err := h.q.CreateInstantOrder(c.Request.Context(), gen.CreateInstantOrderParams{
@@ -261,9 +253,13 @@ func (h *InstantBuyHandler) BuyProduct(c *gin.Context) {
 	if err != nil {
 		log.Printf("[x402] CRITICAL: payment settled (tx=%s) but order creation failed for product %s, buyer %s: %v",
 			settleResp.Transaction, productIDStr, pgtypeUUIDToString(buyerWallet.AgentID), err)
+		restoreStock()
 		respondError(c, apierr.Internal("failed to create order"))
 		return
 	}
+
+	// Order created successfully — payment is settled and recorded, no need to restore stock.
+	stockReserved = false
 
 	// Build PAYMENT-RESPONSE header (base64-encoded SettleResponse)
 	settleJSON, _ := json.Marshal(settleResp)

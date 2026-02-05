@@ -9,6 +9,7 @@ export type Wallet = components["schemas"]["Wallet"];
 export type Product = components["schemas"]["Product"];
 export type ProductDetail = components["schemas"]["ProductDetail"];
 export type Order = components["schemas"]["Order"];
+export type ShippingAddress = components["schemas"]["ShippingAddress"];
 
 // Search result type (updated: stores + products instead of feeds)
 export type SearchResult = {
@@ -121,7 +122,7 @@ export const listMyProducts = (apiKey: string) =>
 
 export const createProduct = (
   apiKey: string,
-  data: { name: string; description?: string; price_usdc: number; delivery_content: string; stock?: number; image_urls?: string[]; external_url?: string }
+  data: { name: string; description?: string; price_usdc: number; delivery_content: string; stock?: number; image_urls?: string[]; external_url?: string; requires_shipping?: boolean }
 ) =>
   apiFetch<ProductDetail>("/products", {
     method: "POST",
@@ -132,7 +133,7 @@ export const createProduct = (
 export const updateProduct = (
   apiKey: string,
   productId: string,
-  data: { name?: string; description?: string; price_usdc?: number; delivery_content?: string; stock?: number; image_urls?: string[]; external_url?: string }
+  data: { name?: string; description?: string; price_usdc?: number; delivery_content?: string; stock?: number; image_urls?: string[]; external_url?: string; requires_shipping?: boolean }
 ) =>
   apiFetch<ProductDetail>(`/products/${productId}`, {
     method: "PATCH",
@@ -151,7 +152,8 @@ export const createOrder = (
   apiKey: string,
   productId: string,
   buyerWallet: string,
-  deadlineDays?: number
+  deadlineDays?: number,
+  shippingAddress?: ShippingAddress
 ) =>
   apiFetch<Order>("/orders", {
     method: "POST",
@@ -160,6 +162,7 @@ export const createOrder = (
       product_id: productId,
       buyer_wallet: buyerWallet,
       deadline_days: deadlineDays,
+      shipping_address: shippingAddress,
     }),
   });
 

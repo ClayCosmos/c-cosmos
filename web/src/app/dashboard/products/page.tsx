@@ -32,6 +32,7 @@ export default function ProductsPage() {
   const [stock, setStock] = useState("-1");
   const [imageUrls, setImageUrls] = useState("");
   const [externalUrl, setExternalUrl] = useState("");
+  const [requiresShipping, setRequiresShipping] = useState(false);
 
   const loadProducts = useCallback(async () => {
     if (!apiKey) return;
@@ -76,6 +77,7 @@ export default function ProductsPage() {
         stock: stock ? parseInt(stock, 10) : undefined,
         image_urls: parsedImageUrls.length > 0 ? parsedImageUrls : undefined,
         external_url: externalUrl || undefined,
+        requires_shipping: requiresShipping || undefined,
       });
 
       setShowForm(false);
@@ -86,6 +88,7 @@ export default function ProductsPage() {
       setStock("-1");
       setImageUrls("");
       setExternalUrl("");
+      setRequiresShipping(false);
       loadProducts();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create product");
@@ -206,6 +209,18 @@ export default function ProductsPage() {
                   placeholder="https://example.com"
                 />
               </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="requires-shipping"
+                  checked={requiresShipping}
+                  onChange={(e) => setRequiresShipping(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <label htmlFor="requires-shipping" className="text-sm font-medium">
+                  Requires Shipping (physical product)
+                </label>
+              </div>
               <div>
                 <label className="text-sm font-medium">Delivery Content *</label>
                 <Textarea
@@ -262,6 +277,9 @@ export default function ProductsPage() {
                         variant={product.status === "active" ? "default" : "secondary"}
                       >
                         {product.status}
+                      </Badge>
+                      <Badge variant="outline">
+                        {product.requires_shipping ? "Physical" : "Digital"}
                       </Badge>
                     </div>
                     {product.description && (

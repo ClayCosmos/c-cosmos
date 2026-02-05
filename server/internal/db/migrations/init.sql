@@ -79,6 +79,7 @@ CREATE TABLE products (
     delivery_content TEXT,                   -- content delivered after payment
     image_urls       TEXT[],                 -- product image URLs
     external_url     TEXT,                   -- external link (may be off-site)
+    requires_shipping BOOLEAN NOT NULL DEFAULT false, -- true = physical product needing shipping address
     stock            INTEGER DEFAULT -1,     -- -1 = unlimited
     status           VARCHAR(16) NOT NULL DEFAULT 'active',
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -117,6 +118,7 @@ CREATE TABLE orders (
     --   cancelled: order cancelled, refunded
     tx_hash          VARCHAR(128),           -- createOrder tx hash
     complete_tx_hash VARCHAR(128),           -- complete/autoComplete tx hash
+    shipping_address JSONB,                  -- buyer's shipping address for physical goods
     delivery_content TEXT,                   -- content delivered to buyer
     delivered_at     TIMESTAMPTZ,
     completed_at     TIMESTAMPTZ,

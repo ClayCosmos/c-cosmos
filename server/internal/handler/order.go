@@ -3,6 +3,7 @@ package handler
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -35,32 +36,46 @@ func NewOrderHandler(pool *pgxpool.Pool, escrowContract string) *OrderHandler {
 	return &OrderHandler{pool: pool, q: gen.New(pool), escrowContract: escrowContract}
 }
 
+type ShippingAddress struct {
+	RecipientName string `json:"recipient_name"`
+	Phone         string `json:"phone"`
+	AddressLine1  string `json:"address_line1"`
+	AddressLine2  string `json:"address_line2,omitempty"`
+	City          string `json:"city"`
+	State         string `json:"state,omitempty"`
+	Country       string `json:"country"`
+	PostalCode    string `json:"postal_code"`
+	Notes         string `json:"notes,omitempty"`
+}
+
 type CreateOrderRequest struct {
-	ProductID    string `json:"product_id" binding:"required"`
-	BuyerWallet  string `json:"buyer_wallet" binding:"required"`
-	DeadlineDays *int   `json:"deadline_days"` // optional, default 7 days
+	ProductID       string           `json:"product_id" binding:"required"`
+	BuyerWallet     string           `json:"buyer_wallet" binding:"required"`
+	DeadlineDays    *int             `json:"deadline_days"`
+	ShippingAddress *ShippingAddress `json:"shipping_address"`
 }
 
 type OrderResponse struct {
-	ID              string    `json:"id"`
-	OrderNo         string    `json:"order_no"`
-	ProductID       string    `json:"product_id"`
-	ProductName     string    `json:"product_name"`
-	BuyerAgentID    string    `json:"buyer_agent_id"`
-	SellerAgentID   string    `json:"seller_agent_id"`
-	BuyerWallet     string    `json:"buyer_wallet"`
-	SellerWallet    string    `json:"seller_wallet"`
-	AmountUSDC      int64     `json:"amount_usdc"`
-	AmountUSD       float64   `json:"amount_usd"`
-	EscrowOrderID   string    `json:"escrow_order_id"`
-	EscrowContract  string    `json:"escrow_contract"`
-	Status          string    `json:"status"`
-	TxHash          string    `json:"tx_hash,omitempty"`
-	DeliveryContent string    `json:"delivery_content,omitempty"`
-	DeliveredAt     *string   `json:"delivered_at,omitempty"`
-	CompletedAt     *string   `json:"completed_at,omitempty"`
-	Deadline        time.Time `json:"deadline"`
-	CreatedAt       time.Time `json:"created_at"`
+	ID              string           `json:"id"`
+	OrderNo         string           `json:"order_no"`
+	ProductID       string           `json:"product_id"`
+	ProductName     string           `json:"product_name"`
+	BuyerAgentID    string           `json:"buyer_agent_id"`
+	SellerAgentID   string           `json:"seller_agent_id"`
+	BuyerWallet     string           `json:"buyer_wallet"`
+	SellerWallet    string           `json:"seller_wallet"`
+	AmountUSDC      int64            `json:"amount_usdc"`
+	AmountUSD       float64          `json:"amount_usd"`
+	EscrowOrderID   string           `json:"escrow_order_id"`
+	EscrowContract  string           `json:"escrow_contract"`
+	Status          string           `json:"status"`
+	TxHash          string           `json:"tx_hash,omitempty"`
+	ShippingAddress *ShippingAddress `json:"shipping_address,omitempty"`
+	DeliveryContent string           `json:"delivery_content,omitempty"`
+	DeliveredAt     *string          `json:"delivered_at,omitempty"`
+	CompletedAt     *string          `json:"completed_at,omitempty"`
+	Deadline        time.Time        `json:"deadline"`
+	CreatedAt       time.Time        `json:"created_at"`
 }
 
 // CreateOrder creates a new order
@@ -126,6 +141,26 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	// Generate escrow order ID (bytes32)
 	escrowOrderID := generateEscrowOrderID()
 
+	// Validate shipping address for physical products
+	var shippingAddrJSON []byte
+	if product.RequiresShipping {
+		if req.ShippingAddress == nil {
+			respondError(c, apierr.BadRequest("shipping address is required for this product"))
+			return
+		}
+		addr := req.ShippingAddress
+		if addr.RecipientName == "" || addr.Phone == "" || addr.AddressLine1 == "" || addr.City == "" || addr.Country == "" || addr.PostalCode == "" {
+			respondError(c, apierr.BadRequest("shipping address must include recipient_name, phone, address_line1, city, country, and postal_code"))
+			return
+		}
+		data, marshalErr := json.Marshal(addr)
+		if marshalErr != nil {
+			respondError(c, apierr.Internal("failed to encode shipping address"))
+			return
+		}
+		shippingAddrJSON = data
+	}
+
 	// Calculate deadline
 	deadlineDays := DefaultDeadlineDays
 	if req.DeadlineDays != nil && *req.DeadlineDays > 0 {
@@ -135,17 +170,18 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 
 	// Create order
 	order, err := h.q.CreateOrder(c.Request.Context(), gen.CreateOrderParams{
-		OrderNo:       orderNo,
-		ProductID:     product.ID,
-		BuyerAgentID:  agent.ID,
-		SellerAgentID: store.AgentID,
-		BuyerWallet:   req.BuyerWallet,
-		SellerWallet:  sellerWallet.Address,
-		AmountUsdc:    product.PriceUsdc,
-		EscrowOrderID: escrowOrderID,
-		EscrowContract: h.escrowContract,
-		Status:        "pending",
-		Deadline:      pgtype.Timestamptz{Time: deadline, Valid: true},
+		OrderNo:         orderNo,
+		ProductID:       product.ID,
+		BuyerAgentID:    agent.ID,
+		SellerAgentID:   store.AgentID,
+		BuyerWallet:     req.BuyerWallet,
+		SellerWallet:    sellerWallet.Address,
+		AmountUsdc:      product.PriceUsdc,
+		EscrowOrderID:   escrowOrderID,
+		EscrowContract:  h.escrowContract,
+		Status:          "pending",
+		Deadline:        pgtype.Timestamptz{Time: deadline, Valid: true},
+		ShippingAddress: shippingAddrJSON,
 	})
 	if err != nil {
 		respondError(c, apierr.Internal("failed to create order: "+err.Error()))
@@ -396,23 +432,35 @@ func generateEscrowOrderID() string {
 	return "0x" + hex.EncodeToString(b)
 }
 
+func parseShippingAddress(data []byte) *ShippingAddress {
+	if len(data) == 0 {
+		return nil
+	}
+	var addr ShippingAddress
+	if err := json.Unmarshal(data, &addr); err != nil {
+		return nil
+	}
+	return &addr
+}
+
 func toOrderResponse(o gen.Order, productName string) OrderResponse {
 	resp := OrderResponse{
-		ID:             pgtypeUUIDToString(o.ID),
-		OrderNo:        o.OrderNo,
-		ProductID:      pgtypeUUIDToString(o.ProductID),
-		ProductName:    productName,
-		BuyerAgentID:   pgtypeUUIDToString(o.BuyerAgentID),
-		SellerAgentID:  pgtypeUUIDToString(o.SellerAgentID),
-		BuyerWallet:    o.BuyerWallet,
-		SellerWallet:   o.SellerWallet,
-		AmountUSDC:     o.AmountUsdc,
-		AmountUSD:      float64(o.AmountUsdc) / 1_000_000,
-		EscrowOrderID:  o.EscrowOrderID,
-		EscrowContract: o.EscrowContract,
-		Status:         o.Status,
-		Deadline:       o.Deadline.Time,
-		CreatedAt:      o.CreatedAt.Time,
+		ID:              pgtypeUUIDToString(o.ID),
+		OrderNo:         o.OrderNo,
+		ProductID:       pgtypeUUIDToString(o.ProductID),
+		ProductName:     productName,
+		BuyerAgentID:    pgtypeUUIDToString(o.BuyerAgentID),
+		SellerAgentID:   pgtypeUUIDToString(o.SellerAgentID),
+		BuyerWallet:     o.BuyerWallet,
+		SellerWallet:    o.SellerWallet,
+		AmountUSDC:      o.AmountUsdc,
+		AmountUSD:       float64(o.AmountUsdc) / 1_000_000,
+		EscrowOrderID:   o.EscrowOrderID,
+		EscrowContract:  o.EscrowContract,
+		Status:          o.Status,
+		ShippingAddress: parseShippingAddress(o.ShippingAddress),
+		Deadline:        o.Deadline.Time,
+		CreatedAt:       o.CreatedAt.Time,
 	}
 
 	if o.TxHash.Valid {
@@ -432,21 +480,22 @@ func toOrderResponse(o gen.Order, productName string) OrderResponse {
 
 func toOrderResponseFromRow(o gen.ListOrdersByBuyerRow) OrderResponse {
 	resp := OrderResponse{
-		ID:             pgtypeUUIDToString(o.ID),
-		OrderNo:        o.OrderNo,
-		ProductID:      pgtypeUUIDToString(o.ProductID),
-		ProductName:    o.ProductName,
-		BuyerAgentID:   pgtypeUUIDToString(o.BuyerAgentID),
-		SellerAgentID:  pgtypeUUIDToString(o.SellerAgentID),
-		BuyerWallet:    o.BuyerWallet,
-		SellerWallet:   o.SellerWallet,
-		AmountUSDC:     o.AmountUsdc,
-		AmountUSD:      float64(o.AmountUsdc) / 1_000_000,
-		EscrowOrderID:  o.EscrowOrderID,
-		EscrowContract: o.EscrowContract,
-		Status:         o.Status,
-		Deadline:       o.Deadline.Time,
-		CreatedAt:      o.CreatedAt.Time,
+		ID:              pgtypeUUIDToString(o.ID),
+		OrderNo:         o.OrderNo,
+		ProductID:       pgtypeUUIDToString(o.ProductID),
+		ProductName:     o.ProductName,
+		BuyerAgentID:    pgtypeUUIDToString(o.BuyerAgentID),
+		SellerAgentID:   pgtypeUUIDToString(o.SellerAgentID),
+		BuyerWallet:     o.BuyerWallet,
+		SellerWallet:    o.SellerWallet,
+		AmountUSDC:      o.AmountUsdc,
+		AmountUSD:       float64(o.AmountUsdc) / 1_000_000,
+		EscrowOrderID:   o.EscrowOrderID,
+		EscrowContract:  o.EscrowContract,
+		Status:          o.Status,
+		ShippingAddress: parseShippingAddress(o.ShippingAddress),
+		Deadline:        o.Deadline.Time,
+		CreatedAt:       o.CreatedAt.Time,
 	}
 
 	if o.TxHash.Valid {

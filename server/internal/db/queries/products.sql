@@ -1,6 +1,6 @@
 -- name: CreateProduct :one
-INSERT INTO products (store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, stock, status)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+INSERT INTO products (store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, stock, status)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING *;
 
 -- name: GetProductByID :one
@@ -31,6 +31,7 @@ UPDATE products SET
     delivery_content = COALESCE(sqlc.narg('delivery_content'), delivery_content),
     image_urls = COALESCE(sqlc.narg('image_urls'), image_urls),
     external_url = COALESCE(sqlc.narg('external_url'), external_url),
+    requires_shipping = COALESCE(sqlc.narg('requires_shipping'), requires_shipping),
     stock = COALESCE(sqlc.narg('stock'), stock),
     updated_at = now()
 WHERE id = @id

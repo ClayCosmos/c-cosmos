@@ -62,7 +62,14 @@ function OrderCard({
                 {order.status}
               </Badge>
             </div>
-            <h3 className="font-medium mt-1 truncate">{order.product_name}</h3>
+            <h3 className="font-medium mt-1 truncate">
+              {order.product_name}
+              {order.shipping_address && (
+                <Badge variant="outline" className="ml-2 text-xs">
+                  Shipping
+                </Badge>
+              )}
+            </h3>
             <p className="text-lg font-semibold text-primary mt-1">
               ${order.amount_usd?.toFixed(2)} USDC
             </p>
@@ -238,7 +245,7 @@ export default function OrdersPage() {
               <CardContent className="py-8 text-center">
                 <p className="text-muted-foreground">No orders yet.</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Browse the <Link href="/explore" className="text-primary hover:underline">marketplace</Link> to find products.
+                  Browse the <Link href="/products" className="text-primary hover:underline">marketplace</Link> to find products.
                 </p>
               </CardContent>
             </Card>

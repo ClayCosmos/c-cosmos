@@ -26,39 +26,42 @@ func NewProductHandler(pool *pgxpool.Pool) *ProductHandler {
 }
 
 type CreateProductRequest struct {
-	Name            string   `json:"name" binding:"required,max=256"`
-	Description     string   `json:"description"`
-	PriceUSDC       int64    `json:"price_usdc" binding:"required,min=1"`
-	DeliveryContent string   `json:"delivery_content" binding:"required"`
-	Stock           *int32   `json:"stock"`
-	ImageURLs       []string `json:"image_urls"`
-	ExternalURL     string   `json:"external_url"`
+	Name             string   `json:"name" binding:"required,max=256"`
+	Description      string   `json:"description"`
+	PriceUSDC        int64    `json:"price_usdc" binding:"required,min=1"`
+	DeliveryContent  string   `json:"delivery_content" binding:"required"`
+	Stock            *int32   `json:"stock"`
+	ImageURLs        []string `json:"image_urls"`
+	ExternalURL      string   `json:"external_url"`
+	RequiresShipping *bool    `json:"requires_shipping"`
 }
 
 type UpdateProductRequest struct {
-	Name            *string   `json:"name"`
-	Description     *string   `json:"description"`
-	PriceUSDC       *int64    `json:"price_usdc"`
-	DeliveryContent *string   `json:"delivery_content"`
-	Stock           *int32    `json:"stock"`
-	ImageURLs       *[]string `json:"image_urls"`
-	ExternalURL     *string   `json:"external_url"`
+	Name             *string   `json:"name"`
+	Description      *string   `json:"description"`
+	PriceUSDC        *int64    `json:"price_usdc"`
+	DeliveryContent  *string   `json:"delivery_content"`
+	Stock            *int32    `json:"stock"`
+	ImageURLs        *[]string `json:"image_urls"`
+	ExternalURL      *string   `json:"external_url"`
+	RequiresShipping *bool     `json:"requires_shipping"`
 }
 
 type ProductResponse struct {
-	ID          string    `json:"id"`
-	StoreID     string    `json:"store_id"`
-	Name        string    `json:"name"`
-	Slug        string    `json:"slug"`
-	Description string    `json:"description"`
-	PriceUSDC   int64     `json:"price_usdc"`
-	PriceUSD    float64   `json:"price_usd"`
-	ImageURLs   []string  `json:"image_urls"`
-	ExternalURL string    `json:"external_url,omitempty"`
-	Stock       int32     `json:"stock"`
-	Status      string    `json:"status"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID               string    `json:"id"`
+	StoreID          string    `json:"store_id"`
+	Name             string    `json:"name"`
+	Slug             string    `json:"slug"`
+	Description      string    `json:"description"`
+	PriceUSDC        int64     `json:"price_usdc"`
+	PriceUSD         float64   `json:"price_usd"`
+	ImageURLs        []string  `json:"image_urls"`
+	ExternalURL      string    `json:"external_url,omitempty"`
+	RequiresShipping bool      `json:"requires_shipping"`
+	Stock            int32     `json:"stock"`
+	Status           string    `json:"status"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
 type ProductDetailResponse struct {
@@ -98,17 +101,23 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		stock = *req.Stock
 	}
 
+	requiresShipping := false
+	if req.RequiresShipping != nil {
+		requiresShipping = *req.RequiresShipping
+	}
+
 	product, err := h.q.CreateProduct(c.Request.Context(), gen.CreateProductParams{
-		StoreID:         store.ID,
-		Name:            req.Name,
-		Slug:            slug,
-		Description:     pgtype.Text{String: req.Description, Valid: req.Description != ""},
-		PriceUsdc:       req.PriceUSDC,
-		DeliveryContent: pgtype.Text{String: req.DeliveryContent, Valid: true},
-		ImageUrls:       req.ImageURLs,
-		ExternalUrl:     pgtype.Text{String: req.ExternalURL, Valid: req.ExternalURL != ""},
-		Stock:           pgtype.Int4{Int32: stock, Valid: true},
-		Status:          "active",
+		StoreID:          store.ID,
+		Name:             req.Name,
+		Slug:             slug,
+		Description:      pgtype.Text{String: req.Description, Valid: req.Description != ""},
+		PriceUsdc:        req.PriceUSDC,
+		DeliveryContent:  pgtype.Text{String: req.DeliveryContent, Valid: true},
+		ImageUrls:        req.ImageURLs,
+		ExternalUrl:      pgtype.Text{String: req.ExternalURL, Valid: req.ExternalURL != ""},
+		RequiresShipping: requiresShipping,
+		Stock:            pgtype.Int4{Int32: stock, Valid: true},
+		Status:           "active",
 	})
 	if err != nil {
 		respondError(c, apierr.Internal("failed to create product: "+err.Error()))
@@ -197,19 +206,20 @@ func (h *ProductHandler) ListAllProducts(c *gin.Context) {
 		}
 		resp[i] = ProductDetailResponse{
 			ProductResponse: ProductResponse{
-				ID:          pgtypeUUIDToString(p.ID),
-				StoreID:     pgtypeUUIDToString(p.StoreID),
-				Name:        p.Name,
-				Slug:        p.Slug,
-				Description: p.Description.String,
-				PriceUSDC:   p.PriceUsdc,
-				PriceUSD:    float64(p.PriceUsdc) / 1_000_000,
-				ImageURLs:   imageURLs,
-				ExternalURL: p.ExternalUrl.String,
-				Stock:       p.Stock.Int32,
-				Status:      p.Status,
-				CreatedAt:   p.CreatedAt.Time,
-				UpdatedAt:   p.UpdatedAt.Time,
+				ID:               pgtypeUUIDToString(p.ID),
+				StoreID:          pgtypeUUIDToString(p.StoreID),
+				Name:             p.Name,
+				Slug:             p.Slug,
+				Description:      p.Description.String,
+				PriceUSDC:        p.PriceUsdc,
+				PriceUSD:         float64(p.PriceUsdc) / 1_000_000,
+				ImageURLs:        imageURLs,
+				ExternalURL:      p.ExternalUrl.String,
+				RequiresShipping: p.RequiresShipping,
+				Stock:            p.Stock.Int32,
+				Status:           p.Status,
+				CreatedAt:        p.CreatedAt.Time,
+				UpdatedAt:        p.UpdatedAt.Time,
 			},
 			StoreName: p.StoreName,
 			StoreSlug: p.StoreSlug,
@@ -292,6 +302,9 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	if req.ExternalURL != nil {
 		params.ExternalUrl = pgtype.Text{String: *req.ExternalURL, Valid: true}
 	}
+	if req.RequiresShipping != nil {
+		params.RequiresShipping = pgtype.Bool{Bool: *req.RequiresShipping, Valid: true}
+	}
 	if req.Stock != nil {
 		params.Stock = pgtype.Int4{Int32: *req.Stock, Valid: true}
 	}
@@ -362,19 +375,20 @@ func toProductResp(p gen.Product) ProductResponse {
 		imageURLs = []string{}
 	}
 	return ProductResponse{
-		ID:          pgtypeUUIDToString(p.ID),
-		StoreID:     pgtypeUUIDToString(p.StoreID),
-		Name:        p.Name,
-		Slug:        p.Slug,
-		Description: p.Description.String,
-		PriceUSDC:   p.PriceUsdc,
-		PriceUSD:    float64(p.PriceUsdc) / 1_000_000,
-		ImageURLs:   imageURLs,
-		ExternalURL: p.ExternalUrl.String,
-		Stock:       p.Stock.Int32,
-		Status:      p.Status,
-		CreatedAt:   p.CreatedAt.Time,
-		UpdatedAt:   p.UpdatedAt.Time,
+		ID:               pgtypeUUIDToString(p.ID),
+		StoreID:          pgtypeUUIDToString(p.StoreID),
+		Name:             p.Name,
+		Slug:             p.Slug,
+		Description:      p.Description.String,
+		PriceUSDC:        p.PriceUsdc,
+		PriceUSD:         float64(p.PriceUsdc) / 1_000_000,
+		ImageURLs:        imageURLs,
+		ExternalURL:      p.ExternalUrl.String,
+		RequiresShipping: p.RequiresShipping,
+		Stock:            p.Stock.Int32,
+		Status:           p.Status,
+		CreatedAt:        p.CreatedAt.Time,
+		UpdatedAt:        p.UpdatedAt.Time,
 	}
 }
 

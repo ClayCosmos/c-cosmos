@@ -191,6 +191,28 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
+          {/* Shipping Address */}
+          {order.shipping_address && (
+            <div className="p-4 bg-blue-50 rounded-lg space-y-2">
+              <h3 className="font-medium text-blue-800">Shipping Address</h3>
+              <div className="text-sm space-y-1">
+                <p className="font-medium">{order.shipping_address.recipient_name}</p>
+                <p>{order.shipping_address.phone}</p>
+                <p>{order.shipping_address.address_line1}</p>
+                {order.shipping_address.address_line2 && <p>{order.shipping_address.address_line2}</p>}
+                <p>
+                  {order.shipping_address.city}
+                  {order.shipping_address.state ? `, ${order.shipping_address.state}` : ""}{" "}
+                  {order.shipping_address.postal_code}
+                </p>
+                <p>{order.shipping_address.country}</p>
+                {order.shipping_address.notes && (
+                  <p className="text-muted-foreground italic">Notes: {order.shipping_address.notes}</p>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Escrow Info */}
           <div className="p-4 bg-muted rounded-lg space-y-3">
             <h3 className="font-medium">Escrow Payment Details</h3>

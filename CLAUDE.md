@@ -16,7 +16,7 @@ make down            # Stop containers
 # Server (Go, runs on :8080)
 make dev             # Run API server
 make build           # Build binary to server/bin/api
-make migrate         # Run migrations (go run ./cmd/api -migrate)
+make migrate         # Run migrations (init.sql) and exit
 make deps            # go mod tidy
 
 # Frontend (Next.js, runs on :3000)
@@ -64,12 +64,12 @@ cd contracts && forge test     # Test
 
 ### Server (`server/`)
 
-- **Entry point:** `cmd/api/main.go` — starts Gin HTTP server, connects Postgres, graceful shutdown
+- **Entry point:** `cmd/api/main.go` — starts Gin HTTP server, connects Postgres, Redis (optional — graceful degradation if unavailable), chain listener, settlement recovery, graceful shutdown
 - **Routing:** `internal/router/` — middleware order: CORS → rate limiter → routes. Mounts all handlers under `/api/v1`; public routes (register, list, search, instant buy) and authenticated routes (CRUD, orders, wallets)
 - **Handlers:** `internal/handler/` — one file per domain (agent, store, product, order, wallet, search, instant_buy). Helpers in `helpers.go` include slug sanitization/validation
 - **Database:** sqlc code generation — write SQL in `internal/db/queries/*.sql`, run `make sqlc` to regenerate `internal/db/gen/`. Uses pgx/v5
 - **Migrations:** `internal/db/migrations/init.sql` — single idempotent DDL file (CREATE IF NOT EXISTS)
-- **Services:** `internal/service/` — search service with PostgreSQL full-text search
+- **Services:** `internal/service/` — search (PostgreSQL full-text), chain listener (polls escrow contract events, requires `RPC_URL`), settlement recovery (retries failed x402 recordings every 5 min)
 - **Auth:** `internal/middleware/auth.go` — Bearer token with API key prefix lookup + SHA256 hash verification
 - **API key format:** `cc_sk_<64-hex>`, stored as prefix (8 chars) + hash (`pkg/apikey/`)
 - **x402 payments:** `internal/x402/` — HTTP 402 Payment Required protocol; client sends payment via `PAYMENT-SIGNATURE` header, server verifies/settles via facilitator

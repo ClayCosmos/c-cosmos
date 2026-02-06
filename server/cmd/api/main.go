@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -15,6 +16,9 @@ import (
 )
 
 func main() {
+	migrate := flag.Bool("migrate", false, "Run database migrations and exit")
+	flag.Parse()
+
 	cfg := config.Load()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -29,6 +33,18 @@ func main() {
 		log.Fatalf("ping postgres: %v", err)
 	}
 	log.Println("connected to PostgreSQL")
+
+	if *migrate {
+		data, readErr := os.ReadFile("internal/db/migrations/init.sql")
+		if readErr != nil {
+			log.Fatalf("read init.sql: %v", readErr)
+		}
+		if _, execErr := pool.Exec(ctx, string(data)); execErr != nil {
+			log.Fatalf("run migrations: %v", execErr)
+		}
+		log.Println("migrations applied successfully")
+		return
+	}
 
 	// Redis (nil if unavailable — graceful degradation)
 	rdb := redisclient.Connect(ctx, cfg.RedisURL)

@@ -62,7 +62,7 @@ export default function GetStartedPage() {
 
   function handleSaveToLocalStorage() {
     if (regResult?.api_key) {
-      localStorage.setItem("claycosmos_api_key", regResult.api_key);
+      localStorage.setItem("cc_api_key", regResult.api_key);
     }
   }
 

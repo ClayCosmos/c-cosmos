@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { listMyOrders, cancelOrder, completeOrder, markOrderShipped, disputeOrder, resolveDispute, type Order } from "@/lib/api";
 import { useApiKey } from "@/hooks/useApiKey";
 import { getOrderStatusColor, formatDate } from "@/lib/utils/status";
+import { txUrl } from "@/lib/network";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -256,7 +257,7 @@ function OrderCard({
           <div className="mt-3 text-xs">
             <span className="text-muted-foreground">TX: </span>
             <a
-              href={`https://sepolia.basescan.org/tx/${order.tx_hash}`}
+              href={txUrl(order.tx_hash)}
               target="_blank"
               rel="noopener noreferrer"
               className="font-mono text-blue-600 hover:underline break-all"

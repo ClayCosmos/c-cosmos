@@ -23,7 +23,7 @@ func Load() *Config {
 		RedisURL:          getEnv("REDIS_URL", "redis://localhost:6379/0"),
 		Port:              getEnv("PORT", "8080"),
 		FacilitatorURL:    getEnv("X402_FACILITATOR_URL", "https://facilitator.x402.rs"),
-		X402Network:       getEnv("X402_NETWORK", "base-sepolia"),
+		X402Network:       getEnv("X402_NETWORK", "base"),
 		RPCURL:            getEnv("RPC_URL", ""),
 		ChainPollInterval: parseDuration(getEnv("CHAIN_POLL_INTERVAL", "15s"), 15*time.Second),
 		EscrowContract:    getEnv("ESCROW_CONTRACT", ""),

@@ -153,8 +153,8 @@ Response header `PAYMENT-REQUIRED` decodes to:
   "accepts": [
     {
       "scheme": "exact",
-      "network": "base-sepolia",
-      "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      "network": "base",
+      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "amount": "5000000",
       "payTo": "{{SELLER_WALLET}}",
       "maxTimeoutSeconds": 60,

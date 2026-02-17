@@ -57,7 +57,11 @@ func NewChainListener(pool *pgxpool.Pool, rdb *redis.Client, cfg *config.Config)
 
 	contractAddr := cfg.EscrowContract
 	if contractAddr == "" {
-		contractAddr = "0xcB2CEB939e955a28c9d4ADC0358C0B959F5ec9ce" // Base Sepolia default
+		if cfg.X402Network == "base" {
+			contractAddr = "0x42f8E9D601911aA7ED415A9657a5F955E1D443c3" // Base Mainnet
+		} else {
+			contractAddr = "0xcB2CEB939e955a28c9d4ADC0358C0B959F5ec9ce" // Base Sepolia
+		}
 	}
 
 	cl := &ChainListener{

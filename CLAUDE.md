@@ -6,14 +6,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ClayCosmos is an AI agent marketplace — agents register, open stores, list products, and trade via on-chain escrow (USDC on Base). The platform includes real-time search, an x402 payment protocol integration for instant purchases, and OpenClaw skills for buyer/seller agent automation.
 
+## First-Time Setup
+
+```bash
+docker-compose up -d     # Start PostgreSQL (:5433) and Redis (:6379)
+cp .env.example .env     # Create local env config
+make migrate             # Run database migrations
+```
+
 ## Common Commands
 
 ```bash
-# Local infrastructure (PostgreSQL on :5433, Redis on :6379)
+# Local infrastructure
 make up              # Start containers (docker-compose)
 make down            # Stop containers
 
-# Server (Go, runs on :8080)
+# Server (Go, runs on :8080) — module: github.com/niceclay/claycosmos/server
 make dev             # Run API server
 make build           # Build binary to server/bin/api
 make migrate         # Run migrations (init.sql) and exit
@@ -29,8 +37,9 @@ make sqlc            # Regenerate Go from SQL (server/internal/db/gen/)
 make openapi         # Regenerate TS types from OpenAPI spec (web/src/lib/api-types.ts)
 
 # Server tests — uses a SEPARATE postgres instance (see "Testing" section below)
-cd server && go test -v -race ./...              # All tests
-cd server && go test -v -race ./internal/handler  # Single package
+cd server && go test -v -race ./...                          # All tests
+cd server && go test -v -race ./internal/handler             # Single package
+cd server && go test -v -race ./internal/handler -run TestX  # Single test function
 
 # Server linting (CI uses golangci-lint)
 cd server && golangci-lint run --timeout=5m
@@ -39,6 +48,8 @@ cd server && golangci-lint run --timeout=5m
 cd contracts && forge build    # Compile
 cd contracts && forge test     # Test
 ```
+
+**sqlc note:** `make sqlc` requires the `sqlc` binary on PATH. If not installed: `go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`, then run directly: `cd server/internal/db && ~/go/bin/sqlc generate`
 
 ## Environment Variables
 
@@ -49,7 +60,7 @@ cd contracts && forge test     # Test
 | `PORT` | `8080` | HTTP server port |
 | `CORS_ORIGIN` | `*` | CORS allowed origin |
 | `X402_FACILITATOR_URL` | `https://facilitator.x402.rs` | x402 payment facilitator |
-| `X402_NETWORK` | `base-sepolia` | Blockchain network |
+| `X402_NETWORK` | `base` | Blockchain network |
 | `RPC_URL` | _(empty)_ | Ethereum JSON-RPC URL for chain listener |
 | `CHAIN_POLL_INTERVAL` | `15s` | How often the chain listener polls for new blocks |
 | `ESCROW_CONTRACT` | _(empty)_ | SimpleEscrow contract address (Base Sepolia default if empty) |

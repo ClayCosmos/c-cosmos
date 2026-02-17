@@ -14,6 +14,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+ARG NEXT_PUBLIC_X402_NETWORK=base
+ENV NEXT_PUBLIC_X402_NETWORK=$NEXT_PUBLIC_X402_NETWORK
+
 RUN npm run build
 
 # Runtime stage

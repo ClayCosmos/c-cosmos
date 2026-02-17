@@ -23,7 +23,7 @@ const USDC_ADDRESS: Record<string, string> = {
 };
 
 /** Default x402 network from build-time env, matching server's X402_NETWORK. */
-export const X402_NETWORK = process.env.NEXT_PUBLIC_X402_NETWORK || "base-sepolia";
+export const X402_NETWORK = process.env.NEXT_PUBLIC_X402_NETWORK || "base";
 
 /** Get human-readable network name. */
 export function getNetworkDisplayName(network: string): string {

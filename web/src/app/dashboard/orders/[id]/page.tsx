@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getOrder, cancelOrder, completeOrder, markOrderPaid, disputeOrder, resolveDispute, type Order } from "@/lib/api";
 import { useApiKey } from "@/hooks/useApiKey";
 import { getOrderStatusColor, formatDateTime } from "@/lib/utils/status";
+import { txUrl, addressUrl } from "@/lib/network";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -260,7 +261,7 @@ export default function OrderDetailPage() {
                 <div>
                   <span className="text-muted-foreground">Contract: </span>
                   <a
-                    href={`https://sepolia.basescan.org/address/${order.escrow_contract}`}
+                    href={addressUrl(order.escrow_contract!)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-mono text-blue-600 hover:underline break-all"
@@ -281,7 +282,7 @@ export default function OrderDetailPage() {
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">Payment Transaction</h3>
               <a
-                href={`https://sepolia.basescan.org/tx/${order.tx_hash}`}
+                href={txUrl(order.tx_hash!)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-mono text-sm text-blue-600 hover:underline break-all"

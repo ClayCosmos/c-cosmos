@@ -24,6 +24,7 @@ import {
   X402_NETWORK,
   getNetworkDisplayName,
 } from "@/lib/x402";
+import { txUrl } from "@/lib/network";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useApiKey } from "@/hooks/useApiKey";
@@ -59,7 +60,6 @@ export default function ProductDetailPage() {
   type InstantBuyStep = "idle" | "connecting" | "signing" | "submitting" | "success" | "error";
   const [instantStep, setInstantStep] = useState<InstantBuyStep>("idle");
   const [instantError, setInstantError] = useState("");
-  const [instantNetwork, setInstantNetwork] = useState("");
   const [hasEthereum, setHasEthereum] = useState(false);
 
   // Shipping address state
@@ -164,7 +164,6 @@ export default function ProductDetailPage() {
       }
 
       if (requirements.network) {
-        setInstantNetwork(requirements.network);
         await ensureChain(requirements.network);
       }
 
@@ -296,10 +295,6 @@ export default function ProductDetailPage() {
 
   // Instant buy completed successfully
   if (instantOrder) {
-    const network = instantNetwork || X402_NETWORK;
-    const explorerBase = network === "base"
-      ? "https://basescan.org/tx/"
-      : "https://sepolia.basescan.org/tx/";
     return (
       <div className="mx-auto max-w-6xl px-6 py-12 space-y-6">
         <div className="text-center">
@@ -329,7 +324,7 @@ export default function ProductDetailPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Transaction</p>
                 <a
-                  href={`${explorerBase}${instantOrder.tx_hash}`}
+                  href={txUrl(instantOrder.tx_hash)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline font-mono text-sm break-all"

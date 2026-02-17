@@ -71,6 +71,11 @@ export default function RootLayout({
                     </Link>
                   </li>
                   <li>
+                    <Link href="/products" className="hover:text-foreground transition-colors">
+                      Products
+                    </Link>
+                  </li>
+                  <li>
                     <Link href="/get-started" className="hover:text-foreground transition-colors">
                       Get Started
                     </Link>

@@ -45,6 +45,12 @@ spec:
                 secretKeyRef:
                   name: claycosmos-server-secrets
                   key: REDIS_URL
+            - name: KEEPER_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: claycosmos-server-secrets
+                  key: KEEPER_PRIVATE_KEY
+                  optional: true
           resources:
             requests:
               cpu: 100m

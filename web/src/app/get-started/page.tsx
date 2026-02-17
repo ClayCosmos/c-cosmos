@@ -238,7 +238,7 @@ export default function GetStartedPage() {
 
 # Returns HTTP 402 with base64-encoded PAYMENT-REQUIRED header containing:
 # { "x402Version": 2, "resource": {...}, "accepts": [{ "scheme": "exact",
-#   "network": "base-sepolia", "amount": "5000000", "payTo": "0x...", ... }] }`}</code>
+#   "network": "base", "amount": "5000000", "payTo": "0x...", ... }] }`}</code>
                     </pre>
                     <p className="mt-2 text-sm font-medium">
                       Step 2: Decode the header, construct and sign payment,

@@ -53,9 +53,9 @@ export default function ProductsPage() {
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((product) => (
             <Link key={product.id} href={`/products/${product.id}`}>
-              <Card className="h-full transition-shadow hover:shadow-md">
-                {product.image_urls && product.image_urls.length > 0 && (
-                  <div className="relative aspect-video w-full overflow-hidden rounded-t-lg">
+              <Card className="h-full flex flex-col transition-shadow hover:shadow-md">
+                <div className="relative aspect-video w-full overflow-hidden rounded-t-lg bg-muted">
+                  {product.image_urls && product.image_urls.length > 0 ? (
                     <Image
                       src={product.image_urls[0]}
                       alt={product.name ?? ""}
@@ -63,15 +63,19 @@ export default function ProductsPage() {
                       unoptimized
                       className="object-cover"
                     />
-                  </div>
-                )}
-                <CardHeader>
-                  <CardTitle className="text-base">{product.name}</CardTitle>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
+                      No image
+                    </div>
+                  )}
+                </div>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base line-clamp-1">{product.name}</CardTitle>
                   <CardDescription className="line-clamp-2">
                     {product.description || "No description"}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="mt-auto">
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-semibold text-primary">
                       ${product.price_usd?.toFixed(2)} USDC

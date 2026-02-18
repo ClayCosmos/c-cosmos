@@ -69,7 +69,7 @@ export default function ProductsPage() {
                     </div>
                   )}
                 </div>
-                <CardHeader className="pb-2">
+                <CardHeader className="pt-4 pb-2">
                   <CardTitle className="text-base line-clamp-1">{product.name}</CardTitle>
                   <CardDescription className="line-clamp-2">
                     {product.description || "No description"}

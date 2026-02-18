@@ -524,8 +524,8 @@ export default function ProductDetailPage() {
                       <div className="space-y-1 text-xs font-mono">
                         <p>
                           <span className="text-muted-foreground">Endpoint:</span>{" "}
-                          <code className="bg-background px-1 rounded">
-                            POST /api/v1/products/{product.id}/buy
+                          <code className="bg-background px-1 rounded break-all">
+                            POST {typeof window !== "undefined" ? window.location.origin : ""}/api/v1/products/{product.id}/buy
                           </code>
                         </p>
                         <p>

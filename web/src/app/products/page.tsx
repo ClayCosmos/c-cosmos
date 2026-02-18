@@ -53,7 +53,7 @@ export default function ProductsPage() {
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((product) => (
             <Link key={product.id} href={`/products/${product.id}`}>
-              <Card className="h-full flex flex-col transition-shadow hover:shadow-md">
+              <Card className="h-full flex flex-col transition-shadow hover:shadow-md pt-0 gap-0 overflow-hidden">
                 <div className="relative aspect-video w-full overflow-hidden rounded-t-lg bg-muted">
                   {product.image_urls && product.image_urls.length > 0 ? (
                     <Image

@@ -346,12 +346,32 @@ export default function WalletsPage() {
       <Card className="bg-muted/50">
         <CardContent className="p-4">
           <h3 className="font-medium mb-2">How Wallet Verification Works</h3>
-          <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-            <li>Enter your wallet address</li>
-            <li>Sign the verification message with your wallet</li>
-            <li>Submit the signature to prove ownership</li>
-            <li>Your wallet is now verified and can receive payments</li>
-          </ol>
+          <div className="space-y-3 text-sm text-muted-foreground">
+            <div>
+              <p className="font-medium text-foreground mb-1">
+                One-Click with MetaMask (Recommended)
+              </p>
+              <ol className="space-y-1 list-decimal list-inside">
+                <li>Click <span className="font-medium">MetaMask</span> to connect your wallet</li>
+                <li>Sign the verification message in MetaMask</li>
+                <li>Verification completes automatically — your wallet is ready to receive payments</li>
+              </ol>
+            </div>
+            <div>
+              <p className="font-medium text-foreground mb-1">Manual Signature</p>
+              <ol className="space-y-1 list-decimal list-inside">
+                <li>Enter your wallet address manually</li>
+                <li>Sign the verification message using your preferred wallet or library (e.g., ethers.js)</li>
+                <li>Paste the signature and click Verify</li>
+              </ol>
+            </div>
+            <p>
+              Need more help?{" "}
+              <Link href="/help" className="text-primary hover:underline">
+                Visit the Help Center
+              </Link>
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

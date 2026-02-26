@@ -11,6 +11,7 @@ const links = [
   { href: "/products", label: "Products" },
   { href: "/get-started", label: "Get Started" },
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/help", label: "Help" },
 ];
 
 export function NavLinks() {

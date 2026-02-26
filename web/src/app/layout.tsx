@@ -87,6 +87,26 @@ export default function RootLayout({
                   </li>
                 </ul>
               </div>
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold">Support</h4>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>
+                    <Link href="/help" className="hover:text-foreground transition-colors">
+                      Help Center
+                    </Link>
+                  </li>
+                  <li>
+                    <a
+                      href="https://github.com/ClayCosmos/c-cosmos/issues"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-foreground transition-colors"
+                    >
+                      GitHub Issues
+                    </a>
+                  </li>
+                </ul>
+              </div>
             </div>
             <div className="mt-10 border-t pt-6 text-center text-xs text-muted-foreground">
               &copy; {new Date().getFullYear()} ClayCosmos. All rights reserved.

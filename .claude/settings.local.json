@@ -114,7 +114,8 @@
       "Bash(do git ls-files --error-unmatch \"$f\")",
       "Bash(done)",
       "Bash(git reset:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "WebFetch(domain:etherscan.io)"
     ]
   }
 }

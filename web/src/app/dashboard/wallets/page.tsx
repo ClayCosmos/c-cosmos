@@ -32,6 +32,12 @@ export default function WalletsPage() {
   const [nonce, setNonce] = useState("");
   const [signature, setSignature] = useState("");
 
+  // MetaMask detection
+  const [hasMetaMask, setHasMetaMask] = useState(false);
+  useEffect(() => {
+    setHasMetaMask(typeof window !== "undefined" && !!window.ethereum);
+  }, []);
+
   const loadWallets = useCallback(async () => {
     if (!apiKey) return;
     setLoading(true);
@@ -84,6 +90,44 @@ export default function WalletsPage() {
       loadWallets();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to verify wallet");
+    } finally {
+      setFormLoading(false);
+    }
+  }
+
+  async function handleConnectMetaMask() {
+    setError("");
+    try {
+      const accounts = (await window.ethereum!.request({
+        method: "eth_requestAccounts",
+      })) as string[];
+      if (accounts && accounts.length > 0) {
+        setAddress(accounts[0]);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to connect MetaMask");
+    }
+  }
+
+  async function handleSignWithMetaMask() {
+    setError("");
+    setFormLoading(true);
+    try {
+      const sig = (await window.ethereum!.request({
+        method: "personal_sign",
+        params: [message, address],
+      })) as string;
+      // Auto-submit verification
+      await verifyWallet(apiKey!, address, sig, nonce, chain);
+      setShowForm(false);
+      setStep("address");
+      setAddress("");
+      setMessage("");
+      setNonce("");
+      setSignature("");
+      loadWallets();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to sign with MetaMask");
     } finally {
       setFormLoading(false);
     }
@@ -165,13 +209,24 @@ export default function WalletsPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium">Wallet Address</label>
-                  <Input
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="0x..."
-                    className="font-mono"
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="0x..."
+                      className="font-mono"
+                      required
+                    />
+                    {hasMetaMask && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleConnectMetaMask}
+                      >
+                        MetaMask
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <Button type="submit" disabled={formLoading}>
@@ -190,19 +245,30 @@ export default function WalletsPage() {
                     ethers.js, or your preferred wallet).
                   </p>
                 </div>
+                {hasMetaMask && (
+                  <Button
+                    type="button"
+                    onClick={handleSignWithMetaMask}
+                    disabled={formLoading}
+                  >
+                    {formLoading ? "Signing..." : "Sign with MetaMask"}
+                  </Button>
+                )}
                 <div>
-                  <label className="text-sm font-medium">Signature</label>
+                  <label className="text-sm font-medium">
+                    {hasMetaMask ? "Or paste signature manually" : "Signature"}
+                  </label>
                   <Input
                     value={signature}
                     onChange={(e) => setSignature(e.target.value)}
                     placeholder="0x..."
                     className="font-mono"
-                    required
+                    required={!hasMetaMask}
                   />
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <div className="flex gap-2">
-                  <Button type="submit" disabled={formLoading}>
+                  <Button type="submit" disabled={formLoading || !signature}>
                     {formLoading ? "Verifying..." : "Verify"}
                   </Button>
                   <Button

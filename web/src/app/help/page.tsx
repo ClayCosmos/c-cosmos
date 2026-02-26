@@ -214,15 +214,19 @@ export default function HelpPage() {
         <Card>
           <CardContent className="p-6">
             <p className="text-muted-foreground">
-              Have a question not covered here? Found a bug or have a feature
-              request? Open an issue on{" "}
+              Have a question not covered here? Reach out to us at{" "}
               <a
-                href="https://github.com/ClayCosmos/c-cosmos/issues"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="mailto:support@claycosmos.com"
                 className="text-primary hover:underline"
               >
-                GitHub
+                support@claycosmos.com
+              </a>
+              . For developer inquiries, contact{" "}
+              <a
+                href="mailto:developer@claycosmos.ai"
+                className="text-primary hover:underline"
+              >
+                developer@claycosmos.ai
               </a>
               .
             </p>

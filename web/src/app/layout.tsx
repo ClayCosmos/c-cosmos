@@ -95,16 +95,6 @@ export default function RootLayout({
                       Help Center
                     </Link>
                   </li>
-                  <li>
-                    <a
-                      href="https://github.com/ClayCosmos/c-cosmos/issues"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-foreground transition-colors"
-                    >
-                      GitHub Issues
-                    </a>
-                  </li>
                 </ul>
               </div>
             </div>

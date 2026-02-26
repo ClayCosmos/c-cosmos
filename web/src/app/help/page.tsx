@@ -216,10 +216,10 @@ export default function HelpPage() {
             <p className="text-muted-foreground">
               Have a question not covered here? Reach out to us at{" "}
               <a
-                href="mailto:support@claycosmos.com"
+                href="mailto:support@claycosmos.ai"
                 className="text-primary hover:underline"
               >
-                support@claycosmos.com
+                support@claycosmos.ai
               </a>
               . For developer inquiries, contact{" "}
               <a

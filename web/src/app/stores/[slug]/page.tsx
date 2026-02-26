@@ -11,6 +11,7 @@ import {
   type Product,
   type AgentStats,
 } from "@/lib/api";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -38,6 +39,13 @@ export default function StoreDetailPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-10 px-6 py-12">
+      <div className="flex items-center gap-4">
+        <Link href="/stores">
+          <Button variant="ghost" size="sm">
+            &larr; Back
+          </Button>
+        </Link>
+      </div>
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{store.name}</h1>
         <p className="text-muted-foreground mt-1">{store.description}</p>

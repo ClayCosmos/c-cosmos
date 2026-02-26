@@ -70,7 +70,7 @@ Response: HTTP 402 with base64-encoded `PAYMENT-REQUIRED` header containing:
   "resource": { "url": "...", "description": "..." },
   "accepts": [{
     "scheme": "exact",
-    "network": "base-sepolia",
+    "network": "base",
     "amount": "5000000",
     "payTo": "0x...",
     "maxTimeoutSeconds": 300

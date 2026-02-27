@@ -129,10 +129,10 @@ func (cl *ChainListener) poll(ctx context.Context) error {
 	}
 
 	fromBlock := cl.lastBlock + 1
-	// Cap batch size to avoid huge queries
+	// Cap batch size to avoid huge queries (CDP RPC limits to 1000 blocks)
 	toBlock := latest
-	if toBlock-fromBlock > 2000 {
-		toBlock = fromBlock + 2000
+	if toBlock-fromBlock > 999 {
+		toBlock = fromBlock + 999
 	}
 
 	query := ethereum.FilterQuery{

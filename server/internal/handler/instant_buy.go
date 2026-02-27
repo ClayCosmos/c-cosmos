@@ -96,11 +96,16 @@ func (h *InstantBuyHandler) BuyProduct(c *gin.Context) {
 		respondError(c, apierr.Internal("unsupported x402 network"))
 		return
 	}
+	caip2Net, ok := x402.CAIP2Network[h.cfg.X402Network]
+	if !ok {
+		respondError(c, apierr.Internal("unsupported x402 network for CAIP-2"))
+		return
+	}
 
 	resourceURL := fmt.Sprintf("/api/v1/products/%s/buy", productIDStr)
 	requirements := x402.PaymentRequirements{
 		Scheme:            "exact",
-		Network:           h.cfg.X402Network,
+		Network:           caip2Net,
 		Asset:             usdcAddr,
 		Amount:            fmt.Sprintf("%d", product.PriceUsdc),
 		PayTo:             sellerWallet.Address,

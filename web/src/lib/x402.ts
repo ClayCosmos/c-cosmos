@@ -10,16 +10,20 @@ declare global {
   }
 }
 
-// Chain configuration
+// Chain configuration (supports both legacy and CAIP-2 network names)
 const CHAINS: Record<string, { chainId: string; name: string }> = {
   "base-sepolia": { chainId: "0x14A34", name: "Base Sepolia" },
   base: { chainId: "0x2105", name: "Base" },
+  "eip155:84532": { chainId: "0x14A34", name: "Base Sepolia" },
+  "eip155:8453": { chainId: "0x2105", name: "Base" },
 };
 
-// USDC contract addresses per network
+// USDC contract addresses per network (supports both legacy and CAIP-2 network names)
 const USDC_ADDRESS: Record<string, string> = {
   "base-sepolia": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   base: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  "eip155:84532": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+  "eip155:8453": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
 };
 
 /** Default x402 network from build-time env, matching server's X402_NETWORK. */

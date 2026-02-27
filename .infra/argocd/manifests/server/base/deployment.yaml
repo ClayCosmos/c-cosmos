@@ -51,6 +51,12 @@ spec:
                   name: claycosmos-server-secrets
                   key: KEEPER_PRIVATE_KEY
                   optional: true
+            - name: CDP_API_KEY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: claycosmos-server-secrets
+                  key: CDP_API_KEY_SECRET
+                  optional: true
           resources:
             requests:
               cpu: 100m

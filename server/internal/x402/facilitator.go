@@ -2,10 +2,14 @@ package x402
 
 import (
 	"bytes"
+	"crypto/ed25519"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -13,16 +17,28 @@ import (
 type FacilitatorClient struct {
 	baseURL    string
 	httpClient *http.Client
+	auth       *CDPAuth // nil if no auth needed (e.g. community facilitator)
+}
+
+// CDPAuth holds Coinbase Developer Platform API credentials for JWT authentication.
+type CDPAuth struct {
+	KeyID     string // CDP_API_KEY_ID
+	KeySecret string // CDP_API_KEY_SECRET (base64-encoded Ed25519 private key)
 }
 
 // NewFacilitatorClient creates a new facilitator client.
-func NewFacilitatorClient(baseURL string) *FacilitatorClient {
-	return &FacilitatorClient{
+// If cdpKeyID and cdpKeySecret are non-empty, requests are authenticated with CDP JWT.
+func NewFacilitatorClient(baseURL, cdpKeyID, cdpKeySecret string) *FacilitatorClient {
+	fc := &FacilitatorClient{
 		baseURL: baseURL,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
 	}
+	if cdpKeyID != "" && cdpKeySecret != "" {
+		fc.auth = &CDPAuth{KeyID: cdpKeyID, KeySecret: cdpKeySecret}
+	}
+	return fc
 }
 
 // --- x402 Protocol Types (v2) ---
@@ -89,7 +105,94 @@ type SettleResponse struct {
 	Network      string `json:"network,omitempty"`
 }
 
+// --- JWT Authentication for CDP ---
+
+// generateJWT creates a signed JWT for CDP API authentication.
+func (a *CDPAuth) generateJWT(method, fullURL string) (string, error) {
+	keyBytes, err := base64.StdEncoding.DecodeString(a.KeySecret)
+	if err != nil {
+		return "", fmt.Errorf("decode CDP key secret: %w", err)
+	}
+	if len(keyBytes) != ed25519.PrivateKeySize {
+		return "", fmt.Errorf("invalid CDP key secret length: got %d, want %d", len(keyBytes), ed25519.PrivateKeySize)
+	}
+	privateKey := ed25519.PrivateKey(keyBytes)
+
+	u, err := url.Parse(fullURL)
+	if err != nil {
+		return "", fmt.Errorf("parse url: %w", err)
+	}
+	uri := fmt.Sprintf("%s %s%s", method, u.Host, u.Path)
+
+	nonceBytes := make([]byte, 16)
+	if _, err := rand.Read(nonceBytes); err != nil {
+		return "", fmt.Errorf("generate nonce: %w", err)
+	}
+	nonce := fmt.Sprintf("%x", nonceBytes)
+
+	now := time.Now().Unix()
+
+	header := map[string]string{
+		"alg": "EdDSA",
+		"typ": "JWT",
+		"kid": a.KeyID,
+	}
+
+	payload := map[string]any{
+		"sub":   a.KeyID,
+		"iss":   "cdp",
+		"nbf":   now,
+		"exp":   now + 120,
+		"uri":   uri,
+		"nonce": nonce,
+	}
+
+	headerJSON, _ := json.Marshal(header)
+	payloadJSON, _ := json.Marshal(payload)
+
+	headerB64 := base64.RawURLEncoding.EncodeToString(headerJSON)
+	payloadB64 := base64.RawURLEncoding.EncodeToString(payloadJSON)
+
+	signingInput := headerB64 + "." + payloadB64
+	signature := ed25519.Sign(privateKey, []byte(signingInput))
+	sigB64 := base64.RawURLEncoding.EncodeToString(signature)
+
+	return signingInput + "." + sigB64, nil
+}
+
 // --- Client Methods ---
+
+// doPost sends an authenticated POST request to the facilitator.
+func (fc *FacilitatorClient) doPost(endpoint string, body []byte) ([]byte, int, error) {
+	fullURL := fc.baseURL + endpoint
+
+	req, err := http.NewRequest(http.MethodPost, fullURL, bytes.NewReader(body))
+	if err != nil {
+		return nil, 0, fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	if fc.auth != nil {
+		jwt, err := fc.auth.generateJWT("POST", fullURL)
+		if err != nil {
+			return nil, 0, fmt.Errorf("generate CDP JWT: %w", err)
+		}
+		req.Header.Set("Authorization", "Bearer "+jwt)
+	}
+
+	resp, err := fc.httpClient.Do(req)
+	if err != nil {
+		return nil, 0, fmt.Errorf("http request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, resp.StatusCode, fmt.Errorf("read response: %w", err)
+	}
+
+	return respBody, resp.StatusCode, nil
+}
 
 // Verify calls the facilitator to verify a payment payload against requirements.
 func (fc *FacilitatorClient) Verify(payload PaymentPayload, requirements PaymentRequirements) (*VerifyResponse, error) {
@@ -103,19 +206,13 @@ func (fc *FacilitatorClient) Verify(payload PaymentPayload, requirements Payment
 		return nil, fmt.Errorf("marshal verify request: %w", err)
 	}
 
-	resp, err := fc.httpClient.Post(fc.baseURL+"/verify", "application/json", bytes.NewReader(data))
+	respBody, statusCode, err := fc.doPost("/verify", data)
 	if err != nil {
 		return nil, fmt.Errorf("facilitator verify request: %w", err)
 	}
-	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read verify response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("facilitator verify returned %d: %s", resp.StatusCode, string(respBody))
+	if statusCode != http.StatusOK {
+		return nil, fmt.Errorf("facilitator verify returned %d: %s", statusCode, string(respBody))
 	}
 
 	var result VerifyResponse
@@ -138,19 +235,13 @@ func (fc *FacilitatorClient) Settle(payload PaymentPayload, requirements Payment
 		return nil, fmt.Errorf("marshal settle request: %w", err)
 	}
 
-	resp, err := fc.httpClient.Post(fc.baseURL+"/settle", "application/json", bytes.NewReader(data))
+	respBody, statusCode, err := fc.doPost("/settle", data)
 	if err != nil {
 		return nil, fmt.Errorf("facilitator settle request: %w", err)
 	}
-	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read settle response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("facilitator settle returned %d: %s", resp.StatusCode, string(respBody))
+	if statusCode != http.StatusOK {
+		return nil, fmt.Errorf("facilitator settle returned %d: %s", statusCode, string(respBody))
 	}
 
 	var result SettleResponse

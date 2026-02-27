@@ -30,7 +30,7 @@ func NewInstantBuyHandler(pool *pgxpool.Pool, cfg *config.Config) *InstantBuyHan
 	return &InstantBuyHandler{
 		pool:        pool,
 		q:           gen.New(pool),
-		facilitator: x402.NewFacilitatorClient(cfg.FacilitatorURL),
+		facilitator: x402.NewFacilitatorClient(cfg.FacilitatorURL, cfg.CDPAPIKeyID, cfg.CDPAPIKeySecret),
 		cfg:         cfg,
 	}
 }

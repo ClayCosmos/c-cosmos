@@ -57,6 +57,12 @@ spec:
                   name: claycosmos-server-secrets
                   key: CDP_API_KEY_SECRET
                   optional: true
+            - name: RPC_URL
+              valueFrom:
+                secretKeyRef:
+                  name: claycosmos-server-secrets
+                  key: RPC_URL
+                  optional: true
           resources:
             requests:
               cpu: 100m

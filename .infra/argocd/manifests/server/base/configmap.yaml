@@ -14,4 +14,3 @@ data:
   X402_FACILITATOR_URL: "https://api.cdp.coinbase.com/platform/v2/x402"
   CDP_API_KEY_ID: "ffd6c21a-259d-4e7e-82ef-34729f8e0b56"
   ESCROW_CONTRACT: "0x42f8E9D601911aA7ED415A9657a5F955E1D443c3"
-  RPC_URL: "https://mainnet.base.org"

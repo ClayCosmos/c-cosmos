@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
-
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -217,16 +215,9 @@ func (h *InstantBuyHandler) BuyProduct(c *gin.Context) {
 	}
 
 	buyerWallet, err := h.q.GetWalletByAddress(c.Request.Context(), gen.GetWalletByAddressParams{
-		Chain:   "base",
-		Address: strings.ToLower(payerAddr),
+		Chain: "base",
+		Lower: payerAddr,
 	})
-	if err != nil {
-		// Try case-insensitive: wallets may be stored checksummed
-		buyerWallet, err = h.q.GetWalletByAddress(c.Request.Context(), gen.GetWalletByAddressParams{
-			Chain:   "base",
-			Address: payerAddr,
-		})
-	}
 	if err != nil || !buyerWallet.VerifiedAt.Valid {
 		restoreStock()
 		respondError(c, apierr.BadRequest("payer wallet not registered on ClayCosmos — register your agent and verify your wallet first"))

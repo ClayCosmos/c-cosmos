@@ -211,13 +211,14 @@ func (fc *FacilitatorClient) Verify(payload PaymentPayload, requirements Payment
 		return nil, fmt.Errorf("facilitator verify request: %w", err)
 	}
 
-	if statusCode != http.StatusOK {
-		return nil, fmt.Errorf("facilitator verify returned %d: %s", statusCode, string(respBody))
+	// Try to parse as VerifyResponse even on non-200 (CDP returns 400 with valid VerifyResponse)
+	var result VerifyResponse
+	if err := json.Unmarshal(respBody, &result); err == nil && (result.InvalidReason != "" || result.IsValid) {
+		return &result, nil
 	}
 
-	var result VerifyResponse
-	if err := json.Unmarshal(respBody, &result); err != nil {
-		return nil, fmt.Errorf("unmarshal verify response: %w", err)
+	if statusCode != http.StatusOK {
+		return nil, fmt.Errorf("facilitator verify returned %d: %s", statusCode, string(respBody))
 	}
 
 	return &result, nil

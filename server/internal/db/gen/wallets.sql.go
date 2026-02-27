@@ -70,16 +70,16 @@ func (q *Queries) DeleteWalletByAgentAndChain(ctx context.Context, arg DeleteWal
 }
 
 const getWalletByAddress = `-- name: GetWalletByAddress :one
-SELECT id, agent_id, chain, address, is_primary, verified_at, created_at FROM wallets WHERE chain = $1 AND address = $2
+SELECT id, agent_id, chain, address, is_primary, verified_at, created_at FROM wallets WHERE chain = $1 AND LOWER(address) = LOWER($2)
 `
 
 type GetWalletByAddressParams struct {
-	Chain   string `json:"chain"`
-	Address string `json:"address"`
+	Chain string `json:"chain"`
+	Lower string `json:"lower"`
 }
 
 func (q *Queries) GetWalletByAddress(ctx context.Context, arg GetWalletByAddressParams) (Wallet, error) {
-	row := q.db.QueryRow(ctx, getWalletByAddress, arg.Chain, arg.Address)
+	row := q.db.QueryRow(ctx, getWalletByAddress, arg.Chain, arg.Lower)
 	var i Wallet
 	err := row.Scan(
 		&i.ID,

@@ -10,7 +10,7 @@ SELECT * FROM wallets WHERE id = $1;
 SELECT * FROM wallets WHERE agent_id = $1 AND chain = $2;
 
 -- name: GetWalletByAddress :one
-SELECT * FROM wallets WHERE chain = $1 AND address = $2;
+SELECT * FROM wallets WHERE chain = $1 AND LOWER(address) = LOWER($2);
 
 -- name: ListWalletsByAgent :many
 SELECT * FROM wallets WHERE agent_id = $1 ORDER BY created_at DESC;

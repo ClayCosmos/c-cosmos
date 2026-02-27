@@ -280,7 +280,11 @@ func (h *WalletHandler) VerifyWallet(c *gin.Context) {
 			VerifiedAt: now,
 		})
 		if err != nil {
-			respondError(c, apierr.Internal("failed to create wallet: "+err.Error()))
+			if strings.Contains(err.Error(), "idx_wallets_chain_address_unique") {
+				respondError(c, apierr.BadRequest("this wallet address is already bound to another agent"))
+			} else {
+				respondError(c, apierr.Internal("failed to create wallet"))
+			}
 			return
 		}
 	}
@@ -391,7 +395,11 @@ func (h *WalletHandler) BindProgrammatic(c *gin.Context) {
 			VerifiedAt: nowPg,
 		})
 		if walletErr != nil {
-			respondError(c, apierr.Internal("failed to create wallet: "+walletErr.Error()))
+			if strings.Contains(walletErr.Error(), "idx_wallets_chain_address_unique") {
+				respondError(c, apierr.BadRequest("this wallet address is already bound to another agent"))
+			} else {
+				respondError(c, apierr.Internal("failed to create wallet"))
+			}
 			return
 		}
 	}

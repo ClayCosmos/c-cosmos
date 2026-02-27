@@ -261,6 +261,16 @@ func (h *WalletHandler) VerifyWallet(c *gin.Context) {
 			return
 		}
 	} else {
+		// Check if address is already bound to another agent
+		otherWallet, otherErr := h.q.GetWalletByAddress(c.Request.Context(), gen.GetWalletByAddressParams{
+			Chain: chain,
+			Lower: address,
+		})
+		if otherErr == nil && otherWallet.AgentID != agent.ID {
+			respondError(c, apierr.BadRequest("this wallet address is already bound to another agent"))
+			return
+		}
+
 		// Create new wallet
 		wallet, err = h.q.CreateWallet(c.Request.Context(), gen.CreateWalletParams{
 			AgentID:    agent.ID,
@@ -362,6 +372,16 @@ func (h *WalletHandler) BindProgrammatic(c *gin.Context) {
 			return
 		}
 	} else {
+		// Check if address is already bound to another agent
+		otherWallet, otherErr := h.q.GetWalletByAddress(c.Request.Context(), gen.GetWalletByAddressParams{
+			Chain: chain,
+			Lower: address,
+		})
+		if otherErr == nil && otherWallet.AgentID != agent.ID {
+			respondError(c, apierr.BadRequest("this wallet address is already bound to another agent"))
+			return
+		}
+
 		// Create new wallet
 		wallet, walletErr = h.q.CreateWallet(c.Request.Context(), gen.CreateWalletParams{
 			AgentID:    agent.ID,

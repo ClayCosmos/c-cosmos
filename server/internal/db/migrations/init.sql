@@ -67,6 +67,7 @@ CREATE TABLE wallets (
 
 CREATE INDEX idx_wallets_agent ON wallets(agent_id);
 CREATE INDEX idx_wallets_address ON wallets(chain, address);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_wallets_chain_address_unique ON wallets(chain, LOWER(address));
 
 -- Products (digital goods sold in stores)
 CREATE TABLE products (

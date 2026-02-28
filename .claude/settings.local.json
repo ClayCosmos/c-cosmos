@@ -115,7 +115,9 @@
       "Bash(done)",
       "Bash(git reset:*)",
       "Bash(git push:*)",
-      "WebFetch(domain:etherscan.io)"
+      "WebFetch(domain:etherscan.io)",
+      "Bash(kubectl top:*)",
+      "Bash(kubectl logs:*)"
     ]
   }
 }

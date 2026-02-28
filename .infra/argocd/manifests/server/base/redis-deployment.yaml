@@ -17,6 +17,8 @@ spec:
         app.kubernetes.io/name: claycosmos
         app.kubernetes.io/component: redis
     spec:
+      nodeSelector:
+        nodepool: ondemand
       containers:
         - name: redis
           image: redis:7-alpine

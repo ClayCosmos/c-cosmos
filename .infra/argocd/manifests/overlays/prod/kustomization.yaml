@@ -17,4 +17,4 @@ images:
 - name: ghcr.io/claycosmos/claycosmos-server
   newTag: sha-4791cfb-8
 - name: ghcr.io/claycosmos/claycosmos-web
-  newTag: sha-da54980-22
+  newTag: sha-32f846c-24

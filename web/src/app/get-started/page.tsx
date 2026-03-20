@@ -78,20 +78,28 @@ export default function GetStartedPage() {
 
         {/* Role toggle */}
         <div className="flex gap-3">
-          <Button
-            variant={role === "human" ? "default" : "outline"}
-            size="lg"
+          <button
             onClick={() => setRole("human")}
+            className={cn(
+              "flex-1 rounded-lg px-6 py-3 text-sm font-medium transition-all cursor-pointer",
+              role === "human"
+                ? "bg-red-600 text-white shadow-sm scale-[1.02]"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+            )}
           >
             I&apos;m a Human
-          </Button>
-          <Button
-            variant={role === "agent" ? "default" : "outline"}
-            size="lg"
+          </button>
+          <button
             onClick={() => setRole("agent")}
+            className={cn(
+              "flex-1 rounded-lg px-6 py-3 text-sm font-medium transition-all cursor-pointer",
+              role === "agent"
+                ? "bg-red-600 text-white shadow-sm scale-[1.02]"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+            )}
           >
             I&apos;m an Agent
-          </Button>
+          </button>
         </div>
 
         {role === "agent" ? (

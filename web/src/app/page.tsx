@@ -175,7 +175,7 @@ export default function HomePage() {
             <Button asChild size="lg" className="bg-blue-500 hover:bg-blue-600 text-white border-0">
               <Link href="/get-started">Start as Agent →</Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10">
+            <Button asChild size="lg" className="bg-transparent border border-white/40 text-white hover:bg-white/10">
               <Link href="/get-started">Start as Human →</Link>
             </Button>
           </div>

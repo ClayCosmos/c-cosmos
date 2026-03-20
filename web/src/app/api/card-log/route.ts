@@ -1,62 +1,80 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GIST_ID = process.env.CARD_LOG_GIST_ID || '';
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
+const REPO = 'ClayCosmos/c-cosmos';
+const FILE_PATH = 'web/data/agent-cards.json';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, tagline, skills, url, website } = body;
+    const name = decodeURIComponent(body.name || '').trim();
+    const tagline = decodeURIComponent(body.tagline || '').trim();
+    const skills = decodeURIComponent(body.skills || '')
+      .split(',').map((s: string) => s.trim()).filter(Boolean);
+    const url = decodeURIComponent(body.url || '').trim();
+    const website = decodeURIComponent(body.website || '').trim();
 
     if (!name) {
       return NextResponse.json({ error: 'name required' }, { status: 400 });
     }
 
-    if (!GITHUB_TOKEN || !GIST_ID) {
-      // Fallback: just acknowledge
-      return NextResponse.json({ ok: true, note: 'gist not configured' });
+    const token = process.env.GITHUB_TOKEN;
+    const apiBase = 'https://api.github.com/repos/' + REPO + '/contents/' + FILE_PATH;
+
+    let currentContent = '[]';
+    let sha: string | undefined;
+
+    if (token) {
+      try {
+        const getRes = await fetch(apiBase, {
+          headers: {
+            Authorization: 'Bearer ' + token,
+            Accept: 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28'
+          }
+        });
+        if (getRes.ok) {
+          const data = await getRes.json();
+          sha = data.sha;
+          currentContent = Buffer.from(data.content, 'base64').toString('utf-8');
+        }
+      } catch {}
     }
 
-    // Fetch current gist
-    const gistRes = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-      headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github+json' }
-    });
-    const gist = await gistRes.json();
-    const filename = Object.keys(gist.files)[0];
-    let entries = [];
-    try {
-      entries = JSON.parse(gist.files[filename].content);
-    } catch {}
+    let entries: any[] = [];
+    try { entries = JSON.parse(currentContent); } catch {}
 
-    entries.unshift({
-      name: decodeURIComponent(name || ''),
-      tagline: decodeURIComponent(tagline || ''),
-      skills: decodeURIComponent(skills || '').split(',').map((s: string) => s.trim()).filter(Boolean),
-      url: decodeURIComponent(url || ''),
-      website: decodeURIComponent(website || ''),
-      timestamp: new Date().toISOString(),
-      ip: req.headers.get('x-forwarded-for') || 'unknown',
-    });
+    // Deduplicate: skip if same agent logged today
+    const today = new Date().toISOString().slice(0, 10);
+    const alreadyLogged = entries.some((e: any) =>
+      e.name?.toLowerCase() === name.toLowerCase() &&
+      e.timestamp?.startsWith(today)
+    );
 
-    if (entries.length > 500) entries = entries.slice(0, 500);
+    if (!alreadyLogged) {
+      entries.unshift({ name, tagline, skills, url, website, timestamp: new Date().toISOString() });
+      if (entries.length > 500) entries = entries.slice(0, 500);
 
-    // Update gist
-    await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${GITHUB_TOKEN}`,
-        Accept: 'application/vnd.github+json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        files: {
-          [filename]: { content: JSON.stringify(entries, null, 2) }
-        }
-      })
-    });
+      if (token) {
+        const newContent = Buffer.from(JSON.stringify(entries, null, 2)).toString('base64');
+        await fetch(apiBase, {
+          method: 'PUT',
+          headers: {
+            Authorization: 'Bearer ' + token,
+            Accept: 'application/vnd.github+json',
+            'Content-Type': 'application/json',
+            'X-GitHub-Api-Version': '2022-11-28'
+          },
+          body: JSON.stringify({
+            message: 'chore: log agent card creation — ' + name,
+            content: newContent,
+            sha: sha
+          })
+        });
+      }
+    }
 
-    return NextResponse.json({ ok: true, total: entries.length });
-  } catch (err) {
-    return NextResponse.json({ error: 'server error' }, { status: 500 });
+    return NextResponse.json({ ok: true, total: entries.length, alreadyLogged });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

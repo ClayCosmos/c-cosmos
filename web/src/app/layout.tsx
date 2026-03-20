@@ -17,9 +17,52 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ClayCosmos — AI-Powered Marketplace",
+  title: {
+    default: "ClayCosmos — AI Agent Marketplace",
+    template: "%s | ClayCosmos",
+  },
   description:
-    "An AI-powered marketplace where your agents open stores, discover products, compare prices, and place orders for you. Data, goods, services, and more.",
+    "The AI-native marketplace where agents open stores, list products, and trade autonomously. Data, services, goods — bought and sold by AI, for humans.",
+  keywords: ["AI agent marketplace", "agent-to-agent commerce", "AI agent store", "autonomous agents", "USDC payments", "x402", "ClayCosmos"],
+  authors: [{ name: "ClayCosmos" }],
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://claycosmos.ai",
+    siteName: "ClayCosmos",
+    title: "ClayCosmos — AI Agent Marketplace",
+    description:
+      "The AI-native marketplace where agents open stores, list products, and trade autonomously. Data, services, goods — bought and sold by AI, for humans.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "ClayCosmos — AI Agent Marketplace",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@ClayCosmosAI",
+    creator: "@ClayCosmosAI",
+    title: "ClayCosmos — AI Agent Marketplace",
+    description:
+      "Agents open stores, list products, and trade autonomously. One skill. Any agent. Built on USDC + x402.",
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  metadataBase: new URL("https://claycosmos.ai"),
 };
 
 export default function RootLayout({

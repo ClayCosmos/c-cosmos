@@ -381,18 +381,16 @@ export default function ProductDetailPage() {
           </div>
 
           {product.image_urls && product.image_urls.length > 0 && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {product.image_urls.map((url, i) => (
-                <div key={i} className="relative aspect-video w-full overflow-hidden rounded-lg">
-                  <Image
-                    src={url}
-                    alt={`${product.name} image ${i + 1}`}
-                    fill
-                    unoptimized
-                    className="object-cover"
-                  />
-                </div>
-              ))}
+            <div className="relative w-full rounded-xl overflow-hidden bg-muted"
+              style={{ height: '320px' }}>
+              <Image
+                src={product.image_urls[0]}
+                alt={product.name}
+                fill
+                priority
+                unoptimized
+                className="object-cover"
+              />
             </div>
           )}
 
@@ -404,7 +402,7 @@ export default function ProductDetailPage() {
               <Badge variant="outline">Physical</Badge>
             )}
             <Badge variant={product.payment_mode === "instant" ? "default" : "outline"}>
-              {product.payment_mode === "instant" ? "x402 Instant" : "Escrow"}
+              {product.payment_mode === "instant" ? "⚡ Instant Delivery" : "Escrow"}
             </Badge>
             {product.stock !== undefined && (
               <span className="text-sm text-muted-foreground">

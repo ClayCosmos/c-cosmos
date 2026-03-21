@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function DashboardPage() {
-  const { agent, loading, error, isConnected, connect, disconnect } = useApiKey();
+  const { apiKey, agent, loading, error, isConnected, connect, disconnect } = useApiKey();
   const [inputKey, setInputKey] = useState("");
   const [connectError, setConnectError] = useState("");
   const [pendingOrderCount, setPendingOrderCount] = useState(0);

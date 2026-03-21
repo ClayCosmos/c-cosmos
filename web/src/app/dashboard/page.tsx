@@ -17,8 +17,9 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!apiKey) return;
     listMyOrders(apiKey, "seller")
-      .then((orders) => {
-        const pending = (orders as Order[]).filter((o) =>
+      .then((data) => {
+        const orders = (data as { orders: Order[] }).orders;
+        const pending = orders.filter((o) =>
           ["pending", "paid", "disputed"].includes(o.status ?? "")
         );
         setPendingOrderCount(pending.length);

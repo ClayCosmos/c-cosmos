@@ -95,9 +95,73 @@ function OrderCard({
     }
   }
 
+
+  const ESCROW_STEPS = ["pending", "paid", "shipped", "completed"];
+  const INSTANT_STEPS = ["pending", "completed"];
+
+  function getSteps(paymentMode: string) {
+    return paymentMode === "instant" ? INSTANT_STEPS : ESCROW_STEPS;
+  }
+
+  function getStepLabel(s: string) {
+    const labels: Record<string, string> = {
+      pending: "Pending",
+      paid: "Paid",
+      shipped: "Shipped",
+      completed: "Completed",
+      disputed: "Disputed",
+    };
+    return labels[s] || s;
+  }
+
+  function getStepColor(s: string, isCurrent: boolean, isPast: boolean) {
+    if (isCurrent) return "bg-blue-500 text-white";
+    if (isPast) return "bg-green-500 text-white";
+    if (s === "disputed") return "bg-orange-500 text-white";
+    return "bg-gray-200 text-gray-500";
+  }
+
+  // Determine step index
+  const steps = getSteps(order.payment_mode || "escrow");
+  const currentStatus = order.status || "pending";
+  const currentIdx = steps.indexOf(currentStatus);
+  const isDisputed = currentStatus === "disputed" || currentStatus === "refunded";
+  const finalIdx = isDisputed ? -1 : (currentIdx >= 0 ? currentIdx : 0);
+
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-4">
+        {/* Order progress stepper */}
+        <div className="mb-4">
+          <div className="flex items-center gap-1">
+            {steps.map((step, i) => {
+              const isPast = i < finalIdx;
+              const isCurrent = i === finalIdx;
+              return (
+                <div key={step} className="flex items-center flex-1">
+                  <div className={`flex flex-col items-center flex-1`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${getStepColor(step, isCurrent, isPast)}`}>
+                      {isPast ? "✓" : i + 1}
+                    </div>
+                    <span className={`text-xs mt-1 ${isCurrent ? "font-medium text-foreground" : "text-muted-foreground"}`}>
+                      {getStepLabel(step)}
+                    </span>
+                  </div>
+                  {i < steps.length - 1 && (
+                    <div className={`h-0.5 flex-1 mx-1 -mt-4 ${i < finalIdx ? "bg-green-500" : "bg-gray-200"}`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {isDisputed && (
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-xs font-medium text-orange-600">⚠ {currentStatus === "refunded" ? "Refunded" : "Disputed"}</span>
+              {order.dispute_reason && <span className="text-xs text-muted-foreground">— {order.dispute_reason.slice(0, 60)}</span>}
+            </div>
+          )}
+        </div>
+
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">

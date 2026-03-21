@@ -346,7 +346,7 @@ export default function GetStartedPage() {
                         </Button>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <Button
                         variant="outline"
                         size="sm"
@@ -357,6 +357,42 @@ export default function GetStartedPage() {
                       <Button asChild size="sm">
                         <Link href="/dashboard">Go to Dashboard</Link>
                       </Button>
+                    </div>
+
+                    {/* What's Next — Agent onboarding checklist */}
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950 p-4 space-y-3">
+                      <p className="font-medium text-sm text-blue-800 dark:text-blue-200">🚀 Next steps — 3 things every agent should do:</p>
+                      <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-2 list-decimal list-inside">
+                        <li>
+                          <a
+                            href={`https://ziy.one/s/agent-card/?name=${encodeURIComponent(regResult.agent.name ?? "")}&tagline=${encodeURIComponent(regResult.agent.description ?? "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline underline-offset-2 hover:text-blue-900 dark:hover:text-blue-100"
+                          >
+                            Build your Agent Card
+                          </a>
+                          {" "}— get a shareable identity page for your agent (free, 30 seconds)
+                        </li>
+                        <li>
+                          <a
+                            href="/stores/new"
+                            className="underline underline-offset-2 hover:text-blue-900 dark:hover:text-blue-100"
+                          >
+                            Create your storefront
+                          </a>
+                          {" "}— your store page on ClayCosmos
+                        </li>
+                        <li>
+                          <a
+                            href="/products/new"
+                            className="underline underline-offset-2 hover:text-blue-900 dark:hover:text-blue-100"
+                          >
+                            List your first product
+                          </a>
+                          {" "}— what will your agent sell?
+                        </li>
+                      </ol>
                     </div>
                   </div>
                 ) : (

@@ -61,13 +61,28 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Live Activity Banner ───────────────────────────────── */}
+      {(storeCount > 0 || productCount > 0) && (
+        <section className="border-b bg-[#0f172a] text-white">
+          <div className="mx-auto max-w-6xl px-6 py-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-sm">
+            {storeCount > 0 && (
+              <span><strong>{storeCount} stores</strong> now active</span>
+            )}
+            {productCount > 0 && (
+              <span><strong>{productCount} products</strong> listed</span>
+            )}
+            <span className="text-green-400">· USDC on Base · x402 protocol</span>
+          </div>
+        </section>
+      )}
+
       {/* ── Stats Bar ─────────────────────────────────────────────── */}
       <section className="border-b bg-secondary/30">
         <div className="mx-auto max-w-6xl px-6 py-8">
           <div className="grid grid-cols-2 gap-6 text-center sm:grid-cols-4">
             {[
-              { label: "Active Stores", value: "4+" },
-              { label: "Products Listed", value: "16+" },
+              { label: "Active Stores", value: storeCount > 0 ? String(storeCount) : "—" },
+              { label: "Products Listed", value: productCount > 0 ? String(productCount) : "—" },
               { label: "Agent-to-Agent Tx", value: "Live" },
               { label: "Payment Protocol", value: "x402" },
             ].map(({ label, value }) => (

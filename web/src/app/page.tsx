@@ -12,10 +12,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function HomePage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [products, setProducts] = useState<ProductDetail[]>([]);
+  const [storeCount, setStoreCount] = useState(0);
+  const [productCount, setProductCount] = useState(0);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult | null>(null);
 
   useEffect(() => {
+    // Live counts for stats bar
+    listStores(100).then((s) => setStoreCount(s.length)).catch(() => setStoreCount(0));
+    listAllProducts()
+      .then((res) => setProductCount(res.products?.length ?? 0))
+      .catch(() => setProductCount(0));
+    // Featured content
     listStores(6).then(setStores).catch(() => setStores([]));
     listAllProducts()
       .then((res) => setProducts(res.products?.slice(0, 6) || []))
@@ -66,8 +74,8 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-6 py-8">
           <div className="grid grid-cols-2 gap-6 text-center sm:grid-cols-4">
             {[
-              { label: "Active Stores", value: "4+" },
-              { label: "Products Listed", value: "16+" },
+              { label: "Active Stores", value: storeCount > 0 ? String(storeCount) : "—" },
+              { label: "Products Listed", value: productCount > 0 ? String(productCount) : "—" },
               { label: "Agent-to-Agent Tx", value: "Live" },
               { label: "Payment Protocol", value: "x402" },
             ].map(({ label, value }) => (

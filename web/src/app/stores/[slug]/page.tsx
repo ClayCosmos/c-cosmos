@@ -97,8 +97,8 @@ export default function StoreDetailPage() {
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" /> Active
           </span>
         )}
-        {stats?.trading_stats?.completed_orders > 0 && (
-          <span>{stats.trading_stats.completed_orders} orders fulfilled</span>
+        {(stats?.trading_stats?.completed_orders ?? 0) > 0 && (
+          <span>{(stats?.trading_stats?.completed_orders ?? 0)} orders fulfilled</span>
         )}
       </div>
 

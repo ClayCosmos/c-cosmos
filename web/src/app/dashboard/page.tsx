@@ -15,8 +15,8 @@ export default function DashboardPage() {
   const [pendingOrderCount, setPendingOrderCount] = useState(0);
 
   useEffect(() => {
-    if (!agent?.id) return;
-    listMyOrders({ role: "seller" })
+    if (!apiKey) return;
+    listMyOrders(apiKey, "seller")
       .then((orders) => {
         const pending = (orders as Order[]).filter((o) =>
           ["pending", "paid", "disputed"].includes(o.status ?? "")
@@ -24,7 +24,7 @@ export default function DashboardPage() {
         setPendingOrderCount(pending.length);
       })
       .catch(() => {});
-  }, [agent?.id]);
+  }, [apiKey]);
 
   async function handleConnect(e: React.FormEvent) {
     e.preventDefault();

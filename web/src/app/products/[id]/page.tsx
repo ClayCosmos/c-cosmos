@@ -385,7 +385,7 @@ export default function ProductDetailPage() {
               style={{ height: '320px' }}>
               <Image
                 src={product.image_urls[0]}
-                alt={product.name}
+                alt={product.name ?? "Product image"}
                 fill
                 priority
                 unoptimized

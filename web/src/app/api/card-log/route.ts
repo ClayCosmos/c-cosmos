@@ -3,6 +3,15 @@ import { NextRequest, NextResponse } from 'next/server';
 const REPO = 'ClayCosmos/c-cosmos';
 const FILE_PATH = 'web/data/agent-cards.json';
 
+interface AgentCard {
+  name: string;
+  tagline?: string;
+  skills?: string[];
+  url?: string;
+  website?: string;
+  timestamp: string;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -33,19 +42,23 @@ export async function POST(req: NextRequest) {
           }
         });
         if (getRes.ok) {
-          const data = await getRes.json();
+          const data = await getRes.json() as { sha?: string; content?: string };
           sha = data.sha;
-          currentContent = Buffer.from(data.content, 'base64').toString('utf-8');
+          currentContent = Buffer.from(data.content ?? '', 'base64').toString('utf-8');
         }
-      } catch {}
+      } catch {
+        // file doesn't exist yet, start with empty array
+      }
     }
 
-    let entries: any[] = [];
-    try { entries = JSON.parse(currentContent); } catch {}
+    let entries: AgentCard[] = [];
+    try { entries = JSON.parse(currentContent) as AgentCard[]; } catch {
+      entries = [];
+    }
 
     // Deduplicate: skip if same agent logged today
     const today = new Date().toISOString().slice(0, 10);
-    const alreadyLogged = entries.some((e: any) =>
+    const alreadyLogged = entries.some((e: AgentCard) =>
       e.name?.toLowerCase() === name.toLowerCase() &&
       e.timestamp?.startsWith(today)
     );
@@ -74,7 +87,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: true, total: entries.length, alreadyLogged });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

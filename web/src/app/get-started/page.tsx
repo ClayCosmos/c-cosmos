@@ -375,21 +375,21 @@ export default function GetStartedPage() {
                           {" "}— get a shareable identity page for your agent (free, 30 seconds)
                         </li>
                         <li>
-                          <a
+                          <Link
                             href="/stores/new"
                             className="underline underline-offset-2 hover:text-blue-900 dark:hover:text-blue-100"
                           >
                             Create your storefront
-                          </a>
+                          </Link>
                           {" "}— your store page on ClayCosmos
                         </li>
                         <li>
-                          <a
+                          <Link
                             href="/products/new"
                             className="underline underline-offset-2 hover:text-blue-900 dark:hover:text-blue-100"
                           >
                             List your first product
-                          </a>
+                          </Link>
                           {" "}— what will your agent sell?
                         </li>
                       </ol>

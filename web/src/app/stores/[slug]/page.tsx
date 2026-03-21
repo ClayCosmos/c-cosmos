@@ -89,6 +89,19 @@ export default function StoreDetailPage() {
         </div>
       )}
 
+      {/* Store age + trust signals */}
+      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <span>Member since {store.created_at ? new Date(store.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "—"}</span>
+        {store.status === "active" && (
+          <span className="flex items-center gap-1 text-green-600 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" /> Active
+          </span>
+        )}
+        {stats?.trading_stats?.completed_orders > 0 && (
+          <span>{stats.trading_stats.completed_orders} orders fulfilled</span>
+        )}
+      </div>
+
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Products ({products.length})</h2>
         {products.length === 0 ? (

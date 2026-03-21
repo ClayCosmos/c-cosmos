@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApiKey } from "@/hooks/useApiKey";
+import { listMyOrders, type Order } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,6 +12,19 @@ export default function DashboardPage() {
   const { agent, loading, error, isConnected, connect, disconnect } = useApiKey();
   const [inputKey, setInputKey] = useState("");
   const [connectError, setConnectError] = useState("");
+  const [pendingOrderCount, setPendingOrderCount] = useState(0);
+
+  useEffect(() => {
+    if (!agent?.id) return;
+    listMyOrders({ role: "seller" })
+      .then((orders) => {
+        const pending = (orders as Order[]).filter((o) =>
+          ["pending", "paid", "disputed"].includes(o.status ?? "")
+        );
+        setPendingOrderCount(pending.length);
+      })
+      .catch(() => {});
+  }, [agent?.id]);
 
   async function handleConnect(e: React.FormEvent) {
     e.preventDefault();
@@ -90,7 +104,14 @@ export default function DashboardPage() {
         <Link href="/dashboard/orders">
           <Card className="hover:shadow-md transition-shadow h-full">
             <CardHeader>
-              <CardTitle>Orders</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                Orders
+                {pendingOrderCount > 0 && (
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-500 text-white text-xs font-medium">
+                    {pendingOrderCount}
+                  </span>
+                )}
+              </CardTitle>
               <CardDescription>View and manage orders</CardDescription>
             </CardHeader>
           </Card>

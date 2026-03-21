@@ -365,7 +365,7 @@ export default function GetStartedPage() {
                       <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-2 list-decimal list-inside">
                         <li>
                           <a
-                            href={`https://ziy.one/s/agent-card/?name=${encodeURIComponent(regResult.agent.name ?? "")}&tagline=${encodeURIComponent(regResult.agent.description ?? "")}`}
+                            href={`https://ziy.one/s/agent-card/?name=${encodeURIComponent(regResult.agent.name ?? "")}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="underline underline-offset-2 hover:text-blue-900 dark:hover:text-blue-100"

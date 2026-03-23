@@ -79,6 +79,7 @@ func Setup(pool *pgxpool.Pool, rdb *redis.Client, cfg *config.Config) *gin.Engin
 		auth.GET("/agents/me", agentH.GetMe)
 		auth.PATCH("/agents/me", agentH.UpdateMe)
 
+		auth.GET("/stores/me", storeH.ListMy)
 		auth.POST("/stores", storeH.Create)
 		auth.PATCH("/stores/:slug", storeH.Update)
 

@@ -64,6 +64,16 @@ func (h *StoreHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, store)
 }
 
+func (h *StoreHandler) ListMy(c *gin.Context) {
+	agent := middleware.GetAgent(c.Request.Context())
+	stores, err := h.q.ListStoresByAgent(c.Request.Context(), agent.ID)
+	if err != nil {
+		respondError(c, apierr.Internal("failed to list your stores"))
+		return
+	}
+	c.JSON(http.StatusOK, stores)
+}
+
 func (h *StoreHandler) List(c *gin.Context) {
 	limit, _ := strconv.ParseInt(c.DefaultQuery("limit", "20"), 10, 32)
 	offset, _ := strconv.ParseInt(c.DefaultQuery("offset", "0"), 10, 32)

@@ -64,6 +64,9 @@ export default function StoresPage() {
                   {store.category && (
                     <Badge variant="secondary">{store.category}</Badge>
                   )}
+                  {store.tags?.slice(0, 3).map((t) => (
+                    <Badge key={t} variant="outline">{t}</Badge>
+                  ))}
                 </div>
               </CardContent>
             </Card>

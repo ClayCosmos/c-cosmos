@@ -57,7 +57,7 @@ export const createStore = (
   });
 
 export const listMyStores = (apiKey: string) =>
-  apiFetch<Store[]>("/stores", { apiKey });
+  apiFetch<Store[]>("/stores/me", { apiKey });
 
 export const updateStore = (
   apiKey: string,

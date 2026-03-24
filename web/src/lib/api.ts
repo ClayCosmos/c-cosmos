@@ -48,7 +48,7 @@ export const getStore = (slug: string) =>
 
 export const createStore = (
   apiKey: string,
-  data: { name: string; slug: string; description?: string; category?: string }
+  data: { name: string; slug: string; description?: string; category?: string; tags?: string[] }
 ) =>
   apiFetch<Store>("/stores", {
     method: "POST",
@@ -62,7 +62,7 @@ export const listMyStores = (apiKey: string) =>
 export const updateStore = (
   apiKey: string,
   slug: string,
-  data: { name?: string; description?: string; category?: string; status?: string }
+  data: { name?: string; description?: string; category?: string; tags?: string[]; status?: string }
 ) =>
   apiFetch<Store>(`/stores/${slug}`, {
     method: "PATCH",

@@ -31,6 +31,7 @@ function StoreCard({
   const [editName, setEditName] = useState(store.name ?? "");
   const [editDescription, setEditDescription] = useState(store.description ?? "");
   const [editCategory, setEditCategory] = useState(store.category ?? "");
+  const [editTags, setEditTags] = useState(store.tags?.join(", ") ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const { apiKey } = useApiKey();
@@ -39,6 +40,7 @@ function StoreCard({
     setEditName(store.name ?? "");
     setEditDescription(store.description ?? "");
     setEditCategory(store.category ?? "");
+    setEditTags(store.tags?.join(", ") ?? "");
     setError("");
     setEditing(true);
   }
@@ -48,10 +50,14 @@ function StoreCard({
     setSaving(true);
     setError("");
     try {
+      const tags = editTags
+        ? editTags.split(",").map((t) => t.trim()).filter(Boolean)
+        : [];
       const updated = await updateStore(apiKey, store.slug, {
         name: editName,
         description: editDescription,
         category: editCategory,
+        tags,
       });
       onUpdate(updated);
       setEditing(false);
@@ -75,6 +81,11 @@ function StoreCard({
             value={editCategory}
             onChange={(e) => setEditCategory(e.target.value)}
             placeholder="Category"
+          />
+          <Input
+            value={editTags}
+            onChange={(e) => setEditTags(e.target.value)}
+            placeholder="Tags (comma-separated, e.g. AI, automation, data)"
           />
           <Input
             value={editDescription}
@@ -125,6 +136,7 @@ export default function DashboardStorePage() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
+  const [tags, setTags] = useState("");
   const [msg, setMsg] = useState("");
 
   const { apiKey, isConnected } = useApiKey();
@@ -162,7 +174,13 @@ export default function DashboardStorePage() {
     }
     setMsg("");
     try {
-      const store = await createStore(apiKey, { name, slug, description, category });
+      const store = await createStore(apiKey, {
+        name,
+        slug,
+        description,
+        category,
+        tags: tags ? tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
+      });
       setStores((prev) => [store, ...prev]);
       setMsg("Store created!");
       setName("");
@@ -170,6 +188,7 @@ export default function DashboardStorePage() {
       setSlugTouched(false);
       setDescription("");
       setCategory("");
+      setTags("");
     } catch (err) {
       setMsg(err instanceof Error ? err.message : "Failed to create store");
     }
@@ -218,6 +237,11 @@ export default function DashboardStorePage() {
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder="Category"
+              />
+              <Input
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="Tags (comma-separated, e.g. AI, automation)"
               />
               <Input
                 value={description}

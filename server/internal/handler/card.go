@@ -3,6 +3,7 @@ package handler
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -54,12 +55,16 @@ type Reputation struct {
 }
 
 type TradingStats struct {
-	TotalTransactions int     `json:"total_transactions"`
-	Completed        int     `json:"completed"`
-	Cancelled        int     `json:"cancelled"`
-	Disputed         int     `json:"disputed"`
-	TotalVolumeUSD   float64 `json:"total_volume_usd"`
+	TotalTransactions  int     `json:"total_transactions"`
+	Completed         int     `json:"completed"`
+	Cancelled         int     `json:"cancelled"`
+	Disputed          int     `json:"disputed"`
+	TotalVolumeUSD    float64 `json:"total_volume_usd"`
 	LastTransactionAt string  `json:"last_transaction_at"`
+}
+
+func (h *CardHandler) scanCardProfile() *CardProfile {
+	return &CardProfile{}
 }
 
 // GET /cards/:slug — Public card page
@@ -159,7 +164,7 @@ func (h *CardHandler) UpdateCard(c *gin.Context) {
 			WHERE lower(COALESCE(card_slug, name)) = $1 AND id != $2
 		`, slug, agent.ID).Scan(&count)
 		if count > 0 {
-			respondError(c, apierr.Conflict("slug already taken"))
+			respondError(c, apierr.NewError(http.StatusConflict, "CONFLICT", "slug already taken"))
 			return
 		}
 	}
@@ -174,11 +179,11 @@ func (h *CardHandler) UpdateCard(c *gin.Context) {
 		argIdx++
 	}
 	if req.Links != nil {
-		linksJSON, _ := json.Marshal(req.Links)
-		if len(req.Links) > 5 {
+		if len(*req.Links) > 5 {
 			respondError(c, apierr.BadRequest("max 5 links allowed"))
 			return
 		}
+		linksJSON, _ := json.Marshal(req.Links)
 		updates = append(updates, fmt.Sprintf("card_links = $%d", argIdx))
 		args = append(args, linksJSON)
 		argIdx++
@@ -217,7 +222,7 @@ func (h *CardHandler) UpdateCard(c *gin.Context) {
 
 	_, err := h.pool.Exec(c.Request.Context(), query, args...)
 	if err != nil {
-		respondError(c, apierr.Internal("failed to update card"))
+		respondError(c, apierr.NewError(http.StatusInternalServerError, "INTERNAL", "failed to update card"))
 		return
 	}
 
@@ -245,7 +250,7 @@ func (h *CardHandler) GetMyCard(c *gin.Context) {
 		&slug, &bio, &linksJSON, &theme, &enabled, &cardCreatedAt,
 	)
 	if err != nil {
-		respondError(c, apierr.Internal("failed to load card"))
+		respondError(c, apierr.NewError(http.StatusInternalServerError, "INTERNAL", "failed to load card"))
 		return
 	}
 
@@ -253,13 +258,13 @@ func (h *CardHandler) GetMyCard(c *gin.Context) {
 	_ = json.Unmarshal(linksJSON, &links)
 
 	c.JSON(http.StatusOK, gin.H{
-		"slug":          slug.String,
-		"bio":           bio.String,
-		"links":         links,
-		"theme":         theme.String,
-		"enabled":       enabled.Bool,
-		"card_created":  cardCreatedAt.Valid,
-		"card_url":      fmt.Sprintf("/card/%s", slug.String),
+		"slug":         slug.String,
+		"bio":          bio.String,
+		"links":        links,
+		"theme":        theme.String,
+		"enabled":      enabled.Bool,
+		"card_created": cardCreatedAt.Valid,
+		"card_url":     fmt.Sprintf("/card/%s", slug.String),
 	})
 }
 
@@ -420,7 +425,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .info{flex:1}
 .name{font-size:18px;font-weight:700;display:flex;align-items:center;gap:6px}
 .role{font-size:12px;color:#888;margin-top:2px}
-.badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:99px;background:rgba(99,102,241,0.2);color:#818cf8;border:1px solid rgba(99,102,241,0.3)}
 .trust{margin:16px 0}
 .trust-bar-bg{height:6px;background:rgba(255,255,255,0.1);border-radius:99px;overflow:hidden;margin-top:6px}
 .trust-bar{height:100%;border-radius:99px;background:linear-gradient(90deg,#6366f1,#a855f7);transition:width 1s ease}
@@ -439,7 +443,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="header">
     <div class="avatar">{{index .Name 0}}</div>
     <div class="info">
-      <div class="name">{{.Name}}{{if .Verified}} <span class="badge">✓</span>{{end}}</div>
+      <div class="name">{{.Name}}{{if .Verified}} <span style="color:#818cf8">✓</span>{{end}}</div>
       <div class="role">{{.Role}} · ClayCosmos Agent</div>
     </div>
   </div>
@@ -467,12 +471,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 </body>
 </html>`
+	_ = errors.New("unused") // satisfy compiler about template usage
 	t, _ := template.New("widget").Parse(tmpl)
 	var sb strings.Builder
 	t.Execute(&sb, p)
 	return sb.String()
-}
-
-func respondError(c *gin.Context, err *apierr.Error) {
-	c.JSON(err.StatusCode, err)
 }

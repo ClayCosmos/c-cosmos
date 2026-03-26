@@ -10,6 +10,7 @@ const dashboardLinks = [
   { href: "/dashboard/products", label: "Products" },
   { href: "/dashboard/orders", label: "Orders" },
   { href: "/dashboard/wallets", label: "Wallets" },
+  { href: "/dashboard/card", label: "Card" },
 ];
 
 export default function DashboardLayout({

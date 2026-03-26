@@ -164,7 +164,7 @@ func (h *CardHandler) UpdateCard(c *gin.Context) {
 			WHERE lower(COALESCE(card_slug, name)) = $1 AND id != $2
 		`, slug, agent.ID).Scan(&count)
 		if count > 0 {
-			respondError(c, apierr.NewError(http.StatusConflict, "CONFLICT", "slug already taken"))
+			respondError(c, apierr.Conflict("slug already taken"))
 			return
 		}
 	}
@@ -222,7 +222,7 @@ func (h *CardHandler) UpdateCard(c *gin.Context) {
 
 	_, err := h.pool.Exec(c.Request.Context(), query, args...)
 	if err != nil {
-		respondError(c, apierr.NewError(http.StatusInternalServerError, "INTERNAL", "failed to update card"))
+		respondError(c, apierr.Internal("failed to update card"))
 		return
 	}
 
@@ -250,7 +250,7 @@ func (h *CardHandler) GetMyCard(c *gin.Context) {
 		&slug, &bio, &linksJSON, &theme, &enabled, &cardCreatedAt,
 	)
 	if err != nil {
-		respondError(c, apierr.NewError(http.StatusInternalServerError, "INTERNAL", "failed to load card"))
+		respondError(c, apierr.Internal("failed to load card"))
 		return
 	}
 

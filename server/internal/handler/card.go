@@ -155,11 +155,11 @@ func (h *CardHandler) UpdateCard(c *gin.Context) {
 			return
 		}
 		var count int
-		h.pool.QueryRow(c.Request.Context(), `
+		row := h.pool.QueryRow(c.Request.Context(), `
 			SELECT COUNT(*) FROM agents
 			WHERE lower(COALESCE(card_slug, name)) = $1 AND id != $2
-		`, slug, agent.ID).Scan(&count)
-		if err != nil {
+		`, slug, agent.ID)
+		if err := row.Scan(&count); err != nil {
 			respondError(c, apierr.Internal("failed to check slug uniqueness"))
 			return
 		}

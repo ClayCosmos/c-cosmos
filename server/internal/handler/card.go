@@ -326,7 +326,7 @@ func (h *CardHandler) GetWidget(c *gin.Context) {
 	profile.Badges = computeBadges(profile.Reputation, profile.TradingStats, profile.Verified, profile.Role)
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	c.Header("X-Frame-Options", "ALLOWALL")
+	c.Header("Content-Security-Policy", "frame-ancestors *;")
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.String(http.StatusOK, renderWidgetHTML(profile))
 }
@@ -472,8 +472,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </body>
 </html>`
 	_ = errors.New("unused") // satisfy compiler about template usage
-	t, _ := template.New("widget").Parse(tmpl)
+	t, err := template.New("widget").Parse(tmpl)
+	if err != nil {
+		return fmt.Sprintf("<!-- template parse error: %v --><div class="error">Card unavailable</div>", err)
+	}
 	var sb strings.Builder
-	t.Execute(&sb, p)
+	if err := t.Execute(&sb, p); err != nil {
+		return fmt.Sprintf("<!-- template execute error: %v --><div class="error">Card unavailable</div>", err)
+	}
 	return sb.String()
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 
 interface CardData {
   slug: string;
@@ -20,7 +19,6 @@ export default function DashboardCardPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form state
   const [slug, setSlug] = useState("");
   const [bio, setBio] = useState("");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -28,9 +26,11 @@ export default function DashboardCardPage() {
   const [links, setLinks] = useState<{ label: string; url: string }[]>([]);
 
   useEffect(() => {
-    fetch("/api/v1/cards/me")
-      .then((r) => r.json())
+    const apiKey = localStorage.getItem("api_key");
+    fetch("/api/v1/cards/me", apiKey ? { headers: { Authorization: `Bearer ${apiKey}` } } : {})
+      .then((r) => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
       .then((data) => {
+        if (!apiKey && data.api_key) localStorage.setItem("api_key", data.api_key);
         setCard(data);
         setSlug(data.slug || "");
         setBio(data.bio || "");
@@ -47,9 +47,13 @@ export default function DashboardCardPage() {
     setError(null);
     setSaved(false);
     try {
+      const apiKey = localStorage.getItem("api_key");
       const res = await fetch("/api/v1/cards/me", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+        },
         body: JSON.stringify({
           card_slug: slug,
           card_bio: bio,
@@ -101,7 +105,6 @@ export default function DashboardCardPage() {
         <p className="text-gray-400 text-sm">Customize your public agent profile on ClayCosmos</p>
       </div>
 
-      {/* Preview shortcut */}
       {card?.card_url && (
         <div className="mb-6 p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between">
           <div>
@@ -120,7 +123,6 @@ export default function DashboardCardPage() {
       )}
 
       <div className="space-y-6">
-        {/* Enable toggle */}
         <div className="p-5 rounded-xl border border-white/10 bg-white/3">
           <div className="flex items-center justify-between">
             <div>
@@ -136,7 +138,6 @@ export default function DashboardCardPage() {
           </div>
         </div>
 
-        {/* Card URL slug */}
         <div className="p-5 rounded-xl border border-white/10 bg-white/3">
           <h3 className="text-sm font-medium text-white mb-1">Card URL</h3>
           <p className="text-xs text-gray-500 mb-3">claycosmos.ai/card/your-slug</p>
@@ -153,7 +154,6 @@ export default function DashboardCardPage() {
           <p className="text-xs text-gray-600 mt-2">2–64 characters, letters/numbers/hyphens only</p>
         </div>
 
-        {/* Bio */}
         <div className="p-5 rounded-xl border border-white/10 bg-white/3">
           <h3 className="text-sm font-medium text-white mb-1">Bio</h3>
           <p className="text-xs text-gray-500 mb-3">Shown on your public card page</p>
@@ -168,7 +168,6 @@ export default function DashboardCardPage() {
           <p className="text-xs text-gray-600 mt-1 text-right">{bio.length}/280</p>
         </div>
 
-        {/* Links */}
         <div className="p-5 rounded-xl border border-white/10 bg-white/3">
           <div className="flex items-center justify-between mb-3">
             <div>
@@ -211,7 +210,6 @@ export default function DashboardCardPage() {
           </div>
         </div>
 
-        {/* Theme */}
         <div className="p-5 rounded-xl border border-white/10 bg-white/3">
           <h3 className="text-sm font-medium text-white mb-3">Widget Theme</h3>
           <div className="flex gap-3">
@@ -231,7 +229,6 @@ export default function DashboardCardPage() {
           </div>
         </div>
 
-        {/* Error / Save */}
         {error && (
           <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm">
             {error}

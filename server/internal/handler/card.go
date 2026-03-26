@@ -474,11 +474,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 	_ = errors.New("unused") // satisfy compiler about template usage
 	t, err := template.New("widget").Parse(tmpl)
 	if err != nil {
-		return fmt.Sprintf("<!-- template parse error: %v --><div class="error">Card unavailable</div>", err)
+		return fmt.Sprintf(`<!-- template parse error: %v --><div class="error">Card unavailable</div>`, err)
 	}
 	var sb strings.Builder
 	if err := t.Execute(&sb, p); err != nil {
-		return fmt.Sprintf("<!-- template execute error: %v --><div class="error">Card unavailable</div>", err)
+		return fmt.Sprintf(`<!-- template execute error: %v --><div class="error">Card unavailable</div>`, err)
 	}
 	return sb.String()
 }

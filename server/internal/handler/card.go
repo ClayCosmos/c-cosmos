@@ -63,10 +63,6 @@ type TradingStats struct {
 	LastTransactionAt string  `json:"last_transaction_at"`
 }
 
-func (h *CardHandler) scanCardProfile() *CardProfile {
-	return &CardProfile{}
-}
-
 // GET /cards/:slug — Public card page
 func (h *CardHandler) GetCard(c *gin.Context) {
 	slug := strings.TrimPrefix(c.Param("slug"), "@")
@@ -163,6 +159,10 @@ func (h *CardHandler) UpdateCard(c *gin.Context) {
 			SELECT COUNT(*) FROM agents
 			WHERE lower(COALESCE(card_slug, name)) = $1 AND id != $2
 		`, slug, agent.ID).Scan(&count)
+		if err != nil {
+			respondError(c, apierr.Internal("failed to check slug uniqueness"))
+			return
+		}
 		if count > 0 {
 			respondError(c, apierr.Conflict("slug already taken"))
 			return

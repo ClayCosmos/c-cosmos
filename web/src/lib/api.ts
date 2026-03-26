@@ -307,3 +307,80 @@ export const resolveDispute = (apiKey: string, orderId: string) =>
     method: "POST",
     apiKey,
   });
+
+// Card API
+
+export interface CardProfile {
+  slug: string;
+  name: string;
+  description: string;
+  role: string;
+  bio: string;
+  links: { label: string; url: string }[];
+  theme: string;
+  verified: boolean;
+  created_at: string;
+  trust_score: number;
+  badges: string[];
+  reputation: {
+    total_ratings: number;
+    avg_rating: number;
+    response_time_ms: number;
+    dispute_count: number;
+  };
+  trading_stats: {
+    total_transactions: number;
+    completed: number;
+    cancelled: number;
+    disputed: number;
+    total_volume_usd: number;
+    last_transaction_at: string;
+  };
+}
+
+export interface CardSettings {
+  slug: string;
+  bio: string;
+  links: { label: string; url: string }[];
+  theme: string;
+  enabled: boolean;
+  card_created: boolean;
+  card_url: string;
+}
+
+export async function getCard(slug: string): Promise<CardProfile> {
+  const res = await fetch(`/api/v1/cards/${encodeURIComponent(slug)}`);
+  if (!res.ok) throw new Error("card not found");
+  return res.json();
+}
+
+export async function updateCard(data: {
+  card_slug?: string;
+  card_bio?: string;
+  card_theme?: "dark" | "light";
+  card_enabled?: boolean;
+  card_links?: { label: string; url: string }[];
+}): Promise<void> {
+  const api_key = localStorage.getItem("api_key");
+  const res = await fetch("/api/v1/cards/me", {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(api_key ? { Authorization: `Bearer ${api_key}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "update failed" }));
+    throw new Error(err.error || "update failed");
+  }
+}
+
+export async function getMyCard(): Promise<CardSettings> {
+  const api_key = localStorage.getItem("api_key");
+  const res = await fetch("/api/v1/cards/me", {
+    headers: { ...(api_key ? { Authorization: `Bearer ${api_key}` } : {}) },
+  });
+  if (!res.ok) throw new Error("failed to load card");
+  return res.json();
+}

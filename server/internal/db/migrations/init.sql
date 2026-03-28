@@ -1,21 +1,11 @@
--- ClayCosmos Database Schema
--- Run this to initialize or reset the database
+-- ClayCosmos Database Schema (idempotent — safe to re-run without data loss)
 -- Usage: psql -d claycosmos -f init.sql
-
--- Drop existing tables (in correct order due to foreign keys)
-DROP TABLE IF EXISTS failed_settlements CASCADE;
-DROP TABLE IF EXISTS blockchain_events CASCADE;
-DROP TABLE IF EXISTS orders CASCADE;
-DROP TABLE IF EXISTS products CASCADE;
-DROP TABLE IF EXISTS wallets CASCADE;
-DROP TABLE IF EXISTS stores CASCADE;
-DROP TABLE IF EXISTS agents CASCADE;
 
 -- Extensions
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Agents (users/AI agents that interact with the marketplace)
-CREATE TABLE agents (
+CREATE TABLE IF NOT EXISTS agents (
     id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name           VARCHAR(64) UNIQUE NOT NULL,
     description    TEXT,
@@ -31,7 +21,7 @@ CREATE TABLE agents (
 );
 
 -- Stores (each agent can have one or more stores)
-CREATE TABLE stores (
+CREATE TABLE IF NOT EXISTS stores (
     id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     agent_id       UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
     name           VARCHAR(128) NOT NULL,
@@ -47,15 +37,22 @@ CREATE TABLE stores (
 );
 
 -- Full-text search for stores
-ALTER TABLE stores ADD COLUMN tsv tsvector
-    GENERATED ALWAYS AS (
-        setweight(to_tsvector('english', coalesce(name, '')), 'A') ||
-        setweight(to_tsvector('english', coalesce(description, '')), 'B')
-    ) STORED;
-CREATE INDEX idx_stores_tsv ON stores USING GIN(tsv);
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'stores' AND column_name = 'tsv'
+    ) THEN
+        ALTER TABLE stores ADD COLUMN tsv tsvector
+            GENERATED ALWAYS AS (
+                setweight(to_tsvector('english', coalesce(name, '')), 'A') ||
+                setweight(to_tsvector('english', coalesce(description, '')), 'B')
+            ) STORED;
+    END IF;
+END $$;
+CREATE INDEX IF NOT EXISTS idx_stores_tsv ON stores USING GIN(tsv);
 
 -- Wallets (blockchain wallets linked to agents)
-CREATE TABLE wallets (
+CREATE TABLE IF NOT EXISTS wallets (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     agent_id    UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
     chain       VARCHAR(32) NOT NULL DEFAULT 'base',
@@ -66,12 +63,12 @@ CREATE TABLE wallets (
     UNIQUE(agent_id, chain)
 );
 
-CREATE INDEX idx_wallets_agent ON wallets(agent_id);
-CREATE INDEX idx_wallets_address ON wallets(chain, address);
+CREATE INDEX IF NOT EXISTS idx_wallets_agent ON wallets(agent_id);
+CREATE INDEX IF NOT EXISTS idx_wallets_address ON wallets(chain, address);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_wallets_chain_address_unique ON wallets(chain, LOWER(address));
 
 -- Products (digital goods sold in stores)
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
     id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     store_id         UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
     name             VARCHAR(256) NOT NULL,
@@ -90,19 +87,26 @@ CREATE TABLE products (
     UNIQUE(store_id, slug)
 );
 
-CREATE INDEX idx_products_store ON products(store_id);
-CREATE INDEX idx_products_status ON products(status);
+CREATE INDEX IF NOT EXISTS idx_products_store ON products(store_id);
+CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
 
 -- Full-text search for products
-ALTER TABLE products ADD COLUMN tsv tsvector
-    GENERATED ALWAYS AS (
-        setweight(to_tsvector('english', coalesce(name, '')), 'A') ||
-        setweight(to_tsvector('english', coalesce(description, '')), 'B')
-    ) STORED;
-CREATE INDEX idx_products_tsv ON products USING GIN(tsv);
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'products' AND column_name = 'tsv'
+    ) THEN
+        ALTER TABLE products ADD COLUMN tsv tsvector
+            GENERATED ALWAYS AS (
+                setweight(to_tsvector('english', coalesce(name, '')), 'A') ||
+                setweight(to_tsvector('english', coalesce(description, '')), 'B')
+            ) STORED;
+    END IF;
+END $$;
+CREATE INDEX IF NOT EXISTS idx_products_tsv ON products USING GIN(tsv);
 
 -- Orders (purchases of products)
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
     id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_no         VARCHAR(32) UNIQUE NOT NULL,
     product_id       UUID NOT NULL REFERENCES products(id),
@@ -138,15 +142,15 @@ CREATE TABLE orders (
     updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_orders_buyer ON orders(buyer_agent_id);
-CREATE INDEX idx_orders_seller ON orders(seller_agent_id);
-CREATE INDEX idx_orders_status ON orders(status);
-CREATE INDEX idx_orders_escrow ON orders(escrow_contract, escrow_order_id);
-CREATE INDEX idx_orders_product ON orders(product_id);
-CREATE UNIQUE INDEX idx_orders_payment_sig_hash ON orders(payment_sig_hash) WHERE payment_sig_hash IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_orders_buyer ON orders(buyer_agent_id);
+CREATE INDEX IF NOT EXISTS idx_orders_seller ON orders(seller_agent_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_escrow ON orders(escrow_contract, escrow_order_id);
+CREATE INDEX IF NOT EXISTS idx_orders_product ON orders(product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_payment_sig_hash ON orders(payment_sig_hash) WHERE payment_sig_hash IS NOT NULL;
 
 -- Blockchain events (for idempotent event processing)
-CREATE TABLE blockchain_events (
+CREATE TABLE IF NOT EXISTS blockchain_events (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     chain        VARCHAR(32) NOT NULL,
     tx_hash      VARCHAR(128) NOT NULL,
@@ -160,11 +164,11 @@ CREATE TABLE blockchain_events (
     UNIQUE(chain, tx_hash, log_index)
 );
 
-CREATE INDEX idx_events_unprocessed ON blockchain_events(chain, processed) WHERE NOT processed;
-CREATE INDEX idx_events_tx ON blockchain_events(chain, tx_hash);
+CREATE INDEX IF NOT EXISTS idx_events_unprocessed ON blockchain_events(chain, processed) WHERE NOT processed;
+CREATE INDEX IF NOT EXISTS idx_events_tx ON blockchain_events(chain, tx_hash);
 
 -- Failed settlements (x402 payments that settled but order creation failed)
-CREATE TABLE failed_settlements (
+CREATE TABLE IF NOT EXISTS failed_settlements (
     id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     product_id       UUID NOT NULL REFERENCES products(id),
     buyer_agent_id   UUID NOT NULL REFERENCES agents(id),
@@ -183,4 +187,4 @@ CREATE TABLE failed_settlements (
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_failed_settlements_unrecovered ON failed_settlements(recovered) WHERE NOT recovered;
+CREATE INDEX IF NOT EXISTS idx_failed_settlements_unrecovered ON failed_settlements(recovered) WHERE NOT recovered;

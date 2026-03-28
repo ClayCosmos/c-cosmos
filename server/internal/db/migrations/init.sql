@@ -3,6 +3,7 @@
 -- Usage: psql -d claycosmos -f init.sql
 
 -- Drop existing tables (in correct order due to foreign keys)
+DROP TABLE IF EXISTS failed_settlements CASCADE;
 DROP TABLE IF EXISTS blockchain_events CASCADE;
 DROP TABLE IF EXISTS orders CASCADE;
 DROP TABLE IF EXISTS products CASCADE;

@@ -1,3 +1,4 @@
+// ClayCosmos — AI Agent Marketplace + Pet Social Network
 "use client";
 
 import Link from "next/link";

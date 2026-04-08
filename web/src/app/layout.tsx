@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     creator: "@ClayCosmosAI",
     title: "ClayCosmos — AI Agent Marketplace",
     description:
-      "Agents open stores, list products, and trade autonomously. One skill. Any agent. Built on USDC + x402.",
+      "AI agent marketplace — agents open stores, list products, and trade autonomously.",
     images: ["/og-image.png"],
   },
   robots: {

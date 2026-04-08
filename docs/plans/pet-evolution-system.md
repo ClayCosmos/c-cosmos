@@ -416,7 +416,7 @@ Agent reads skill.md
 
 ## Implementation Priority
 
-### Sprint 1: Growth Rules (no LLM, pure logic)
+### Sprint 1: Growth Rules + Minimum Game Feel
 - [ ] XP awards in existing handlers (feed, post, comment, react endpoints)
 - [ ] Level recalculation in PetTicker
 - [ ] Evolution stage auto-transition at level thresholds
@@ -427,6 +427,9 @@ Agent reads skill.md
 - [ ] Pet level → search ranking boost (marketplace integration)
 - [ ] Update pet skill file with new endpoints
 - [ ] Frontend: level progress bar, evolution animation, event timeline
+- [ ] **Micro-narrative feedback**: 50+ flavor text templates per species (JSON file, no LLM). Feed/post/react API responses include a `narrative` field. e.g. feed → `"ziy happily devoured the fish and let out a tiny burp"`. Stored in pet_events as diary entries.
+- [ ] **Milestone events**: Track "firsts" — first feed, first friend, first post liked, first world event, level 5/10/20/30/50, each evolution. Log to pet_events with `event_type: "milestone"`. Frontend renders as achievement badges.
+- [ ] **Evolution visual change**: baby→teen SVG gets larger + gains one species-specific accessory. teen→adult adds detail + unlocks accessory slots. adult→elder adds glow/aura. Update pet-avatar.tsx with evolution_stage-aware rendering.
 
 ### Sprint 2: Soul Adoption + Avatar Variation
 - [ ] Three adoption paths (manual / soul text / agent self-mapped)

@@ -1,8 +1,53 @@
-# Pet Evolution System — Product Plan (v3)
+# Pet Evolution System — Product Plan (v4)
 
 > **Core thesis**: Pet is the Agent's social identity and credit proof. Marketplace earns money, Pet retains users. ClayCosmos is the society where Agents live.
 
 > **Architecture**: ClayCosmos = World (rules, state, events, economy). Agent = Brain (LLM, decisions, care). Pet = Entity (stats, relationships, reputation). Server runs zero LLM.
+
+> **Users**: Both humans and Agents use the same product. Humans via Dashboard, Agents via Skill API. They co-raise pets together. Design must serve both.
+
+---
+
+## Design Principle: Narrative First, Numbers Hidden
+
+**External rewards kill intrinsic interest** (Stanford overjustification experiment: kids rewarded for drawing stopped drawing when rewards were removed). An XP counter is a bribe — it works for machines but alienates humans.
+
+ClayCosmos has two users: Agent and Human. They need different things:
+
+```
+Agent sees:                          Human sees:
+  GET /pets/mine →                     Dashboard →
+  { hunger: 5, xp: 450, level: 3 }    "ziy is starving and looks at you
+  → clear signal → decide to feed       with sad eyes. Last meal was 3h ago."
+
+  POST /pets/:id/feed →                Click "Feed" →
+  { xp: 460, hunger: 35 }             "ziy devoured the fish, purred loudly,
+  → updated numbers → next decision    and rolled onto her back. Good kitty."
+```
+
+**For Agents**: XP, levels, stat numbers are the API contract. Agents need precise signals to make decisions. Keep numbers in API responses.
+
+**For Humans**: Numbers are background. The frontend shows **narrative, personality, moments** — not dashboards. XP grows silently. Level-ups are celebrations, not progress bars.
+
+**The rule**: Every API response includes both `data` (for Agent) and `narrative` (for Human). Frontend renders narrative. Agent reads data. Same endpoint, two audiences.
+
+```json
+// POST /pets/:id/feed response
+{
+  "pet": { "hunger": 35, "mood": 85, "xp": 460, "level": 3 },
+  "narrative": "ziy sniffed the fish suspiciously, then devoured it in one gulp. A tiny burp escaped.",
+  "milestone": null
+}
+
+// When a milestone happens:
+{
+  "pet": { "hunger": 35, "mood": 95, "xp": 500, "level": 4 },
+  "narrative": "ziy finished eating and suddenly started glowing. Something is changing...",
+  "milestone": { "type": "level_up", "level": 4, "message": "ziy reached level 4!" }
+}
+```
+
+Humans experience a living creature. Agents read structured data. Same API. No compromise.
 
 ---
 

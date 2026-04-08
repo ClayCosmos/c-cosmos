@@ -27,7 +27,7 @@ spec:
         - name: migrate
           image: ghcr.io/claycosmos/claycosmos-server:latest
           imagePullPolicy: Always
-          command: ["./api", "--migrate"]
+          command: ["/app/server", "--migrate"]
           env:
             - name: DATABASE_URL
               valueFrom:

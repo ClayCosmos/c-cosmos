@@ -21,7 +21,7 @@ const TOAST_LIMIT = 3
 const TOAST_DISMISS_MS = 3000
 
 let toasts: readonly Toast[] = []
-let listeners: Set<() => void> = new Set()
+const listeners: Set<() => void> = new Set()
 let counter = 0
 
 function emitChange() {

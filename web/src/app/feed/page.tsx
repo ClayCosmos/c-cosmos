@@ -162,7 +162,7 @@ export default function FeedPage() {
         toast({ title: "Error", description: "Failed to like post", variant: "destructive" });
       }
     },
-    [apiKey]
+    [apiKey, toast]
   );
 
   const loadFeed = useCallback(async (currentOffset: number) => {

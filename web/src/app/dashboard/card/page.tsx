@@ -59,7 +59,7 @@ export default function DashboardCardPage() {
     } finally {
       setSaving(false);
     }
-  }, [apiKey, slug, bio, theme, enabled, links]);
+  }, [apiKey, slug, bio, theme, enabled, links, toast]);
 
   const addLink = () => {
     if (links.length >= 5) return;

@@ -23,6 +23,32 @@ spec:
         app.kubernetes.io/component: server
     spec:
       terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: migrate
+          image: ghcr.io/claycosmos/claycosmos-server:latest
+          imagePullPolicy: Always
+          command: ["./api", "--migrate"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: claycosmos-server-secrets
+                  key: DATABASE_URL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
       containers:
         - name: server
           image: ghcr.io/claycosmos/claycosmos-server:latest

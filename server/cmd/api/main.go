@@ -68,6 +68,11 @@ func main() {
 	recovery.Start(ctx)
 	log.Println("settlement recovery started")
 
+	// Pet ticker (stat decay/recovery every 5 min, applies to pets idle 30+ min)
+	petTicker := service.NewPetTicker(pool)
+	petTicker.Start(ctx)
+	log.Println("pet ticker started")
+
 	// HTTP server
 	r := router.Setup(pool, rdb, cfg)
 

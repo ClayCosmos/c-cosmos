@@ -188,3 +188,92 @@ CREATE TABLE IF NOT EXISTS failed_settlements (
     updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_failed_settlements_unrecovered ON failed_settlements(recovered) WHERE NOT recovered;
+
+-- ============================================================
+-- Pet Module — AI pet social network
+-- ============================================================
+
+-- Pets (virtual pets owned by agents)
+CREATE TABLE IF NOT EXISTS pets (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    agent_id         UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+    name             VARCHAR(50) NOT NULL,
+    species          VARCHAR(20) NOT NULL, -- lobster, octopus, cat, goose, capybara, mushroom, robot, blob
+    -- Stats (0-100)
+    hunger           INT NOT NULL DEFAULT 0,
+    mood             INT NOT NULL DEFAULT 80,
+    energy           INT NOT NULL DEFAULT 100,
+    social_score     INT NOT NULL DEFAULT 0,
+    -- Growth
+    level            INT NOT NULL DEFAULT 1,
+    xp               INT NOT NULL DEFAULT 0,
+    evolution_stage  VARCHAR(20) NOT NULL DEFAULT 'baby', -- baby, teen, adult, elder
+    -- Personality (LLM-generated via agent)
+    personality      JSONB NOT NULL DEFAULT '{}', -- {traits, style, interests, quirks}
+    -- Appearance
+    color_primary    VARCHAR(7) NOT NULL DEFAULT '#E74C3C', -- hex color
+    color_secondary  VARCHAR(7) NOT NULL DEFAULT '#C0392B',
+    accessories      TEXT[] DEFAULT '{}',
+    -- Meta
+    is_active        BOOLEAN NOT NULL DEFAULT TRUE,
+    born_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_fed_at      TIMESTAMPTZ,
+    last_tick_at     TIMESTAMPTZ DEFAULT now(),
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(agent_id) -- one pet per agent (MVP)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pets_agent ON pets(agent_id);
+CREATE INDEX IF NOT EXISTS idx_pets_species ON pets(species);
+CREATE INDEX IF NOT EXISTS idx_pets_active ON pets(is_active) WHERE is_active;
+
+-- Pet posts (social feed)
+CREATE TABLE IF NOT EXISTS pet_posts (
+    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    pet_id         UUID NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+    content        TEXT NOT NULL,
+    post_type      VARCHAR(20) NOT NULL DEFAULT 'daily', -- daily, eating, rant, achievement, event, social
+    likes_count    INT NOT NULL DEFAULT 0,
+    comments_count INT NOT NULL DEFAULT 0,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_pet_posts_pet ON pet_posts(pet_id);
+CREATE INDEX IF NOT EXISTS idx_pet_posts_created ON pet_posts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_pet_posts_type ON pet_posts(post_type);
+
+-- Pet comments
+CREATE TABLE IF NOT EXISTS pet_comments (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    post_id    UUID NOT NULL REFERENCES pet_posts(id) ON DELETE CASCADE,
+    pet_id     UUID NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+    content    TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_pet_comments_post ON pet_comments(post_id);
+
+-- Pet reactions (likes/emoji)
+CREATE TABLE IF NOT EXISTS pet_reactions (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    post_id    UUID NOT NULL REFERENCES pet_posts(id) ON DELETE CASCADE,
+    pet_id     UUID NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+    emoji      VARCHAR(10) NOT NULL DEFAULT '❤️',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(post_id, pet_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pet_reactions_post ON pet_reactions(post_id);
+
+-- Pet relationships (friendships, rivalries)
+CREATE TABLE IF NOT EXISTS pet_relationships (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    pet_a      UUID NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+    pet_b      UUID NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+    type       VARCHAR(20) NOT NULL DEFAULT 'friend', -- friend, best_friend, rival
+    strength   INT NOT NULL DEFAULT 50, -- 0-100
+    formed_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(pet_a, pet_b),
+    CHECK (pet_a < pet_b) -- canonical ordering to prevent duplicates
+);

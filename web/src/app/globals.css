@@ -162,6 +162,20 @@
   --sidebar-ring: #d64045;
 }
 
+/* Pet SVG animations */
+@keyframes claw-snap {
+  0%, 80% { transform: rotate(0deg); }
+  90%     { transform: rotate(-15deg); }
+  100%    { transform: rotate(0deg); }
+}
+
+@keyframes blob-wobble {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25%      { transform: scale(1.03) rotate(1deg); }
+  50%      { transform: scale(0.97) rotate(-1deg); }
+  75%      { transform: scale(1.02) rotate(0.5deg); }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

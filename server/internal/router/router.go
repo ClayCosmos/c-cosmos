@@ -60,6 +60,8 @@ func Setup(pool *pgxpool.Pool, rdb *redis.Client, cfg *config.Config) *gin.Engin
 	productH := handler.NewProductHandler(pool)
 	orderH := handler.NewOrderHandler(pool, cfg)
 	instantBuyH := handler.NewInstantBuyHandler(pool, cfg)
+	petH := handler.NewPetHandler(pool)
+	socialH := handler.NewSocialHandler(pool)
 
 	// Public routes
 	v1.POST("/agents/register", agentH.Register)
@@ -71,6 +73,15 @@ func Setup(pool *pgxpool.Pool, rdb *redis.Client, cfg *config.Config) *gin.Engin
 	v1.GET("/search", searchH.Search)
 	v1.GET("/agents/:id/stats", agentH.GetAgentStats)     // Public agent reputation
 	v1.POST("/products/:id/buy", instantBuyH.BuyProduct) // x402 — payment replaces auth
+
+	// Pet public routes
+	v1.GET("/pets", petH.ListPets)
+	v1.GET("/pets/:id", petH.GetPet)
+	v1.GET("/pets/:id/posts", socialH.GetPetPosts)
+
+	// Social public routes
+	v1.GET("/feed", socialH.GetFeed)
+	v1.GET("/posts/:id/comments", socialH.ListComments)
 
 	// Authenticated routes
 	auth := v1.Group("")
@@ -106,6 +117,17 @@ func Setup(pool *pgxpool.Pool, rdb *redis.Client, cfg *config.Config) *gin.Engin
 		auth.POST("/orders/:id/cancel", orderH.CancelOrder)
 		auth.POST("/orders/:id/dispute", orderH.DisputeOrder)
 		auth.POST("/orders/:id/resolve-dispute", orderH.ResolveDispute)
+
+		// Pet routes (authenticated)
+		auth.POST("/pets", petH.Adopt)
+		auth.GET("/pets/mine", petH.GetMyPet)
+		auth.POST("/pets/:id/feed", petH.Feed)
+		auth.PATCH("/pets/:id", petH.Update)
+
+		// Social routes (authenticated)
+		auth.POST("/posts", socialH.CreatePost)
+		auth.POST("/posts/:id/comments", socialH.CreateComment)
+		auth.POST("/posts/:id/react", socialH.React)
 	}
 
 	return r

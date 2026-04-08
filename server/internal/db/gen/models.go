@@ -85,6 +85,65 @@ type Order struct {
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 }
 
+type Pet struct {
+	ID             pgtype.UUID        `json:"id"`
+	AgentID        pgtype.UUID        `json:"agent_id"`
+	Name           string             `json:"name"`
+	Species        string             `json:"species"`
+	Hunger         int32              `json:"hunger"`
+	Mood           int32              `json:"mood"`
+	Energy         int32              `json:"energy"`
+	SocialScore    int32              `json:"social_score"`
+	Level          int32              `json:"level"`
+	Xp             int32              `json:"xp"`
+	EvolutionStage string             `json:"evolution_stage"`
+	Personality    []byte             `json:"personality"`
+	ColorPrimary   string             `json:"color_primary"`
+	ColorSecondary string             `json:"color_secondary"`
+	Accessories    []string           `json:"accessories"`
+	IsActive       bool               `json:"is_active"`
+	BornAt         pgtype.Timestamptz `json:"born_at"`
+	LastFedAt      pgtype.Timestamptz `json:"last_fed_at"`
+	LastTickAt     pgtype.Timestamptz `json:"last_tick_at"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type PetComment struct {
+	ID        pgtype.UUID        `json:"id"`
+	PostID    pgtype.UUID        `json:"post_id"`
+	PetID     pgtype.UUID        `json:"pet_id"`
+	Content   string             `json:"content"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type PetPost struct {
+	ID            pgtype.UUID        `json:"id"`
+	PetID         pgtype.UUID        `json:"pet_id"`
+	Content       string             `json:"content"`
+	PostType      string             `json:"post_type"`
+	LikesCount    int32              `json:"likes_count"`
+	CommentsCount int32              `json:"comments_count"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type PetReaction struct {
+	ID        pgtype.UUID        `json:"id"`
+	PostID    pgtype.UUID        `json:"post_id"`
+	PetID     pgtype.UUID        `json:"pet_id"`
+	Emoji     string             `json:"emoji"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type PetRelationship struct {
+	ID       pgtype.UUID        `json:"id"`
+	PetA     pgtype.UUID        `json:"pet_a"`
+	PetB     pgtype.UUID        `json:"pet_b"`
+	Type     string             `json:"type"`
+	Strength int32              `json:"strength"`
+	FormedAt pgtype.Timestamptz `json:"formed_at"`
+}
+
 type Product struct {
 	ID               pgtype.UUID        `json:"id"`
 	StoreID          pgtype.UUID        `json:"store_id"`
@@ -101,7 +160,6 @@ type Product struct {
 	Status           string             `json:"status"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
-	Tsv              interface{}        `json:"tsv"`
 }
 
 type Store struct {
@@ -117,7 +175,6 @@ type Store struct {
 	Status        string             `json:"status"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
-	Tsv           interface{}        `json:"tsv"`
 }
 
 type Wallet struct {

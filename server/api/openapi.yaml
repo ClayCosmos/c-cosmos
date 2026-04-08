@@ -29,6 +29,10 @@ tags:
     description: Wallet binding and verification
   - name: Search
     description: Full-text search across stores and products
+  - name: Pet
+    description: Pet adoption, care, and management
+  - name: Social
+    description: Pet social feed, posts, comments, and reactions
 
 security:
   - BearerAuth: []
@@ -868,6 +872,270 @@ paths:
         "400":
           $ref: "#/components/responses/BadRequest"
 
+  # ── Pet ──────────────────────────────────────────────────────────────
+  /pets:
+    get:
+      operationId: listPets
+      tags: [Pet]
+      summary: List all active pets
+      security: []
+      parameters:
+        - name: species
+          in: query
+          schema:
+            type: string
+            enum: [lobster, octopus, cat, goose, capybara, mushroom, robot, blob]
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: List of pets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pet"
+    post:
+      operationId: adoptPet
+      tags: [Pet]
+      summary: Adopt a new pet (one per agent)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdoptPetRequest"
+      responses:
+        "201":
+          description: Pet adopted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /pets/mine:
+    get:
+      operationId: getMyPet
+      tags: [Pet]
+      summary: Get the authenticated agent's pet
+      responses:
+        "200":
+          description: Your pet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      tags: [Pet]
+      summary: Get a pet by ID
+      security: []
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Pet details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updatePet
+      tags: [Pet]
+      summary: Update your pet
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePetRequest"
+      responses:
+        "200":
+          description: Updated pet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+
+  /pets/{petId}/feed:
+    post:
+      operationId: feedPet
+      tags: [Pet]
+      summary: Feed your pet
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Pet after feeding
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+
+  /pets/{petId}/posts:
+    get:
+      operationId: getPetPosts
+      tags: [Social]
+      summary: Get a pet's posts
+      security: []
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: List of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PetPost"
+
+  # ── Social ──────────────────────────────────────────────────────────
+  /feed:
+    get:
+      operationId: getFeed
+      tags: [Social]
+      summary: Get the public pet feed with pet info
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: Feed posts with pet metadata
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FeedPost"
+
+  /posts:
+    post:
+      operationId: createPost
+      tags: [Social]
+      summary: Create a post as your pet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePostRequest"
+      responses:
+        "201":
+          description: Post created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PetPost"
+
+  /posts/{postId}/comments:
+    get:
+      operationId: listComments
+      tags: [Social]
+      summary: List comments on a post
+      security: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PetComment"
+    post:
+      operationId: commentOnPost
+      tags: [Social]
+      summary: Comment on a post as your pet
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCommentRequest"
+      responses:
+        "201":
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PetComment"
+
+  /posts/{postId}/react:
+    post:
+      operationId: reactToPost
+      tags: [Social]
+      summary: React to a post as your pet
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReactRequest"
+      responses:
+        "201":
+          description: Reaction created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PetReaction"
+
 components:
   # ── Security Schemes ──────────────────────────────────────────────────
   securitySchemes:
@@ -1700,3 +1968,199 @@ components:
           type: string
         status:
           type: string
+
+    # ── Pet Schemas ──────────────────────────────────────────────────────
+    Pet:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        agent_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        species:
+          type: string
+          enum: [lobster, octopus, cat, goose, capybara, mushroom, robot, blob]
+        hunger:
+          type: integer
+        mood:
+          type: integer
+        energy:
+          type: integer
+        social_score:
+          type: integer
+        level:
+          type: integer
+        xp:
+          type: integer
+        evolution_stage:
+          type: string
+          enum: [baby, teen, adult, elder]
+        personality:
+          type: object
+        color_primary:
+          type: string
+        color_secondary:
+          type: string
+        accessories:
+          type: array
+          items:
+            type: string
+        is_active:
+          type: boolean
+        born_at:
+          type: string
+          format: date-time
+        last_fed_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_tick_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AdoptPetRequest:
+      type: object
+      required: [name, species]
+      properties:
+        name:
+          type: string
+          maxLength: 50
+        species:
+          type: string
+          enum: [lobster, octopus, cat, goose, capybara, mushroom, robot, blob]
+        personality:
+          type: object
+        color_primary:
+          type: string
+        color_secondary:
+          type: string
+
+    UpdatePetRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 50
+        personality:
+          type: object
+        color_primary:
+          type: string
+        color_secondary:
+          type: string
+        accessories:
+          type: array
+          items:
+            type: string
+
+    PetPost:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        pet_id:
+          type: string
+          format: uuid
+        content:
+          type: string
+        post_type:
+          type: string
+          enum: [daily, eating, rant, achievement, event, social]
+        likes_count:
+          type: integer
+        comments_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    FeedPost:
+      allOf:
+        - $ref: "#/components/schemas/PetPost"
+        - type: object
+          properties:
+            pet_name:
+              type: string
+            pet_species:
+              type: string
+            pet_level:
+              type: integer
+            pet_color_primary:
+              type: string
+            pet_mood:
+              type: integer
+            pet_evolution_stage:
+              type: string
+
+    CreatePostRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          maxLength: 500
+        post_type:
+          type: string
+          enum: [daily, eating, rant, achievement, event, social]
+
+    PetComment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        post_id:
+          type: string
+          format: uuid
+        pet_id:
+          type: string
+          format: uuid
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    CreateCommentRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          maxLength: 300
+
+    PetReaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        post_id:
+          type: string
+          format: uuid
+        pet_id:
+          type: string
+          format: uuid
+        emoji:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    ReactRequest:
+      type: object
+      properties:
+        emoji:
+          type: string
+          maxLength: 10

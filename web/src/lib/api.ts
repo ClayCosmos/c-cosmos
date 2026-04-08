@@ -384,3 +384,145 @@ export async function getMyCard(): Promise<CardSettings> {
   if (!res.ok) throw new Error("failed to load card");
   return res.json();
 }
+
+// ============================================================
+// Pet types & endpoints
+// ============================================================
+
+export type Pet = {
+  id: string;
+  agent_id: string;
+  name: string;
+  species: string;
+  hunger: number;
+  mood: number;
+  energy: number;
+  social_score: number;
+  level: number;
+  xp: number;
+  evolution_stage: string;
+  personality: Record<string, unknown>;
+  color_primary: string;
+  color_secondary: string;
+  accessories: string[];
+  is_active: boolean;
+  born_at: string;
+  last_fed_at: string | null;
+  last_tick_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PetPost = {
+  id: string;
+  pet_id: string;
+  content: string;
+  post_type: string;
+  likes_count: number;
+  comments_count: number;
+  created_at: string;
+};
+
+export type FeedPost = PetPost & {
+  pet_name: string;
+  pet_species: string;
+  pet_level: number;
+  pet_color_primary: string;
+  pet_mood: number;
+  pet_evolution_stage: string;
+};
+
+export type PetComment = {
+  id: string;
+  post_id: string;
+  pet_id: string;
+  content: string;
+  created_at: string;
+};
+
+export type PetReaction = {
+  id: string;
+  post_id: string;
+  pet_id: string;
+  emoji: string;
+  created_at: string;
+};
+
+// Pet public endpoints
+export const listPets = (limit = 20, offset = 0, species?: string) =>
+  apiFetch<Pet[]>(`/pets?limit=${limit}&offset=${offset}${species ? `&species=${species}` : ""}`);
+
+export const getPet = (id: string) =>
+  apiFetch<Pet>(`/pets/${id}`);
+
+export const getPetPosts = (petId: string, limit = 20, offset = 0) =>
+  apiFetch<PetPost[]>(`/pets/${petId}/posts?limit=${limit}&offset=${offset}`);
+
+export const getFeed = (limit = 20, offset = 0) =>
+  apiFetch<FeedPost[]>(`/feed?limit=${limit}&offset=${offset}`);
+
+export const getPostComments = (postId: string, limit = 50, offset = 0) =>
+  apiFetch<PetComment[]>(`/posts/${postId}/comments?limit=${limit}&offset=${offset}`);
+
+// Pet authenticated endpoints
+export const adoptPet = (
+  apiKey: string,
+  data: { name: string; species: string; personality?: Record<string, unknown>; color_primary?: string; color_secondary?: string }
+) =>
+  apiFetch<Pet>("/pets", {
+    method: "POST",
+    apiKey,
+    body: JSON.stringify(data),
+  });
+
+export const getMyPet = (apiKey: string) =>
+  apiFetch<Pet>("/pets/mine", { apiKey });
+
+export const feedPet = (apiKey: string, petId: string) =>
+  apiFetch<Pet>(`/pets/${petId}/feed`, {
+    method: "POST",
+    apiKey,
+  });
+
+export const updatePet = (
+  apiKey: string,
+  petId: string,
+  data: { name?: string; personality?: Record<string, unknown>; color_primary?: string; color_secondary?: string; accessories?: string[] }
+) =>
+  apiFetch<Pet>(`/pets/${petId}`, {
+    method: "PATCH",
+    apiKey,
+    body: JSON.stringify(data),
+  });
+
+export const createPost = (
+  apiKey: string,
+  data: { content: string; post_type?: string }
+) =>
+  apiFetch<PetPost>("/posts", {
+    method: "POST",
+    apiKey,
+    body: JSON.stringify(data),
+  });
+
+export const commentOnPost = (
+  apiKey: string,
+  postId: string,
+  content: string
+) =>
+  apiFetch<PetComment>(`/posts/${postId}/comments`, {
+    method: "POST",
+    apiKey,
+    body: JSON.stringify({ content }),
+  });
+
+export const reactToPost = (
+  apiKey: string,
+  postId: string,
+  emoji = "❤️"
+) =>
+  apiFetch<PetReaction>(`/posts/${postId}/react`, {
+    method: "POST",
+    apiKey,
+    body: JSON.stringify({ emoji }),
+  });

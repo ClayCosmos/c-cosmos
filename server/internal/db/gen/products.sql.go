@@ -25,7 +25,7 @@ func (q *Queries) CountProductsByStore(ctx context.Context, storeID pgtype.UUID)
 const createProduct = `-- name: CreateProduct :one
 INSERT INTO products (store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, payment_mode, stock, status)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-RETURNING id, store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, payment_mode, stock, status, created_at, updated_at, tsv
+RETURNING id, store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, payment_mode, stock, status, created_at, updated_at
 `
 
 type CreateProductParams struct {
@@ -75,7 +75,6 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Tsv,
 	)
 	return i, err
 }
@@ -83,7 +82,7 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 const decrementProductStock = `-- name: DecrementProductStock :one
 UPDATE products SET stock = stock - 1, updated_at = now()
 WHERE id = $1 AND (stock > 0 OR stock = -1)
-RETURNING id, store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, payment_mode, stock, status, created_at, updated_at, tsv
+RETURNING id, store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, payment_mode, stock, status, created_at, updated_at
 `
 
 func (q *Queries) DecrementProductStock(ctx context.Context, id pgtype.UUID) (Product, error) {
@@ -105,7 +104,6 @@ func (q *Queries) DecrementProductStock(ctx context.Context, id pgtype.UUID) (Pr
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Tsv,
 	)
 	return i, err
 }
@@ -120,7 +118,7 @@ func (q *Queries) DeleteProduct(ctx context.Context, id pgtype.UUID) error {
 }
 
 const getProductByID = `-- name: GetProductByID :one
-SELECT id, store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, payment_mode, stock, status, created_at, updated_at, tsv FROM products WHERE id = $1
+SELECT id, store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, payment_mode, stock, status, created_at, updated_at FROM products WHERE id = $1
 `
 
 func (q *Queries) GetProductByID(ctx context.Context, id pgtype.UUID) (Product, error) {
@@ -142,13 +140,12 @@ func (q *Queries) GetProductByID(ctx context.Context, id pgtype.UUID) (Product, 
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Tsv,
 	)
 	return i, err
 }
 
 const getProductBySlug = `-- name: GetProductBySlug :one
-SELECT id, store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, payment_mode, stock, status, created_at, updated_at, tsv FROM products WHERE store_id = $1 AND slug = $2
+SELECT id, store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, payment_mode, stock, status, created_at, updated_at FROM products WHERE store_id = $1 AND slug = $2
 `
 
 type GetProductBySlugParams struct {
@@ -175,13 +172,12 @@ func (q *Queries) GetProductBySlug(ctx context.Context, arg GetProductBySlugPara
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Tsv,
 	)
 	return i, err
 }
 
 const listAllProducts = `-- name: ListAllProducts :many
-SELECT p.id, p.store_id, p.name, p.slug, p.description, p.price_usdc, p.delivery_content, p.image_urls, p.external_url, p.requires_shipping, p.payment_mode, p.stock, p.status, p.created_at, p.updated_at, p.tsv, s.name as store_name, s.slug as store_slug
+SELECT p.id, p.store_id, p.name, p.slug, p.description, p.price_usdc, p.delivery_content, p.image_urls, p.external_url, p.requires_shipping, p.payment_mode, p.stock, p.status, p.created_at, p.updated_at, s.name as store_name, s.slug as store_slug
 FROM products p
 JOIN stores s ON p.store_id = s.id
 WHERE p.status = 'active'
@@ -210,7 +206,6 @@ type ListAllProductsRow struct {
 	Status           string             `json:"status"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
-	Tsv              interface{}        `json:"tsv"`
 	StoreName        string             `json:"store_name"`
 	StoreSlug        string             `json:"store_slug"`
 }
@@ -240,7 +235,6 @@ func (q *Queries) ListAllProducts(ctx context.Context, arg ListAllProductsParams
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.Tsv,
 			&i.StoreName,
 			&i.StoreSlug,
 		); err != nil {
@@ -255,7 +249,7 @@ func (q *Queries) ListAllProducts(ctx context.Context, arg ListAllProductsParams
 }
 
 const listProductsByStore = `-- name: ListProductsByStore :many
-SELECT id, store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, payment_mode, stock, status, created_at, updated_at, tsv FROM products
+SELECT id, store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, payment_mode, stock, status, created_at, updated_at FROM products
 WHERE store_id = $1 AND status = 'active'
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
@@ -292,7 +286,6 @@ func (q *Queries) ListProductsByStore(ctx context.Context, arg ListProductsBySto
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.Tsv,
 		); err != nil {
 			return nil, err
 		}
@@ -315,7 +308,7 @@ func (q *Queries) RestoreProductStock(ctx context.Context, id pgtype.UUID) error
 }
 
 const searchProducts = `-- name: SearchProducts :many
-SELECT p.id, p.store_id, p.name, p.slug, p.description, p.price_usdc, p.delivery_content, p.image_urls, p.external_url, p.requires_shipping, p.payment_mode, p.stock, p.status, p.created_at, p.updated_at, p.tsv, s.name as store_name, s.slug as store_slug
+SELECT p.id, p.store_id, p.name, p.slug, p.description, p.price_usdc, p.delivery_content, p.image_urls, p.external_url, p.requires_shipping, p.payment_mode, p.stock, p.status, p.created_at, p.updated_at, s.name as store_name, s.slug as store_slug
 FROM products p
 JOIN stores s ON p.store_id = s.id
 WHERE p.status = 'active' AND p.tsv @@ plainto_tsquery('english', $1)
@@ -345,7 +338,6 @@ type SearchProductsRow struct {
 	Status           string             `json:"status"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
-	Tsv              interface{}        `json:"tsv"`
 	StoreName        string             `json:"store_name"`
 	StoreSlug        string             `json:"store_slug"`
 }
@@ -375,7 +367,6 @@ func (q *Queries) SearchProducts(ctx context.Context, arg SearchProductsParams) 
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.Tsv,
 			&i.StoreName,
 			&i.StoreSlug,
 		); err != nil {
@@ -402,7 +393,7 @@ UPDATE products SET
     stock = COALESCE($9, stock),
     updated_at = now()
 WHERE id = $10
-RETURNING id, store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, payment_mode, stock, status, created_at, updated_at, tsv
+RETURNING id, store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, payment_mode, stock, status, created_at, updated_at
 `
 
 type UpdateProductParams struct {
@@ -448,13 +439,12 @@ func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (P
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Tsv,
 	)
 	return i, err
 }
 
 const updateProductStatus = `-- name: UpdateProductStatus :one
-UPDATE products SET status = $2, updated_at = now() WHERE id = $1 RETURNING id, store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, payment_mode, stock, status, created_at, updated_at, tsv
+UPDATE products SET status = $2, updated_at = now() WHERE id = $1 RETURNING id, store_id, name, slug, description, price_usdc, delivery_content, image_urls, external_url, requires_shipping, payment_mode, stock, status, created_at, updated_at
 `
 
 type UpdateProductStatusParams struct {
@@ -481,7 +471,6 @@ func (q *Queries) UpdateProductStatus(ctx context.Context, arg UpdateProductStat
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Tsv,
 	)
 	return i, err
 }

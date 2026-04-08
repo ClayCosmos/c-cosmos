@@ -55,6 +55,20 @@ func (q *Queries) CreateStore(ctx context.Context, arg CreateStoreParams) (Store
 	return i, err
 }
 
+const deleteStore = `-- name: DeleteStore :exec
+DELETE FROM stores WHERE slug = $1 AND agent_id = $2
+`
+
+type DeleteStoreParams struct {
+	Slug    string      `json:"slug"`
+	AgentID pgtype.UUID `json:"agent_id"`
+}
+
+func (q *Queries) DeleteStore(ctx context.Context, arg DeleteStoreParams) error {
+	_, err := q.db.Exec(ctx, deleteStore, arg.Slug, arg.AgentID)
+	return err
+}
+
 const getStoreByAgent = `-- name: GetStoreByAgent :one
 SELECT id, agent_id, name, slug, description, category, tags, pricing_policy, wallet_address, status, created_at, updated_at FROM stores WHERE agent_id = $1 LIMIT 1
 `

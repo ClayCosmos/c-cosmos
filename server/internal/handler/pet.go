@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -34,10 +36,13 @@ type AdoptPetRequest struct {
 func (h *PetHandler) Adopt(c *gin.Context) {
 	var req AdoptPetRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 
+	if req.Personality == nil {
+		req.Personality = map[string]any{}
+	}
 	if req.ColorPrimary == "" {
 		req.ColorPrimary = speciesDefaultColor(req.Species)
 	}
@@ -59,10 +64,11 @@ func (h *PetHandler) Adopt(c *gin.Context) {
 			respondError(c, apierr.Conflict("you already have a pet"))
 			return
 		}
+		log.Printf("[pet] adopt error: %v", err)
 		respondError(c, apierr.Internal("failed to adopt pet"))
 		return
 	}
-	c.JSON(http.StatusCreated, pet)
+	c.JSON(http.StatusCreated, toPetResponse(pet))
 }
 
 // --- Get my pet ---
@@ -74,7 +80,7 @@ func (h *PetHandler) GetMyPet(c *gin.Context) {
 		respondError(c, apierr.NotFound("you don't have a pet yet"))
 		return
 	}
-	c.JSON(http.StatusOK, pet)
+	c.JSON(http.StatusOK, toPetResponse(pet))
 }
 
 // --- Get pet by ID (public) ---
@@ -90,7 +96,7 @@ func (h *PetHandler) GetPet(c *gin.Context) {
 		respondError(c, apierr.NotFound("pet not found"))
 		return
 	}
-	c.JSON(http.StatusOK, pet)
+	c.JSON(http.StatusOK, toPetResponse(pet))
 }
 
 // --- List all pets (public) ---
@@ -122,7 +128,7 @@ func (h *PetHandler) ListPets(c *gin.Context) {
 		respondError(c, apierr.Internal("failed to list pets"))
 		return
 	}
-	c.JSON(http.StatusOK, pets)
+	c.JSON(http.StatusOK, toPetListResponse(pets))
 }
 
 // --- Feed pet ---
@@ -143,7 +149,7 @@ func (h *PetHandler) Feed(c *gin.Context) {
 		respondError(c, apierr.NotFound("pet not found or not yours"))
 		return
 	}
-	c.JSON(http.StatusOK, pet)
+	c.JSON(http.StatusOK, toPetResponse(pet))
 }
 
 // --- Update pet ---
@@ -165,7 +171,7 @@ func (h *PetHandler) Update(c *gin.Context) {
 
 	var req UpdatePetRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 
@@ -183,7 +189,49 @@ func (h *PetHandler) Update(c *gin.Context) {
 		respondError(c, apierr.NotFound("pet not found or not yours"))
 		return
 	}
-	c.JSON(http.StatusOK, pet)
+	c.JSON(http.StatusOK, toPetResponse(pet))
+}
+
+// --- Response helpers ---
+
+// toPetResponse converts a gen.Pet to a JSON-safe response, unmarshalling the
+// personality JSONB field so it is returned as a JSON object instead of base64.
+func toPetResponse(p gen.Pet) gin.H {
+	var personality any
+	if len(p.Personality) > 0 {
+		_ = json.Unmarshal(p.Personality, &personality)
+	}
+	return gin.H{
+		"id":              p.ID,
+		"agent_id":        p.AgentID,
+		"name":            p.Name,
+		"species":         p.Species,
+		"hunger":          p.Hunger,
+		"mood":            p.Mood,
+		"energy":          p.Energy,
+		"social_score":    p.SocialScore,
+		"level":           p.Level,
+		"xp":              p.Xp,
+		"evolution_stage": p.EvolutionStage,
+		"personality":     personality,
+		"color_primary":   p.ColorPrimary,
+		"color_secondary": p.ColorSecondary,
+		"accessories":     p.Accessories,
+		"is_active":       p.IsActive,
+		"born_at":         p.BornAt,
+		"last_fed_at":     p.LastFedAt,
+		"last_tick_at":    p.LastTickAt,
+		"created_at":      p.CreatedAt,
+		"updated_at":      p.UpdatedAt,
+	}
+}
+
+func toPetListResponse(pets []gen.Pet) []gin.H {
+	resp := make([]gin.H, len(pets))
+	for i, p := range pets {
+		resp[i] = toPetResponse(p)
+	}
+	return resp
 }
 
 // --- Helpers ---

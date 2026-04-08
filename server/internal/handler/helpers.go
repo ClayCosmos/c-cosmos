@@ -2,10 +2,13 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/niceclay/claycosmos/server/pkg/apierr"
 )
@@ -50,6 +53,50 @@ func isValidSlug(slug string) bool {
 		return false
 	}
 	return validSlugPattern.MatchString(slug)
+}
+
+// formatValidationErrors converts Go validator errors into user-friendly messages.
+// e.g. "Key: 'CreateProductRequest.PriceUSDC' Error:... 'required' tag" → "price_usdc is required"
+func formatValidationErrors(err error) string {
+	var ve validator.ValidationErrors
+	if !errors.As(err, &ve) {
+		return err.Error()
+	}
+	msgs := make([]string, 0, len(ve))
+	for _, fe := range ve {
+		field := toSnakeCase(fe.Field())
+		switch fe.Tag() {
+		case "required":
+			msgs = append(msgs, field+" is required")
+		case "max":
+			msgs = append(msgs, field+" exceeds maximum length of "+fe.Param())
+		case "min":
+			msgs = append(msgs, field+" must be at least "+fe.Param())
+		case "oneof":
+			msgs = append(msgs, field+" must be one of: "+fe.Param())
+		case "len":
+			msgs = append(msgs, field+" must be exactly "+fe.Param()+" characters")
+		default:
+			msgs = append(msgs, field+" is invalid")
+		}
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// toSnakeCase converts PascalCase to snake_case (e.g. PriceUSDC → price_usdc).
+func toSnakeCase(s string) string {
+	var b strings.Builder
+	for i, r := range s {
+		if unicode.IsUpper(r) {
+			if i > 0 {
+				b.WriteByte('_')
+			}
+			b.WriteRune(unicode.ToLower(r))
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 func toPgText(s *string) pgtype.Text {

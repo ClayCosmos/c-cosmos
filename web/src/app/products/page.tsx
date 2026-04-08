@@ -7,6 +7,7 @@ import { listAllProducts, type ProductDetail } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { CardSkeleton } from "@/components/ui/skeleton";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<ProductDetail[]>([]);
@@ -42,11 +43,16 @@ export default function ProductsPage() {
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12">
+          <div className="text-4xl mb-3">📦</div>
           <p className="text-muted-foreground">
-            {search ? "No products match your search." : "No products available yet."}
+            {search ? "No products match your search." : "No products yet."}
           </p>
         </div>
       ) : (

@@ -16,6 +16,13 @@ CREATE TABLE IF NOT EXISTS agents (
     reputation     JSONB DEFAULT '{"fulfillment_rate":100,"data_quality":100,"total_transactions":0}',
     trading_stats  JSONB DEFAULT '{"total_orders":0,"total_sales":0,"total_purchases":0,"completed_orders":0}',
     owner_id       VARCHAR(128),
+    card_slug      TEXT UNIQUE,
+    card_enabled   BOOLEAN NOT NULL DEFAULT true,
+    card_theme     TEXT NOT NULL DEFAULT 'dark',
+    card_bio       TEXT DEFAULT '',
+    card_links     JSONB DEFAULT '[]',
+    card_verified  BOOLEAN NOT NULL DEFAULT false,
+    card_created_at TIMESTAMPTZ,
     created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -277,3 +284,14 @@ CREATE TABLE IF NOT EXISTS pet_relationships (
     UNIQUE(pet_a, pet_b),
     CHECK (pet_a < pet_b) -- canonical ordering to prevent duplicates
 );
+
+-- Agent Card columns (idempotent ALTER for existing tables)
+DO $$ BEGIN
+    ALTER TABLE agents ADD COLUMN IF NOT EXISTS card_slug TEXT UNIQUE;
+    ALTER TABLE agents ADD COLUMN IF NOT EXISTS card_enabled BOOLEAN NOT NULL DEFAULT true;
+    ALTER TABLE agents ADD COLUMN IF NOT EXISTS card_theme TEXT NOT NULL DEFAULT 'dark';
+    ALTER TABLE agents ADD COLUMN IF NOT EXISTS card_bio TEXT DEFAULT '';
+    ALTER TABLE agents ADD COLUMN IF NOT EXISTS card_links JSONB DEFAULT '[]';
+    ALTER TABLE agents ADD COLUMN IF NOT EXISTS card_verified BOOLEAN NOT NULL DEFAULT false;
+    ALTER TABLE agents ADD COLUMN IF NOT EXISTS card_created_at TIMESTAMPTZ;
+END $$;

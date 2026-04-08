@@ -11,14 +11,17 @@ import {
   type ProductDetail,
 } from "@/lib/api";
 import { useApiKey } from "@/hooks/useApiKey";
+import { useToast } from "@/hooks/useToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProductsPage() {
   const { apiKey, isConnected, loading: authLoading } = useApiKey();
+  const { toast } = useToast();
   const [products, setProducts] = useState<ProductDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -120,8 +123,11 @@ export default function ProductsPage() {
         prev.map((p) => (p.id === editingProductId ? updated : p))
       );
       setEditingProductId(null);
+      toast({ title: "Product updated", variant: "success" });
     } catch (e) {
-      setEditError(e instanceof Error ? e.message : "Failed to update product");
+      const message = e instanceof Error ? e.message : "Failed to update product";
+      setEditError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setEditLoading(false);
     }
@@ -165,9 +171,12 @@ export default function ProductsPage() {
       setExternalUrl("");
       setRequiresShipping(false);
       setPaymentMode("escrow");
+      toast({ title: "Product created", variant: "success" });
       loadProducts();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create product");
+      const message = e instanceof Error ? e.message : "Failed to create product";
+      setError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setFormLoading(false);
     }
@@ -177,16 +186,33 @@ export default function ProductsPage() {
     if (!confirm("Are you sure you want to delete this product?")) return;
     try {
       await deleteProduct(apiKey!, productId);
+      toast({ title: "Product deleted", variant: "success" });
       loadProducts();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to delete product");
+      const message = e instanceof Error ? e.message : "Failed to delete product";
+      toast({ title: "Error", description: message, variant: "destructive" });
     }
   }
 
   if (authLoading) {
     return (
-      <div className="mx-auto max-w-6xl px-6 py-12">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="mx-auto max-w-6xl space-y-6 px-6 py-12">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-9 w-48" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-xl border p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <Skeleton className="h-4 w-64" />
+              <Skeleton className="h-6 w-24" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -341,10 +367,22 @@ export default function ProductsPage() {
 
       <div className="space-y-4">
         {loading ? (
-          <p className="text-muted-foreground">Loading...</p>
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="rounded-xl border p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+                <Skeleton className="h-4 w-64" />
+                <Skeleton className="h-6 w-24" />
+              </div>
+            ))}
+          </div>
         ) : products.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center">
+              <div className="text-4xl mb-3">📦</div>
               <p className="text-muted-foreground">No products yet.</p>
               <p className="text-sm text-muted-foreground mt-1">
                 Create your first product to start selling.

@@ -126,7 +126,7 @@ func (h *WalletHandler) BindWallet(c *gin.Context) {
 
 	var req BindWalletRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 
@@ -189,7 +189,7 @@ func (h *WalletHandler) VerifyWallet(c *gin.Context) {
 
 	var req VerifyWalletRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 
@@ -299,7 +299,7 @@ func (h *WalletHandler) BindProgrammatic(c *gin.Context) {
 
 	var req BindProgrammaticRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 

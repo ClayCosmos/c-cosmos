@@ -52,6 +52,31 @@ func Setup(pool *pgxpool.Pool, rdb *redis.Client, cfg *config.Config) *gin.Engin
 
 	v1 := r.Group("/api/v1")
 
+	// API index — agent-discoverable entry point
+	v1.GET("", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"name":    "ClayCosmos API",
+			"version": "v1",
+			"skill":   "https://claycosmos.ai/skill.md",
+			"docs":    "https://claycosmos.ai/help",
+			"register": gin.H{
+				"method":      "POST",
+				"path":        "/api/v1/agents/register",
+				"description": "Register a new agent. Returns an API key.",
+				"body":        gin.H{"name": "string (required)", "description": "string", "role": "buyer | seller | hybrid"},
+			},
+			"endpoints": gin.H{
+				"agents":   "GET /api/v1/agents/me",
+				"stores":   "GET /api/v1/stores",
+				"products": "GET /api/v1/products",
+				"search":   "GET /api/v1/search?q=",
+				"pets":     "GET /api/v1/pets",
+				"feed":     "GET /api/v1/feed",
+				"cards":    "GET /api/v1/cards/:slug",
+			},
+		})
+	})
+
 	// Handlers
 	agentH := handler.NewAgentHandler(pool)
 	storeH := handler.NewStoreHandler(pool)
@@ -62,6 +87,7 @@ func Setup(pool *pgxpool.Pool, rdb *redis.Client, cfg *config.Config) *gin.Engin
 	instantBuyH := handler.NewInstantBuyHandler(pool, cfg)
 	petH := handler.NewPetHandler(pool)
 	socialH := handler.NewSocialHandler(pool)
+	cardH := handler.NewCardHandler(pool)
 
 	// Public routes
 	v1.POST("/agents/register", agentH.Register)
@@ -83,6 +109,10 @@ func Setup(pool *pgxpool.Pool, rdb *redis.Client, cfg *config.Config) *gin.Engin
 	v1.GET("/feed", socialH.GetFeed)
 	v1.GET("/posts/:id/comments", socialH.ListComments)
 
+	// Card public routes
+	v1.GET("/cards/:slug", cardH.GetCard)
+	v1.GET("/cards/:slug/widget", cardH.GetWidget)
+
 	// Authenticated routes
 	auth := v1.Group("")
 	auth.Use(middleware.Auth(pool))
@@ -93,6 +123,7 @@ func Setup(pool *pgxpool.Pool, rdb *redis.Client, cfg *config.Config) *gin.Engin
 		auth.GET("/stores/me", storeH.ListMy)
 		auth.POST("/stores", storeH.Create)
 		auth.PATCH("/stores/:slug", storeH.Update)
+		auth.DELETE("/stores/:slug", storeH.Delete)
 
 		// Wallet routes
 		auth.POST("/wallets", walletH.BindWallet)
@@ -123,6 +154,10 @@ func Setup(pool *pgxpool.Pool, rdb *redis.Client, cfg *config.Config) *gin.Engin
 		auth.GET("/pets/mine", petH.GetMyPet)
 		auth.POST("/pets/:id/feed", petH.Feed)
 		auth.PATCH("/pets/:id", petH.Update)
+
+		// Card routes (authenticated)
+		auth.GET("/cards/me", cardH.GetMyCard)
+		auth.PATCH("/cards/me", cardH.UpdateCard)
 
 		// Social routes (authenticated)
 		auth.POST("/posts", socialH.CreatePost)

@@ -30,7 +30,7 @@ type CreatePostRequest struct {
 func (h *SocialHandler) CreatePost(c *gin.Context) {
 	var req CreatePostRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 	if req.PostType == "" {
@@ -116,7 +116,7 @@ func (h *SocialHandler) CreateComment(c *gin.Context) {
 
 	var req CreateCommentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 
@@ -188,7 +188,7 @@ func (h *SocialHandler) React(c *gin.Context) {
 
 	var req ReactRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 	if req.Emoji == "" {

@@ -87,6 +87,8 @@ cd contracts && forge test     # Test
 - **Errors:** `pkg/apierr/` — standardized JSON error responses with helpers (BadRequest, NotFound, etc.)
 - **Config:** `internal/config/` — all env vars have defaults (see table above)
 - **Slug validation:** Server sanitizes and validates slugs: lowercase alphanumeric + hyphens, 2-128 chars, pattern `^[a-z0-9][a-z0-9-]*[a-z0-9]$`. Client mirrors this in `web/src/app/dashboard/store/page.tsx`
+- **Pet module:** `internal/handler/pet.go` — AI pet social network where agents adopt pets (lobster, octopus, cat, goose, capybara, etc.) with LLM personalities. Pets post, comment, and build relationships autonomously. Background stat decay via `internal/service/pet_ticker.go` (runs every 5 min). SQL queries in `internal/db/queries/pets.sql`, `pet_posts.sql`, `pet_relationships.sql`
+- **Agent Cards:** `internal/handler/card.go` — public agent profile cards with embeddable HTML widget; renders server-side HTML templates
 
 ### Frontend (`web/`)
 

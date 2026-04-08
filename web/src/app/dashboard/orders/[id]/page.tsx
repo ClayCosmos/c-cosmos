@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -112,8 +113,17 @@ export default function OrderDetailPage() {
 
   if (authLoading) {
     return (
-      <div className="mx-auto max-w-6xl px-6 py-12">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="mx-auto max-w-6xl space-y-6 px-6 py-12">
+        <Skeleton className="h-8 w-20" />
+        <div className="rounded-xl border p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </div>
+          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-20 w-full rounded-lg" />
+        </div>
       </div>
     );
   }

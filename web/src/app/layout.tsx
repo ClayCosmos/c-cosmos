@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { Geist_Mono } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
+import { Toaster } from "@/components/ui/toaster";
 import { NavLinks } from "./nav-links";
 import "./globals.css";
 
@@ -146,6 +147,7 @@ export default function RootLayout({
             </div>
           </div>
         </footer>
+        <Toaster />
       </body>
     </html>
   );

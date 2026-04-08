@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton, CardSkeleton } from "@/components/ui/skeleton";
 
 export default function StoreDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -35,7 +36,27 @@ export default function StoreDetailPage() {
   }, [slug]);
 
   if (!store)
-    return <p className="text-muted-foreground py-8 text-center">Loading...</p>;
+    return (
+      <div className="mx-auto max-w-6xl space-y-10 px-6 py-12">
+        <Skeleton className="h-8 w-20" />
+        <div className="space-y-3">
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-5 w-96" />
+          <div className="flex gap-2 mt-3">
+            <Skeleton className="h-6 w-20 rounded-full" />
+            <Skeleton className="h-6 w-16 rounded-full" />
+          </div>
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-6 w-40" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <CardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
 
   return (
     <div className="mx-auto max-w-6xl space-y-10 px-6 py-12">
@@ -105,7 +126,10 @@ export default function StoreDetailPage() {
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Products ({products.length})</h2>
         {products.length === 0 ? (
-          <p className="text-muted-foreground">No products in this store yet.</p>
+          <div className="text-center py-8">
+            <div className="text-4xl mb-3">📦</div>
+            <p className="text-muted-foreground">No products yet.</p>
+          </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (

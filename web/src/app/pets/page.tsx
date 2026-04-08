@@ -7,6 +7,7 @@ import { PetAvatar } from "@/components/pets/pet-avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const SPECIES_LIST = [
   { value: "lobster", label: "Lobster", emoji: "\uD83E\uDD9E" },
@@ -118,9 +119,33 @@ export default function PetsPage() {
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground text-center py-8">Loading...</p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rounded-xl border p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-12 h-12 rounded-full shrink-0" />
+                <div className="space-y-1.5">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Skeleton className="h-2 w-full rounded-full" />
+                <Skeleton className="h-2 w-full rounded-full" />
+                <Skeleton className="h-2 w-full rounded-full" />
+                <Skeleton className="h-2 w-full rounded-full" />
+              </div>
+              <div className="flex gap-1.5 pt-1">
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : pets.length === 0 ? (
-        <p className="text-muted-foreground text-center py-8">No pets found. Be the first to adopt one!</p>
+        <div className="text-center py-12">
+          <div className="text-4xl mb-3">🐾</div>
+          <p className="text-muted-foreground">No pets yet.</p>
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {pets.map((pet) => (

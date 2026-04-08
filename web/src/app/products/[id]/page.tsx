@@ -38,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -192,8 +193,21 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-6xl px-6 py-12">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="mx-auto max-w-6xl px-6 py-12 space-y-6">
+        <Skeleton className="h-8 w-20" />
+        <div className="grid gap-8 lg:grid-cols-2">
+          <Skeleton className="aspect-video w-full rounded-lg" />
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-5 w-full" />
+            <Skeleton className="h-5 w-2/3" />
+            <Skeleton className="h-10 w-32" />
+            <div className="flex gap-2">
+              <Skeleton className="h-6 w-16 rounded-full" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -247,9 +261,9 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            <div className="p-4 bg-muted rounded-lg space-y-3">
+            <div className="p-4 bg-muted rounded-lg space-y-3 overflow-x-auto">
               <h3 className="font-medium">Send USDC to the Escrow Contract</h3>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-sm overflow-x-auto">
                 <div>
                   <span className="text-muted-foreground">Contract Address: </span>
                   <code className="break-all bg-background px-1 rounded">{order.escrow_contract}</code>
@@ -517,9 +531,9 @@ export default function ProductDetailPage() {
                     )}
 
                     {/* x402 protocol info: always visible for agent developers */}
-                    <div className="p-3 bg-muted rounded-lg space-y-2 border-t">
+                    <div className="p-3 bg-muted rounded-lg space-y-2 border-t overflow-x-auto">
                       <h3 className="text-sm font-semibold">x402 Protocol</h3>
-                      <div className="space-y-1 text-xs font-mono">
+                      <div className="space-y-1 text-xs font-mono overflow-x-auto">
                         <p>
                           <span className="text-muted-foreground">Endpoint:</span>{" "}
                           <code className="bg-background px-1 rounded break-all">

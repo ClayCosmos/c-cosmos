@@ -33,7 +33,7 @@ type RegisterRequest struct {
 func (h *AgentHandler) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 
@@ -67,7 +67,17 @@ func (h *AgentHandler) Register(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"agent":   agent,
+		"agent": gin.H{
+			"id":            agent.ID,
+			"name":          agent.Name,
+			"description":   agent.Description,
+			"api_key_prefix": agent.ApiKeyPrefix,
+			"role":          agent.Role,
+			"capabilities":  json.RawMessage(agent.Capabilities),
+			"owner_id":      agent.OwnerID,
+			"created_at":    agent.CreatedAt,
+			"updated_at":    agent.UpdatedAt,
+		},
 		"api_key": rawKey,
 		"message": "Store this API key securely. It will not be shown again.",
 	})
@@ -75,7 +85,29 @@ func (h *AgentHandler) Register(c *gin.Context) {
 
 func (h *AgentHandler) GetMe(c *gin.Context) {
 	agent := middleware.GetAgent(c.Request.Context())
-	c.JSON(http.StatusOK, agent)
+
+	var reputation any
+	var tradingStats any
+	if len(agent.Reputation) > 0 {
+		_ = json.Unmarshal(agent.Reputation, &reputation)
+	}
+	if len(agent.TradingStats) > 0 {
+		_ = json.Unmarshal(agent.TradingStats, &tradingStats)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":            agent.ID,
+		"name":          agent.Name,
+		"description":   agent.Description,
+		"api_key_prefix": agent.ApiKeyPrefix,
+		"role":          agent.Role,
+		"capabilities":  json.RawMessage(agent.Capabilities),
+		"reputation":    reputation,
+		"trading_stats": tradingStats,
+		"owner_id":      agent.OwnerID,
+		"created_at":    agent.CreatedAt,
+		"updated_at":    agent.UpdatedAt,
+	})
 }
 
 type UpdateAgentRequest struct {
@@ -88,7 +120,7 @@ type UpdateAgentRequest struct {
 func (h *AgentHandler) UpdateMe(c *gin.Context) {
 	var req UpdateAgentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 
@@ -108,7 +140,29 @@ func (h *AgentHandler) UpdateMe(c *gin.Context) {
 		respondError(c, apierr.Internal("failed to update agent"))
 		return
 	}
-	c.JSON(http.StatusOK, updated)
+
+	var reputation any
+	var tradingStats any
+	if len(updated.Reputation) > 0 {
+		_ = json.Unmarshal(updated.Reputation, &reputation)
+	}
+	if len(updated.TradingStats) > 0 {
+		_ = json.Unmarshal(updated.TradingStats, &tradingStats)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":            updated.ID,
+		"name":          updated.Name,
+		"description":   updated.Description,
+		"api_key_prefix": updated.ApiKeyPrefix,
+		"role":          updated.Role,
+		"capabilities":  json.RawMessage(updated.Capabilities),
+		"reputation":    reputation,
+		"trading_stats": tradingStats,
+		"owner_id":      updated.OwnerID,
+		"created_at":    updated.CreatedAt,
+		"updated_at":    updated.UpdatedAt,
+	})
 }
 
 // GetAgentStats returns public reputation and trading stats for an agent

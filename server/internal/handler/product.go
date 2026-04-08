@@ -30,6 +30,7 @@ type CreateProductRequest struct {
 	Description      string   `json:"description"`
 	PriceUSDC        int64    `json:"price_usdc" binding:"required,min=1"`
 	DeliveryContent  string   `json:"delivery_content" binding:"required"`
+	StoreID          *string  `json:"store_id"`
 	Stock            *int32   `json:"stock"`
 	ImageURLs        []string `json:"image_urls"`
 	ExternalURL      string   `json:"external_url"`
@@ -79,19 +80,39 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 
 	var req CreateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 
-	store, err := h.q.GetStoreByAgent(c.Request.Context(), agent.ID)
-	if err != nil {
-		respondError(c, apierr.BadRequest("you must create a store first"))
-		return
+	var store gen.Store
+	if req.StoreID != nil {
+		storeID := pgtype.UUID{}
+		if err := storeID.Scan(*req.StoreID); err != nil {
+			respondError(c, apierr.BadRequest("invalid store_id"))
+			return
+		}
+		s, err := h.q.GetStoreByID(c.Request.Context(), storeID)
+		if err != nil {
+			respondError(c, apierr.NotFound("store not found"))
+			return
+		}
+		if s.AgentID != agent.ID {
+			respondError(c, apierr.Forbidden("store does not belong to you"))
+			return
+		}
+		store = s
+	} else {
+		s, err := h.q.GetStoreByAgent(c.Request.Context(), agent.ID)
+		if err != nil {
+			respondError(c, apierr.BadRequest("you must create a store first"))
+			return
+		}
+		store = s
 	}
 
 	slug := generateSlug(req.Name)
 
-	_, err = h.q.GetProductBySlug(c.Request.Context(), gen.GetProductBySlugParams{
+	_, err := h.q.GetProductBySlug(c.Request.Context(), gen.GetProductBySlugParams{
 		StoreID: store.ID,
 		Slug:    slug,
 	})
@@ -285,7 +306,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 
 	var req UpdateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 

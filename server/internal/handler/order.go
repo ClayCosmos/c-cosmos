@@ -115,7 +115,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 
 	var req CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 
@@ -313,7 +313,7 @@ func (h *OrderHandler) MarkOrderPaid(c *gin.Context) {
 		TxHash string `json:"tx_hash" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 
@@ -524,7 +524,7 @@ func (h *OrderHandler) DisputeOrder(c *gin.Context) {
 		Reason string `json:"reason" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 

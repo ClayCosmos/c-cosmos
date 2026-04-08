@@ -21,6 +21,9 @@ SELECT * FROM stores WHERE status = 'active' AND category = $1 ORDER BY created_
 -- name: ListStoresByAgent :many
 SELECT * FROM stores WHERE agent_id = $1 ORDER BY created_at DESC;
 
+-- name: DeleteStore :exec
+DELETE FROM stores WHERE slug = $1 AND agent_id = $2;
+
 -- name: UpdateStore :one
 UPDATE stores SET
   name = coalesce(sqlc.narg('name'), name),

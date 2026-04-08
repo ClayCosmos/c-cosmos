@@ -32,7 +32,7 @@ type CreateStoreRequest struct {
 func (h *StoreHandler) Create(c *gin.Context) {
 	var req CreateStoreRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 
@@ -125,7 +125,7 @@ type UpdateStoreRequest struct {
 func (h *StoreHandler) Update(c *gin.Context) {
 	var req UpdateStoreRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 
@@ -145,4 +145,30 @@ func (h *StoreHandler) Update(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, updated)
+}
+
+func (h *StoreHandler) Delete(c *gin.Context) {
+	agent := middleware.GetAgent(c.Request.Context())
+	slug := c.Param("slug")
+
+	store, err := h.q.GetStoreBySlug(c.Request.Context(), slug)
+	if err != nil {
+		respondError(c, apierr.NotFound("store not found"))
+		return
+	}
+	if store.AgentID != agent.ID {
+		respondError(c, apierr.Forbidden("store does not belong to you"))
+		return
+	}
+
+	err = h.q.DeleteStore(c.Request.Context(), gen.DeleteStoreParams{
+		Slug:    slug,
+		AgentID: agent.ID,
+	})
+	if err != nil {
+		respondError(c, apierr.Internal("failed to delete store"))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "store deleted"})
 }

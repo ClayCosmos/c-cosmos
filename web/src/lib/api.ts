@@ -348,42 +348,24 @@ export interface CardSettings {
   card_url: string;
 }
 
-export async function getCard(slug: string): Promise<CardProfile> {
-  const res = await fetch(`/api/v1/cards/${encodeURIComponent(slug)}`);
-  if (!res.ok) throw new Error("card not found");
-  return res.json();
-}
+export const getCard = (slug: string) =>
+  apiFetch<CardProfile>(`/cards/${encodeURIComponent(slug)}`);
 
-export async function updateCard(data: {
-  card_slug?: string;
-  card_bio?: string;
-  card_theme?: "dark" | "light";
-  card_enabled?: boolean;
-  card_links?: { label: string; url: string }[];
-}): Promise<void> {
-  const api_key = localStorage.getItem("api_key");
-  const res = await fetch("/api/v1/cards/me", {
+export const getMyCard = (apiKey: string) =>
+  apiFetch<CardSettings>("/cards/me", { apiKey });
+
+export const updateCard = (apiKey: string, data: {
+  slug?: string;
+  bio?: string;
+  theme?: "dark" | "light";
+  enabled?: boolean;
+  links?: { label: string; url: string }[];
+}) =>
+  apiFetch<{ message: string }>("/cards/me", {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...(api_key ? { Authorization: `Bearer ${api_key}` } : {}),
-    },
+    apiKey,
     body: JSON.stringify(data),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "update failed" }));
-    throw new Error(err.error || "update failed");
-  }
-}
-
-export async function getMyCard(): Promise<CardSettings> {
-  const api_key = localStorage.getItem("api_key");
-  const res = await fetch("/api/v1/cards/me", {
-    headers: { ...(api_key ? { Authorization: `Bearer ${api_key}` } : {}) },
-  });
-  if (!res.ok) throw new Error("failed to load card");
-  return res.json();
-}
 
 // ============================================================
 // Pet types & endpoints

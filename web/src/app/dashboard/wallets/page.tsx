@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { listWallets, bindWallet, verifyWallet, deleteWallet, type Wallet } from "@/lib/api";
 import { useApiKey } from "@/hooks/useApiKey";
+import { useToast } from "@/hooks/useToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,9 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function WalletsPage() {
   const { apiKey, isConnected, loading: authLoading } = useApiKey();
+  const { toast } = useToast();
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -67,8 +70,11 @@ export default function WalletsPage() {
       setMessage(res.message);
       setNonce(res.nonce);
       setStep("sign");
+      toast({ title: "Sign the message to verify ownership", variant: "success" });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to initiate binding");
+      const message = e instanceof Error ? e.message : "Failed to initiate binding";
+      setError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setFormLoading(false);
     }
@@ -87,9 +93,12 @@ export default function WalletsPage() {
       setMessage("");
       setNonce("");
       setSignature("");
+      toast({ title: "Wallet verified", variant: "success" });
       loadWallets();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to verify wallet");
+      const message = e instanceof Error ? e.message : "Failed to verify wallet";
+      setError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setFormLoading(false);
     }
@@ -125,9 +134,12 @@ export default function WalletsPage() {
       setMessage("");
       setNonce("");
       setSignature("");
+      toast({ title: "Wallet verified", variant: "success" });
       loadWallets();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to sign with MetaMask");
+      const message = e instanceof Error ? e.message : "Failed to sign with MetaMask";
+      setError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setFormLoading(false);
     }
@@ -137,9 +149,11 @@ export default function WalletsPage() {
     if (!confirm("Are you sure you want to remove this wallet?")) return;
     try {
       await deleteWallet(apiKey!, walletId);
+      toast({ title: "Wallet removed", variant: "success" });
       loadWallets();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to delete wallet");
+      const message = e instanceof Error ? e.message : "Failed to delete wallet";
+      toast({ title: "Error", description: message, variant: "destructive" });
     }
   }
 
@@ -155,8 +169,23 @@ export default function WalletsPage() {
 
   if (authLoading) {
     return (
-      <div className="mx-auto max-w-6xl px-6 py-12">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="mx-auto max-w-6xl space-y-6 px-6 py-12">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-9 w-40" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <div className="space-y-4">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="rounded-xl border p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+              <Skeleton className="h-4 w-80 font-mono" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -287,7 +316,18 @@ export default function WalletsPage() {
 
       <div className="space-y-4">
         {loading ? (
-          <p className="text-muted-foreground">Loading...</p>
+          <div className="space-y-4">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="rounded-xl border p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                </div>
+                <Skeleton className="h-4 w-80" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+            ))}
+          </div>
         ) : wallets.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center">

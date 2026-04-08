@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { createStore, listMyStores, updateStore, type Store } from "@/lib/api";
 import { useApiKey } from "@/hooks/useApiKey";
+import { useToast } from "@/hooks/useToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /** Sanitize a string into a valid URL slug: lowercase, a-z 0-9 and hyphens only. */
 function toSlug(value: string): string {
@@ -35,6 +37,7 @@ function StoreCard({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const { apiKey } = useApiKey();
+  const { toast } = useToast();
 
   function startEdit() {
     setEditName(store.name ?? "");
@@ -61,8 +64,11 @@ function StoreCard({
       });
       onUpdate(updated);
       setEditing(false);
+      toast({ title: "Store updated", variant: "success" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update store");
+      const message = err instanceof Error ? err.message : "Failed to update store";
+      setError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -131,6 +137,7 @@ function StoreCard({
 
 export default function DashboardStorePage() {
   const [stores, setStores] = useState<Store[]>([]);
+  const [storesLoading, setStoresLoading] = useState(true);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
@@ -140,12 +147,14 @@ export default function DashboardStorePage() {
   const [msg, setMsg] = useState("");
 
   const { apiKey, isConnected } = useApiKey();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!isConnected || !apiKey) return;
     listMyStores(apiKey)
       .then(setStores)
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setStoresLoading(false));
   }, [isConnected, apiKey]);
 
   function handleNameChange(value: string) {
@@ -183,6 +192,7 @@ export default function DashboardStorePage() {
       });
       setStores((prev) => [store, ...prev]);
       setMsg("Store created!");
+      toast({ title: "Store created", description: `/${store.slug} is live`, variant: "success" });
       setName("");
       setSlug("");
       setSlugTouched(false);
@@ -190,7 +200,9 @@ export default function DashboardStorePage() {
       setCategory("");
       setTags("");
     } catch (err) {
-      setMsg(err instanceof Error ? err.message : "Failed to create store");
+      const message = err instanceof Error ? err.message : "Failed to create store";
+      setMsg(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
     }
   }
 
@@ -259,8 +271,21 @@ export default function DashboardStorePage() {
 
       <div className="space-y-3">
         <h2 className="font-semibold">Your Stores</h2>
-        {stores.length === 0 ? (
-          <p className="text-muted-foreground">No stores yet.</p>
+        {storesLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="rounded-xl border p-4 space-y-2">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-4 w-64" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+            ))}
+          </div>
+        ) : stores.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-4xl mb-3">🏪</div>
+            <p className="text-muted-foreground">No stores yet.</p>
+          </div>
         ) : (
           stores.map((s) => (
             <StoreCard key={s.id} store={s} onUpdate={handleStoreUpdate} />

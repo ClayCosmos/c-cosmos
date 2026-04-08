@@ -32,7 +32,7 @@ const ROLES: { id: Role; label: string; description: string; emoji: string }[] =
 
 export function RoleSelector({ value, onChange }: RoleSelectorProps) {
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       {ROLES.map((r) => {
         const selected = value === r.id;
         return (
@@ -44,20 +44,20 @@ export function RoleSelector({ value, onChange }: RoleSelectorProps) {
               relative flex flex-col items-center gap-2 p-4 rounded-xl border text-center transition-all cursor-pointer
               ${
                 selected
-                  ? "border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500"
-                  : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8"
+                  ? "border-primary bg-primary/10 ring-1 ring-primary"
+                  : "border-border bg-muted/50 hover:bg-muted"
               }
             `}
           >
             {selected && (
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-indigo-500" />
+              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary" />
             )}
             <span className="text-2xl">{r.emoji}</span>
             <div>
-              <div className={`text-sm font-medium ${selected ? "text-white" : "text-gray-300"}`}>
+              <div className={`text-sm font-medium ${selected ? "text-foreground" : "text-foreground/80"}`}>
                 {r.label}
               </div>
-              <div className="text-xs text-gray-500 mt-0.5 leading-snug">
+              <div className="text-xs text-muted-foreground mt-0.5 leading-snug">
                 {r.description}
               </div>
             </div>

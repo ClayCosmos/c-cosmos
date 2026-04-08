@@ -1,38 +1,35 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-
-interface CardData {
-  slug: string;
-  bio: string;
-  links: { label: string; url: string }[];
-  theme: string;
-  enabled: boolean;
-  card_created: boolean;
-  card_url: string;
-}
+import { useApiKey } from "@/hooks/useApiKey";
+import { useToast } from "@/hooks/useToast";
+import { getMyCard, updateCard, type CardSettings } from "@/lib/api";
+import { Switch } from "@/components/ui/switch";
 
 export default function DashboardCardPage() {
-  const [card, setCard] = useState<CardData | null>(null);
+  const { apiKey, isConnected, loading: authLoading } = useApiKey();
+  const [card, setCard] = useState<CardSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const [slug, setSlug] = useState("");
+  const [slugError, setSlugError] = useState<string | null>(null);
   const [bio, setBio] = useState("");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [enabled, setEnabled] = useState(true);
   const [links, setLinks] = useState<{ label: string; url: string }[]>([]);
 
   useEffect(() => {
-    const apiKey = localStorage.getItem("api_key");
-    fetch("/api/v1/cards/me", apiKey ? { headers: { Authorization: `Bearer ${apiKey}` } } : {})
-      .then((r) => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+    if (!apiKey || !isConnected) {
+      setLoading(false);
+      return;
+    }
+    getMyCard(apiKey)
       .then((data) => {
-        if (!apiKey && data.api_key) localStorage.setItem("api_key", data.api_key);
         setCard(data);
-        setSlug(data.slug || "");
+        setSlug((data.slug || "").toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-"));
         setBio(data.bio || "");
         setTheme((data.theme as "dark" | "light") || "dark");
         setEnabled(data.enabled !== false);
@@ -40,40 +37,29 @@ export default function DashboardCardPage() {
       })
       .catch(() => setError("Failed to load card data"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [apiKey, isConnected]);
 
   const save = useCallback(async () => {
+    if (!apiKey) return;
     setSaving(true);
     setError(null);
-    setSaved(false);
     try {
-      const apiKey = localStorage.getItem("api_key");
-      const res = await fetch("/api/v1/cards/me", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
-        },
-        body: JSON.stringify({
-          card_slug: slug,
-          card_bio: bio,
-          card_theme: theme,
-          card_enabled: enabled,
-          card_links: links,
-        }),
+      await updateCard(apiKey, {
+        slug,
+        bio,
+        theme,
+        enabled,
+        links,
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Save failed");
-      }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      toast({ title: "Saved", variant: "success" });
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Save failed");
+      const message = e instanceof Error ? e.message : "Save failed";
+      setError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
-  }, [slug, bio, theme, enabled, links]);
+  }, [apiKey, slug, bio, theme, enabled, links]);
 
   const addLink = () => {
     if (links.length >= 5) return;
@@ -90,164 +76,187 @@ export default function DashboardCardPage() {
     setLinks(next);
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isConnected) {
+    return (
+      <div className="mx-auto max-w-6xl px-6 py-12 text-muted-foreground">
+        Connect your API key to manage your card.
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white mb-1">Agent Card</h1>
-        <p className="text-gray-400 text-sm">Customize your public agent profile on ClayCosmos</p>
-      </div>
-
-      {card?.card_url && (
-        <div className="mb-6 p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between">
-          <div>
-            <p className="text-sm text-indigo-300 font-medium">Your public card is live</p>
-            <p className="text-xs text-indigo-400/70">{window.location.origin}{card.card_url}</p>
-          </div>
-          <a
-            href={card.card_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
-          >
-            View →
-          </a>
+    <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-2xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight mb-1">Agent Card</h1>
+          <p className="text-muted-foreground text-sm">Customize your public agent profile on ClayCosmos</p>
         </div>
-      )}
 
-      <div className="space-y-6">
-        <div className="p-5 rounded-xl border border-white/10 bg-white/3">
-          <div className="flex items-center justify-between">
+        {slug && (
+          <div className="mb-6 p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-medium text-white">Card Visibility</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Public card page + widget embed</p>
+              <p className="text-sm font-medium">Your public card is live</p>
+              <p className="text-xs text-muted-foreground">{typeof window !== "undefined" ? window.location.origin : ""}/card/{slug}</p>
             </div>
-            <button
-              onClick={() => setEnabled(!enabled)}
-              className={`relative w-11 h-6 rounded-full transition-colors ${enabled ? "bg-indigo-600" : "bg-white/10"}`}
+            <a
+              href={`/card/${slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             >
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enabled ? "translate-x-5" : "translate-x-0"}`} />
-            </button>
-          </div>
-        </div>
-
-        <div className="p-5 rounded-xl border border-white/10 bg-white/3">
-          <h3 className="text-sm font-medium text-white mb-1">Card URL</h3>
-          <p className="text-xs text-gray-500 mb-3">claycosmos.ai/card/your-slug</p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
-              placeholder="your-slug"
-              className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors text-sm"
-              maxLength={64}
-            />
-          </div>
-          <p className="text-xs text-gray-600 mt-2">2–64 characters, letters/numbers/hyphens only</p>
-        </div>
-
-        <div className="p-5 rounded-xl border border-white/10 bg-white/3">
-          <h3 className="text-sm font-medium text-white mb-1">Bio</h3>
-          <p className="text-xs text-gray-500 mb-3">Shown on your public card page</p>
-          <textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            placeholder="What does your agent do? What makes it special?"
-            className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors text-sm resize-none"
-            rows={3}
-            maxLength={280}
-          />
-          <p className="text-xs text-gray-600 mt-1 text-right">{bio.length}/280</p>
-        </div>
-
-        <div className="p-5 rounded-xl border border-white/10 bg-white/3">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="text-sm font-medium text-white">Links</h3>
-              <p className="text-xs text-gray-500">Up to 5 links shown on your card</p>
-            </div>
-            <button
-              onClick={addLink}
-              disabled={links.length >= 5}
-              className="text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 disabled:opacity-30 transition-colors"
-            >
-              + Add link
-            </button>
-          </div>
-          <div className="space-y-2">
-            {links.map((link, i) => (
-              <div key={i} className="flex gap-2">
-                <input
-                  type="text"
-                  value={link.label}
-                  onChange={(e) => updateLink(i, "label", e.target.value)}
-                  placeholder="Label (e.g. Website)"
-                  className="w-1/3 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors text-sm"
-                />
-                <input
-                  type="url"
-                  value={link.url}
-                  onChange={(e) => updateLink(i, "url", e.target.value)}
-                  placeholder="https://..."
-                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors text-sm"
-                />
-                <button
-                  onClick={() => removeLink(i)}
-                  className="text-gray-500 hover:text-red-400 px-2 text-sm transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="p-5 rounded-xl border border-white/10 bg-white/3">
-          <h3 className="text-sm font-medium text-white mb-3">Widget Theme</h3>
-          <div className="flex gap-3">
-            {(["dark", "light"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTheme(t)}
-                className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-all ${
-                  theme === t
-                    ? "border-indigo-500 bg-indigo-500/10 text-indigo-300"
-                    : "border-white/10 bg-white/5 text-gray-400 hover:border-white/20"
-                }`}
-              >
-                {t === "dark" ? "🌑 Dark" : "☀️ Light"}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {error && (
-          <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm">
-            {error}
+              View
+            </a>
           </div>
         )}
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={save}
-            disabled={saving}
-            className="px-6 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 transition-all"
-          >
-            {saving ? "Saving..." : saved ? "✓ Saved!" : "Save Changes"}
-          </button>
-          {!card?.card_created && (
-            <p className="text-xs text-gray-600">
-              Your card will be created automatically when you save
-            </p>
+        <div className="space-y-6">
+          <div className="p-5 rounded-xl border">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium">Card Visibility</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Public card page + widget embed</p>
+              </div>
+              <Switch checked={enabled} onCheckedChange={setEnabled} />
+            </div>
+          </div>
+
+          <div className="p-5 rounded-xl border">
+            <h3 className="text-sm font-medium mb-1">Card URL</h3>
+            <p className="text-xs text-muted-foreground mb-3">claycosmos.ai/card/your-slug</p>
+            <input
+              type="text"
+              value={slug}
+              onChange={(e) => {
+                const val = e.target.value
+                  .toLowerCase()
+                  .replace(/[^a-z0-9-]/g, "")
+                  .replace(/-+/g, "-")
+                  .replace(/^-/, "");
+                setSlug(val);
+                if (!val) {
+                  setSlugError("Slug is required");
+                } else if (val.length < 4) {
+                  setSlugError("At least 4 characters");
+                } else if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(val)) {
+                  setSlugError("Must start and end with a letter or number");
+                } else {
+                  setSlugError(null);
+                }
+              }}
+              placeholder="my-agent"
+              className={`w-full px-3 py-2 rounded-lg bg-muted/50 border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${slugError ? "border-destructive" : ""}`}
+              maxLength={64}
+            />
+            {slugError ? (
+              <p className="text-xs text-destructive mt-2">{slugError}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-2">4-64 characters. Lowercase letters, numbers, hyphens. Must start and end with a letter or number.</p>
+            )}
+          </div>
+
+          <div className="p-5 rounded-xl border">
+            <h3 className="text-sm font-medium mb-1">Bio</h3>
+            <p className="text-xs text-muted-foreground mb-3">Shown on your public card page</p>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="What does your agent do? What makes it special?"
+              className="w-full px-3 py-2 rounded-lg bg-muted/50 border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+              rows={3}
+              maxLength={280}
+            />
+            <p className="text-xs text-muted-foreground mt-1 text-right">{bio.length}/280</p>
+          </div>
+
+          <div className="p-5 rounded-xl border">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-medium">Links</h3>
+                <p className="text-xs text-muted-foreground">Up to 5 links shown on your card</p>
+              </div>
+              <button
+                onClick={addLink}
+                disabled={links.length >= 5}
+                className="text-xs px-3 py-1.5 rounded-lg border hover:bg-muted disabled:opacity-30 transition-colors"
+              >
+                + Add link
+              </button>
+            </div>
+            <div className="space-y-2">
+              {links.map((link, i) => (
+                <div key={i} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={link.label}
+                    onChange={(e) => updateLink(i, "label", e.target.value)}
+                    placeholder="Label"
+                    className="w-1/3 px-3 py-2 rounded-lg bg-muted/50 border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <input
+                    type="url"
+                    value={link.url}
+                    onChange={(e) => updateLink(i, "url", e.target.value)}
+                    placeholder="https://..."
+                    className="flex-1 px-3 py-2 rounded-lg bg-muted/50 border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <button
+                    onClick={() => removeLink(i)}
+                    className="text-muted-foreground hover:text-destructive px-2 text-sm transition-colors"
+                  >
+                    x
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-5 rounded-xl border">
+            <h3 className="text-sm font-medium mb-3">Widget Theme</h3>
+            <div className="flex gap-3">
+              {(["dark", "light"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTheme(t)}
+                  className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-all ${
+                    theme === t
+                      ? "border-primary bg-primary/5"
+                      : "hover:bg-muted/50"
+                  }`}
+                >
+                  {t === "dark" ? "Dark" : "Light"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {error && (
+            <div className="px-4 py-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+              {error}
+            </div>
           )}
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={save}
+              disabled={saving || !!slugError || !slug}
+              className="px-6 py-2.5 rounded-xl font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-all"
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+            {!card?.card_created && (
+              <p className="text-xs text-muted-foreground">
+                Your card will be created automatically when you save
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>

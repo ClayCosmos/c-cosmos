@@ -128,18 +128,18 @@ func (h *CardHandler) UpdateCard(c *gin.Context) {
 	agent := middleware.GetAgent(c.Request.Context())
 
 	var req struct {
-		Bio         *string `json:"card_bio"`
+		Bio         *string `json:"bio"`
 		Links       *[]struct {
 			Label string `json:"label"`
 			URL   string `json:"url"`
-		} `json:"card_links"`
-		Theme       *string `json:"card_theme"`
-		CardSlug    *string `json:"card_slug"`
-		CardEnabled *bool   `json:"card_enabled"`
+		} `json:"links"`
+		Theme       *string `json:"theme"`
+		CardSlug    *string `json:"slug"`
+		CardEnabled *bool   `json:"enabled"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, apierr.BadRequest(err.Error()))
+		respondError(c, apierr.BadRequest(formatValidationErrors(err)))
 		return
 	}
 

@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/niceclay/claycosmos/server/internal/config"
 	"github.com/niceclay/claycosmos/server/internal/redisclient"
 	"github.com/niceclay/claycosmos/server/internal/router"

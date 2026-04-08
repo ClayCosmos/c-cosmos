@@ -1,3 +1,4 @@
+// ClayCosmos API Server — Marketplace + Pet Social Network
 package main
 
 import (

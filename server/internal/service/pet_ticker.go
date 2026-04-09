@@ -3,15 +3,12 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
-	"math"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/niceclay/claycosmos/server/internal/db/gen"
-	"github.com/niceclay/claycosmos/server/internal/narrative"
 )
 
 // PetTicker periodically decays/recovers pet stats (hunger, mood, energy),
@@ -181,78 +178,3 @@ func (pt *PetTicker) logEvent(ctx context.Context, petID pgtype.UUID, eventType 
 	}
 }
 
-// calculateLevel computes the level from XP: floor(sqrt(xp / 100)) + 1.
-func calculateLevel(xp int32) int32 {
-	if xp <= 0 {
-		return 1
-	}
-	return int32(math.Floor(math.Sqrt(float64(xp)/100))) + 1
-}
-
-// evolutionThresholds maps level thresholds to evolution stages.
-func checkEvolutionEligible(level int32, currentStage string) (string, string) {
-	switch {
-	case level >= 31 && currentStage == "adult":
-		return "elder", "evolve_elder"
-	case level >= 16 && currentStage == "teen":
-		return "adult", "evolve_adult"
-	case level >= 6 && currentStage == "baby":
-		return "teen", "evolve_teen"
-	default:
-		return "", ""
-	}
-}
-
-// processLevelAndEvolution recalculates a pet's level and checks evolution.
-// This is used by the ticker for batch processing. Handlers use the DB-computed level.
-func (pt *PetTicker) processLevelAndEvolution(ctx context.Context, pet gen.Pet) {
-	expectedLevel := calculateLevel(pet.Xp)
-	if expectedLevel != pet.Level {
-		// Level changed — the DB query AddPetXP already handles this,
-		// but this serves as a consistency check during ticks.
-		if expectedLevel > pet.Level {
-			pt.logEvent(ctx, pet.ID, "level_up", map[string]any{
-				"old_level": pet.Level,
-				"new_level": expectedLevel,
-				"source":    "tick_recalc",
-			})
-
-			// Check level milestones
-			for _, milestone := range []int32{5, 10, 20, 30, 50} {
-				if pet.Level < milestone && expectedLevel >= milestone {
-					msg := narrative.GetMilestone("level_"+itoa(milestone), pet.Name)
-					if msg != "" {
-						pt.logEvent(ctx, pet.ID, "milestone", map[string]any{
-							"key":     "level_" + itoa(milestone),
-							"message": msg,
-						})
-					}
-				}
-			}
-		}
-	}
-
-	// Check evolution
-	targetStage, milestoneKey := checkEvolutionEligible(expectedLevel, pet.EvolutionStage)
-	if targetStage != "" {
-		_, err := pt.q.UpdatePetEvolution(ctx, gen.UpdatePetEvolutionParams{
-			ID:             pet.ID,
-			EvolutionStage: targetStage,
-		})
-		if err != nil {
-			log.Printf("[pet-ticker] evolution error for pet %v: %v", pet.ID, err)
-			return
-		}
-		msg := narrative.GetMilestone(milestoneKey, pet.Name)
-		pt.logEvent(ctx, pet.ID, "evolution", map[string]any{
-			"from":      pet.EvolutionStage,
-			"to":        targetStage,
-			"level":     expectedLevel,
-			"milestone": msg,
-		})
-	}
-}
-
-func itoa(n int32) string {
-	return fmt.Sprint(n)
-}

@@ -6,6 +6,7 @@ type PetAvatarProps = {
   colorSecondary?: string;
   mood?: number;
   size?: "sm" | "md" | "lg" | "xl";
+  evolutionStage?: string;
   className?: string;
 };
 
@@ -252,31 +253,58 @@ const SPECIES_RENDERERS: Record<string, typeof LobsterSvg> = {
   blob: BlobSvg,
 };
 
+function getEvolutionStyles(stage: string | undefined, colorPrimary: string): { className: string; style: React.CSSProperties } {
+  switch (stage) {
+    case "teen":
+      return {
+        className: "ring-2 ring-primary/20",
+        style: {},
+      };
+    case "adult":
+      return {
+        className: "shadow-lg",
+        style: { boxShadow: `0 4px 14px ${colorPrimary}30` },
+      };
+    case "elder":
+      return {
+        className: "",
+        style: { boxShadow: "0 0 15px rgba(234,179,8,0.3)" },
+      };
+    default:
+      return { className: "", style: {} };
+  }
+}
+
 export function PetAvatar({
   species,
   colorPrimary = "#E74C3C",
   colorSecondary = "#C0392B",
   mood = 80,
   size = "md",
+  evolutionStage,
   className,
 }: PetAvatarProps) {
   const Renderer = SPECIES_RENDERERS[species];
   const s = SIZES[size];
+  const evo = getEvolutionStyles(evolutionStage, colorPrimary);
 
   if (!Renderer) {
     return (
-      <div className={cn(s.container, "rounded-full bg-muted flex items-center justify-center text-lg", className)}>
+      <div className={cn(s.container, "rounded-full bg-muted flex items-center justify-center text-lg", evo.className, className)} style={evo.style}>
         🐾
       </div>
     );
   }
 
   return (
-    <div className={cn(s.container, "rounded-full overflow-hidden flex items-center justify-center", className)}
-         style={{ backgroundColor: colorPrimary + "15" }}>
+    <div className={cn(s.container, "relative rounded-full overflow-hidden flex items-center justify-center", evo.className, className)}
+         style={{ backgroundColor: colorPrimary + "15", ...evo.style }}>
       <svg viewBox="0 0 40 40" width={s.svg} height={s.svg}>
         <Renderer primary={colorPrimary} secondary={colorSecondary} mood={mood} />
       </svg>
+      {evolutionStage === "elder" && (
+        <span className="absolute -top-0.5 -right-0.5 text-[10px] leading-none">&#9733;</span>
+      )}
     </div>
   );
 }

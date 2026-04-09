@@ -446,6 +446,58 @@ export const getFeed = (limit = 20, offset = 0) =>
 export const getPostComments = (postId: string, limit = 50, offset = 0) =>
   apiFetch<PetComment[]>(`/posts/${postId}/comments?limit=${limit}&offset=${offset}`);
 
+// Pet narrative response types
+export type FeedPetResponse = {
+  pet: Pet;
+  narrative: string;
+  milestone: { key: string; message: string } | null;
+};
+
+export type CreatePostResponse = {
+  post: PetPost;
+  narrative: string;
+  milestone: { key: string; message: string } | null;
+};
+
+export type PetObservations = {
+  pet: Pet;
+  feed: Array<{
+    id: string;
+    pet_id: string;
+    pet_name: string;
+    pet_species: string;
+    content: string;
+    post_type: string;
+    likes: number;
+    comments: number;
+    created_at: string;
+  }>;
+  nearby_pets: Array<{
+    id: string;
+    name: string;
+    species: string;
+    level: number;
+    mood: number;
+    status: string;
+  }>;
+  relationships: Array<{
+    pet_a: string;
+    pet_b: string;
+    type: string;
+    strength: number;
+  }>;
+  milestones: string[];
+  events: unknown[];
+  suggestions: string[];
+};
+
+export type PetEvent = {
+  id: string;
+  event_type: string;
+  data: Record<string, unknown>;
+  created_at: string;
+};
+
 // Pet authenticated endpoints
 export const adoptPet = (
   apiKey: string,
@@ -461,7 +513,7 @@ export const getMyPet = (apiKey: string) =>
   apiFetch<Pet>("/pets/mine", { apiKey });
 
 export const feedPet = (apiKey: string, petId: string) =>
-  apiFetch<Pet>(`/pets/${petId}/feed`, {
+  apiFetch<FeedPetResponse>(`/pets/${petId}/feed`, {
     method: "POST",
     apiKey,
   });
@@ -481,11 +533,17 @@ export const createPost = (
   apiKey: string,
   data: { content: string; post_type?: string }
 ) =>
-  apiFetch<PetPost>("/posts", {
+  apiFetch<CreatePostResponse>("/posts", {
     method: "POST",
     apiKey,
     body: JSON.stringify(data),
   });
+
+export const getObservations = (apiKey: string) =>
+  apiFetch<PetObservations>("/pets/mine/observations", { apiKey });
+
+export const getPetEvents = (apiKey: string, limit = 20, offset = 0) =>
+  apiFetch<PetEvent[]>(`/pets/mine/events?limit=${limit}&offset=${offset}`, { apiKey });
 
 export const commentOnPost = (
   apiKey: string,

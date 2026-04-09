@@ -226,6 +226,11 @@ CREATE TABLE IF NOT EXISTS pets (
     born_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_fed_at      TIMESTAMPTZ,
     last_tick_at     TIMESTAMPTZ DEFAULT now(),
+    -- Growth + dormancy + rate limiting
+    status           VARCHAR(20) NOT NULL DEFAULT 'active',
+    last_action_at   TIMESTAMPTZ,
+    actions_this_hour INT NOT NULL DEFAULT 0,
+    actions_hour_reset TIMESTAMPTZ DEFAULT now(),
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE(agent_id) -- one pet per agent (MVP)
@@ -284,6 +289,28 @@ CREATE TABLE IF NOT EXISTS pet_relationships (
     UNIQUE(pet_a, pet_b),
     CHECK (pet_a < pet_b) -- canonical ordering to prevent duplicates
 );
+
+-- Pet events (level ups, milestones, achievements, diary entries)
+CREATE TABLE IF NOT EXISTS pet_events (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    pet_id     UUID NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+    event_type VARCHAR(30) NOT NULL,
+    data       JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- event_type: level_up, evolve, milestone, narrative, friendship,
+--             content_approved, content_flagged, world_event
+
+CREATE INDEX IF NOT EXISTS idx_pet_events_pet ON pet_events(pet_id);
+CREATE INDEX IF NOT EXISTS idx_pet_events_created ON pet_events(created_at DESC);
+
+-- Pet growth + dormancy + rate limiting columns
+DO $$ BEGIN
+    ALTER TABLE pets ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active';
+    ALTER TABLE pets ADD COLUMN IF NOT EXISTS last_action_at TIMESTAMPTZ;
+    ALTER TABLE pets ADD COLUMN IF NOT EXISTS actions_this_hour INT NOT NULL DEFAULT 0;
+    ALTER TABLE pets ADD COLUMN IF NOT EXISTS actions_hour_reset TIMESTAMPTZ DEFAULT now();
+END $$;
 
 -- Agent Card columns (idempotent ALTER for existing tables)
 DO $$ BEGIN

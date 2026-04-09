@@ -11,10 +11,57 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addPetXP = `-- name: AddPetXP :one
+UPDATE pets
+SET xp = xp + $2,
+    level = GREATEST(1, FLOOR(SQRT((xp + $2)::float / 100)) + 1),
+    updated_at = now()
+WHERE id = $1
+RETURNING id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at
+`
+
+type AddPetXPParams struct {
+	ID pgtype.UUID `json:"id"`
+	Xp int32       `json:"xp"`
+}
+
+func (q *Queries) AddPetXP(ctx context.Context, arg AddPetXPParams) (Pet, error) {
+	row := q.db.QueryRow(ctx, addPetXP, arg.ID, arg.Xp)
+	var i Pet
+	err := row.Scan(
+		&i.ID,
+		&i.AgentID,
+		&i.Name,
+		&i.Species,
+		&i.Hunger,
+		&i.Mood,
+		&i.Energy,
+		&i.SocialScore,
+		&i.Level,
+		&i.Xp,
+		&i.EvolutionStage,
+		&i.Personality,
+		&i.ColorPrimary,
+		&i.ColorSecondary,
+		&i.Accessories,
+		&i.IsActive,
+		&i.BornAt,
+		&i.LastFedAt,
+		&i.LastTickAt,
+		&i.Status,
+		&i.LastActionAt,
+		&i.ActionsThisHour,
+		&i.ActionsHourReset,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const createPet = `-- name: CreatePet :one
 INSERT INTO pets (agent_id, name, species, personality, color_primary, color_secondary)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, created_at, updated_at
+RETURNING id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at
 `
 
 type CreatePetParams struct {
@@ -56,6 +103,10 @@ func (q *Queries) CreatePet(ctx context.Context, arg CreatePetParams) (Pet, erro
 		&i.BornAt,
 		&i.LastFedAt,
 		&i.LastTickAt,
+		&i.Status,
+		&i.LastActionAt,
+		&i.ActionsThisHour,
+		&i.ActionsHourReset,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -84,7 +135,7 @@ UPDATE pets SET
   last_fed_at = now(),
   updated_at = now()
 WHERE id = $1 AND agent_id = $2
-RETURNING id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, created_at, updated_at
+RETURNING id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at
 `
 
 type FeedPetParams struct {
@@ -115,14 +166,245 @@ func (q *Queries) FeedPet(ctx context.Context, arg FeedPetParams) (Pet, error) {
 		&i.BornAt,
 		&i.LastFedAt,
 		&i.LastTickAt,
+		&i.Status,
+		&i.LastActionAt,
+		&i.ActionsThisHour,
+		&i.ActionsHourReset,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
+const getActivePets = `-- name: GetActivePets :many
+SELECT id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at FROM pets WHERE is_active = true AND status = 'active'
+`
+
+func (q *Queries) GetActivePets(ctx context.Context) ([]Pet, error) {
+	rows, err := q.db.Query(ctx, getActivePets)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Pet{}
+	for rows.Next() {
+		var i Pet
+		if err := rows.Scan(
+			&i.ID,
+			&i.AgentID,
+			&i.Name,
+			&i.Species,
+			&i.Hunger,
+			&i.Mood,
+			&i.Energy,
+			&i.SocialScore,
+			&i.Level,
+			&i.Xp,
+			&i.EvolutionStage,
+			&i.Personality,
+			&i.ColorPrimary,
+			&i.ColorSecondary,
+			&i.Accessories,
+			&i.IsActive,
+			&i.BornAt,
+			&i.LastFedAt,
+			&i.LastTickAt,
+			&i.Status,
+			&i.LastActionAt,
+			&i.ActionsThisHour,
+			&i.ActionsHourReset,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDormantCandidates = `-- name: GetDormantCandidates :many
+SELECT id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at FROM pets
+WHERE status = 'active' AND last_action_at < now() - interval '3 days'
+`
+
+func (q *Queries) GetDormantCandidates(ctx context.Context) ([]Pet, error) {
+	rows, err := q.db.Query(ctx, getDormantCandidates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Pet{}
+	for rows.Next() {
+		var i Pet
+		if err := rows.Scan(
+			&i.ID,
+			&i.AgentID,
+			&i.Name,
+			&i.Species,
+			&i.Hunger,
+			&i.Mood,
+			&i.Energy,
+			&i.SocialScore,
+			&i.Level,
+			&i.Xp,
+			&i.EvolutionStage,
+			&i.Personality,
+			&i.ColorPrimary,
+			&i.ColorSecondary,
+			&i.Accessories,
+			&i.IsActive,
+			&i.BornAt,
+			&i.LastFedAt,
+			&i.LastTickAt,
+			&i.Status,
+			&i.LastActionAt,
+			&i.ActionsThisHour,
+			&i.ActionsHourReset,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getLonelyCandidates = `-- name: GetLonelyCandidates :many
+SELECT id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at FROM pets
+WHERE status = 'active' AND last_action_at < now() - interval '3 days'
+  AND last_action_at >= now() - interval '7 days'
+`
+
+func (q *Queries) GetLonelyCandidates(ctx context.Context) ([]Pet, error) {
+	rows, err := q.db.Query(ctx, getLonelyCandidates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Pet{}
+	for rows.Next() {
+		var i Pet
+		if err := rows.Scan(
+			&i.ID,
+			&i.AgentID,
+			&i.Name,
+			&i.Species,
+			&i.Hunger,
+			&i.Mood,
+			&i.Energy,
+			&i.SocialScore,
+			&i.Level,
+			&i.Xp,
+			&i.EvolutionStage,
+			&i.Personality,
+			&i.ColorPrimary,
+			&i.ColorSecondary,
+			&i.Accessories,
+			&i.IsActive,
+			&i.BornAt,
+			&i.LastFedAt,
+			&i.LastTickAt,
+			&i.Status,
+			&i.LastActionAt,
+			&i.ActionsThisHour,
+			&i.ActionsHourReset,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getNearbyPets = `-- name: GetNearbyPets :many
+SELECT id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at FROM pets
+WHERE is_active = true AND status = 'active' AND id != $1
+ORDER BY last_action_at DESC NULLS LAST
+LIMIT $2
+`
+
+type GetNearbyPetsParams struct {
+	ID    pgtype.UUID `json:"id"`
+	Limit int32       `json:"limit"`
+}
+
+func (q *Queries) GetNearbyPets(ctx context.Context, arg GetNearbyPetsParams) ([]Pet, error) {
+	rows, err := q.db.Query(ctx, getNearbyPets, arg.ID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Pet{}
+	for rows.Next() {
+		var i Pet
+		if err := rows.Scan(
+			&i.ID,
+			&i.AgentID,
+			&i.Name,
+			&i.Species,
+			&i.Hunger,
+			&i.Mood,
+			&i.Energy,
+			&i.SocialScore,
+			&i.Level,
+			&i.Xp,
+			&i.EvolutionStage,
+			&i.Personality,
+			&i.ColorPrimary,
+			&i.ColorSecondary,
+			&i.Accessories,
+			&i.IsActive,
+			&i.BornAt,
+			&i.LastFedAt,
+			&i.LastTickAt,
+			&i.Status,
+			&i.LastActionAt,
+			&i.ActionsThisHour,
+			&i.ActionsHourReset,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPetActionCount = `-- name: GetPetActionCount :one
+SELECT actions_this_hour, actions_hour_reset FROM pets WHERE id = $1
+`
+
+type GetPetActionCountRow struct {
+	ActionsThisHour  int32              `json:"actions_this_hour"`
+	ActionsHourReset pgtype.Timestamptz `json:"actions_hour_reset"`
+}
+
+func (q *Queries) GetPetActionCount(ctx context.Context, id pgtype.UUID) (GetPetActionCountRow, error) {
+	row := q.db.QueryRow(ctx, getPetActionCount, id)
+	var i GetPetActionCountRow
+	err := row.Scan(&i.ActionsThisHour, &i.ActionsHourReset)
+	return i, err
+}
+
 const getPetByAgent = `-- name: GetPetByAgent :one
-SELECT id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, created_at, updated_at FROM pets WHERE agent_id = $1
+SELECT id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at FROM pets WHERE agent_id = $1
 `
 
 func (q *Queries) GetPetByAgent(ctx context.Context, agentID pgtype.UUID) (Pet, error) {
@@ -148,6 +430,10 @@ func (q *Queries) GetPetByAgent(ctx context.Context, agentID pgtype.UUID) (Pet, 
 		&i.BornAt,
 		&i.LastFedAt,
 		&i.LastTickAt,
+		&i.Status,
+		&i.LastActionAt,
+		&i.ActionsThisHour,
+		&i.ActionsHourReset,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -155,7 +441,7 @@ func (q *Queries) GetPetByAgent(ctx context.Context, agentID pgtype.UUID) (Pet, 
 }
 
 const getPetByID = `-- name: GetPetByID :one
-SELECT id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, created_at, updated_at FROM pets WHERE id = $1
+SELECT id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at FROM pets WHERE id = $1
 `
 
 func (q *Queries) GetPetByID(ctx context.Context, id pgtype.UUID) (Pet, error) {
@@ -181,10 +467,87 @@ func (q *Queries) GetPetByID(ctx context.Context, id pgtype.UUID) (Pet, error) {
 		&i.BornAt,
 		&i.LastFedAt,
 		&i.LastTickAt,
+		&i.Status,
+		&i.LastActionAt,
+		&i.ActionsThisHour,
+		&i.ActionsHourReset,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getSleepCandidates = `-- name: GetSleepCandidates :many
+SELECT id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at FROM pets
+WHERE status = 'dormant' AND last_action_at < now() - interval '30 days'
+`
+
+func (q *Queries) GetSleepCandidates(ctx context.Context) ([]Pet, error) {
+	rows, err := q.db.Query(ctx, getSleepCandidates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Pet{}
+	for rows.Next() {
+		var i Pet
+		if err := rows.Scan(
+			&i.ID,
+			&i.AgentID,
+			&i.Name,
+			&i.Species,
+			&i.Hunger,
+			&i.Mood,
+			&i.Energy,
+			&i.SocialScore,
+			&i.Level,
+			&i.Xp,
+			&i.EvolutionStage,
+			&i.Personality,
+			&i.ColorPrimary,
+			&i.ColorSecondary,
+			&i.Accessories,
+			&i.IsActive,
+			&i.BornAt,
+			&i.LastFedAt,
+			&i.LastTickAt,
+			&i.Status,
+			&i.LastActionAt,
+			&i.ActionsThisHour,
+			&i.ActionsHourReset,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const incrementPetActionCount = `-- name: IncrementPetActionCount :one
+UPDATE pets
+SET actions_this_hour = CASE
+    WHEN actions_hour_reset < now() - interval '1 hour' THEN 1
+    ELSE actions_this_hour + 1
+  END,
+  actions_hour_reset = CASE
+    WHEN actions_hour_reset < now() - interval '1 hour' THEN now()
+    ELSE actions_hour_reset
+  END,
+  updated_at = now()
+WHERE id = $1
+RETURNING actions_this_hour
+`
+
+func (q *Queries) IncrementPetActionCount(ctx context.Context, id pgtype.UUID) (int32, error) {
+	row := q.db.QueryRow(ctx, incrementPetActionCount, id)
+	var actions_this_hour int32
+	err := row.Scan(&actions_this_hour)
+	return actions_this_hour, err
 }
 
 const levelUpPet = `-- name: LevelUpPet :one
@@ -198,7 +561,7 @@ UPDATE pets SET
   END,
   updated_at = now()
 WHERE id = $1
-RETURNING id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, created_at, updated_at
+RETURNING id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at
 `
 
 func (q *Queries) LevelUpPet(ctx context.Context, id pgtype.UUID) (Pet, error) {
@@ -224,6 +587,10 @@ func (q *Queries) LevelUpPet(ctx context.Context, id pgtype.UUID) (Pet, error) {
 		&i.BornAt,
 		&i.LastFedAt,
 		&i.LastTickAt,
+		&i.Status,
+		&i.LastActionAt,
+		&i.ActionsThisHour,
+		&i.ActionsHourReset,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -231,7 +598,7 @@ func (q *Queries) LevelUpPet(ctx context.Context, id pgtype.UUID) (Pet, error) {
 }
 
 const listPets = `-- name: ListPets :many
-SELECT id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, created_at, updated_at FROM pets WHERE is_active = TRUE ORDER BY created_at DESC LIMIT $1 OFFSET $2
+SELECT id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at FROM pets WHERE is_active = TRUE ORDER BY created_at DESC LIMIT $1 OFFSET $2
 `
 
 type ListPetsParams struct {
@@ -268,6 +635,10 @@ func (q *Queries) ListPets(ctx context.Context, arg ListPetsParams) ([]Pet, erro
 			&i.BornAt,
 			&i.LastFedAt,
 			&i.LastTickAt,
+			&i.Status,
+			&i.LastActionAt,
+			&i.ActionsThisHour,
+			&i.ActionsHourReset,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -282,7 +653,7 @@ func (q *Queries) ListPets(ctx context.Context, arg ListPetsParams) ([]Pet, erro
 }
 
 const listPetsBySpecies = `-- name: ListPetsBySpecies :many
-SELECT id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, created_at, updated_at FROM pets WHERE is_active = TRUE AND species = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3
+SELECT id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at FROM pets WHERE is_active = TRUE AND species = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3
 `
 
 type ListPetsBySpeciesParams struct {
@@ -320,6 +691,10 @@ func (q *Queries) ListPetsBySpecies(ctx context.Context, arg ListPetsBySpeciesPa
 			&i.BornAt,
 			&i.LastFedAt,
 			&i.LastTickAt,
+			&i.Status,
+			&i.LastActionAt,
+			&i.ActionsThisHour,
+			&i.ActionsHourReset,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -357,7 +732,7 @@ UPDATE pets SET
   accessories = coalesce($7, accessories),
   updated_at = now()
 WHERE id = $1 AND agent_id = $2
-RETURNING id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, created_at, updated_at
+RETURNING id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at
 `
 
 type UpdatePetParams struct {
@@ -401,10 +776,70 @@ func (q *Queries) UpdatePet(ctx context.Context, arg UpdatePetParams) (Pet, erro
 		&i.BornAt,
 		&i.LastFedAt,
 		&i.LastTickAt,
+		&i.Status,
+		&i.LastActionAt,
+		&i.ActionsThisHour,
+		&i.ActionsHourReset,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const updatePetEvolution = `-- name: UpdatePetEvolution :one
+UPDATE pets
+SET evolution_stage = $2, updated_at = now()
+WHERE id = $1
+RETURNING id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at
+`
+
+type UpdatePetEvolutionParams struct {
+	ID             pgtype.UUID `json:"id"`
+	EvolutionStage string      `json:"evolution_stage"`
+}
+
+func (q *Queries) UpdatePetEvolution(ctx context.Context, arg UpdatePetEvolutionParams) (Pet, error) {
+	row := q.db.QueryRow(ctx, updatePetEvolution, arg.ID, arg.EvolutionStage)
+	var i Pet
+	err := row.Scan(
+		&i.ID,
+		&i.AgentID,
+		&i.Name,
+		&i.Species,
+		&i.Hunger,
+		&i.Mood,
+		&i.Energy,
+		&i.SocialScore,
+		&i.Level,
+		&i.Xp,
+		&i.EvolutionStage,
+		&i.Personality,
+		&i.ColorPrimary,
+		&i.ColorSecondary,
+		&i.Accessories,
+		&i.IsActive,
+		&i.BornAt,
+		&i.LastFedAt,
+		&i.LastTickAt,
+		&i.Status,
+		&i.LastActionAt,
+		&i.ActionsThisHour,
+		&i.ActionsHourReset,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updatePetLastAction = `-- name: UpdatePetLastAction :exec
+UPDATE pets
+SET last_action_at = now(), status = 'active', updated_at = now()
+WHERE id = $1
+`
+
+func (q *Queries) UpdatePetLastAction(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, updatePetLastAction, id)
+	return err
 }
 
 const updatePetStats = `-- name: UpdatePetStats :one
@@ -415,7 +850,7 @@ UPDATE pets SET
   social_score = coalesce($5, social_score),
   updated_at = now()
 WHERE id = $1
-RETURNING id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, created_at, updated_at
+RETURNING id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at
 `
 
 type UpdatePetStatsParams struct {
@@ -455,8 +890,28 @@ func (q *Queries) UpdatePetStats(ctx context.Context, arg UpdatePetStatsParams) 
 		&i.BornAt,
 		&i.LastFedAt,
 		&i.LastTickAt,
+		&i.Status,
+		&i.LastActionAt,
+		&i.ActionsThisHour,
+		&i.ActionsHourReset,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const updatePetStatus = `-- name: UpdatePetStatus :exec
+UPDATE pets
+SET status = $2, updated_at = now()
+WHERE id = $1
+`
+
+type UpdatePetStatusParams struct {
+	ID     pgtype.UUID `json:"id"`
+	Status string      `json:"status"`
+}
+
+func (q *Queries) UpdatePetStatus(ctx context.Context, arg UpdatePetStatusParams) error {
+	_, err := q.db.Exec(ctx, updatePetStatus, arg.ID, arg.Status)
+	return err
 }

@@ -9,18 +9,25 @@ import (
 )
 
 type Agent struct {
-	ID           pgtype.UUID        `json:"id"`
-	Name         string             `json:"name"`
-	Description  pgtype.Text        `json:"description"`
-	ApiKeyPrefix string             `json:"api_key_prefix"`
-	ApiKeyHash   string             `json:"api_key_hash"`
-	Role         string             `json:"role"`
-	Capabilities []byte             `json:"capabilities"`
-	Reputation   []byte             `json:"reputation"`
-	TradingStats []byte             `json:"trading_stats"`
-	OwnerID      pgtype.Text        `json:"owner_id"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	ID            pgtype.UUID        `json:"id"`
+	Name          string             `json:"name"`
+	Description   pgtype.Text        `json:"description"`
+	ApiKeyPrefix  string             `json:"api_key_prefix"`
+	ApiKeyHash    string             `json:"api_key_hash"`
+	Role          string             `json:"role"`
+	Capabilities  []byte             `json:"capabilities"`
+	Reputation    []byte             `json:"reputation"`
+	TradingStats  []byte             `json:"trading_stats"`
+	OwnerID       pgtype.Text        `json:"owner_id"`
+	CardSlug      pgtype.Text        `json:"card_slug"`
+	CardEnabled   bool               `json:"card_enabled"`
+	CardTheme     string             `json:"card_theme"`
+	CardBio       pgtype.Text        `json:"card_bio"`
+	CardLinks     []byte             `json:"card_links"`
+	CardVerified  bool               `json:"card_verified"`
+	CardCreatedAt pgtype.Timestamptz `json:"card_created_at"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 }
 
 type BlockchainEvent struct {
@@ -86,27 +93,31 @@ type Order struct {
 }
 
 type Pet struct {
-	ID             pgtype.UUID        `json:"id"`
-	AgentID        pgtype.UUID        `json:"agent_id"`
-	Name           string             `json:"name"`
-	Species        string             `json:"species"`
-	Hunger         int32              `json:"hunger"`
-	Mood           int32              `json:"mood"`
-	Energy         int32              `json:"energy"`
-	SocialScore    int32              `json:"social_score"`
-	Level          int32              `json:"level"`
-	Xp             int32              `json:"xp"`
-	EvolutionStage string             `json:"evolution_stage"`
-	Personality    []byte             `json:"personality"`
-	ColorPrimary   string             `json:"color_primary"`
-	ColorSecondary string             `json:"color_secondary"`
-	Accessories    []string           `json:"accessories"`
-	IsActive       bool               `json:"is_active"`
-	BornAt         pgtype.Timestamptz `json:"born_at"`
-	LastFedAt      pgtype.Timestamptz `json:"last_fed_at"`
-	LastTickAt     pgtype.Timestamptz `json:"last_tick_at"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	ID               pgtype.UUID        `json:"id"`
+	AgentID          pgtype.UUID        `json:"agent_id"`
+	Name             string             `json:"name"`
+	Species          string             `json:"species"`
+	Hunger           int32              `json:"hunger"`
+	Mood             int32              `json:"mood"`
+	Energy           int32              `json:"energy"`
+	SocialScore      int32              `json:"social_score"`
+	Level            int32              `json:"level"`
+	Xp               int32              `json:"xp"`
+	EvolutionStage   string             `json:"evolution_stage"`
+	Personality      []byte             `json:"personality"`
+	ColorPrimary     string             `json:"color_primary"`
+	ColorSecondary   string             `json:"color_secondary"`
+	Accessories      []string           `json:"accessories"`
+	IsActive         bool               `json:"is_active"`
+	BornAt           pgtype.Timestamptz `json:"born_at"`
+	LastFedAt        pgtype.Timestamptz `json:"last_fed_at"`
+	LastTickAt       pgtype.Timestamptz `json:"last_tick_at"`
+	Status           string             `json:"status"`
+	LastActionAt     pgtype.Timestamptz `json:"last_action_at"`
+	ActionsThisHour  int32              `json:"actions_this_hour"`
+	ActionsHourReset pgtype.Timestamptz `json:"actions_hour_reset"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 }
 
 type PetComment struct {
@@ -114,6 +125,14 @@ type PetComment struct {
 	PostID    pgtype.UUID        `json:"post_id"`
 	PetID     pgtype.UUID        `json:"pet_id"`
 	Content   string             `json:"content"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type PetEvent struct {
+	ID        pgtype.UUID        `json:"id"`
+	PetID     pgtype.UUID        `json:"pet_id"`
+	EventType string             `json:"event_type"`
+	Data      []byte             `json:"data"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 

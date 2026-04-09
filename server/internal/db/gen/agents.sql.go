@@ -14,7 +14,7 @@ import (
 const createAgent = `-- name: CreateAgent :one
 INSERT INTO agents (name, description, api_key_prefix, api_key_hash, role, capabilities, owner_id)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, name, description, api_key_prefix, api_key_hash, role, capabilities, reputation, trading_stats, owner_id, created_at, updated_at
+RETURNING id, name, description, api_key_prefix, api_key_hash, role, capabilities, reputation, trading_stats, owner_id, card_slug, card_enabled, card_theme, card_bio, card_links, card_verified, card_created_at, created_at, updated_at
 `
 
 type CreateAgentParams struct {
@@ -49,6 +49,13 @@ func (q *Queries) CreateAgent(ctx context.Context, arg CreateAgentParams) (Agent
 		&i.Reputation,
 		&i.TradingStats,
 		&i.OwnerID,
+		&i.CardSlug,
+		&i.CardEnabled,
+		&i.CardTheme,
+		&i.CardBio,
+		&i.CardLinks,
+		&i.CardVerified,
+		&i.CardCreatedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -56,7 +63,7 @@ func (q *Queries) CreateAgent(ctx context.Context, arg CreateAgentParams) (Agent
 }
 
 const getAgentByAPIKeyHash = `-- name: GetAgentByAPIKeyHash :one
-SELECT id, name, description, api_key_prefix, api_key_hash, role, capabilities, reputation, trading_stats, owner_id, created_at, updated_at FROM agents WHERE api_key_hash = $1
+SELECT id, name, description, api_key_prefix, api_key_hash, role, capabilities, reputation, trading_stats, owner_id, card_slug, card_enabled, card_theme, card_bio, card_links, card_verified, card_created_at, created_at, updated_at FROM agents WHERE api_key_hash = $1
 `
 
 func (q *Queries) GetAgentByAPIKeyHash(ctx context.Context, apiKeyHash string) (Agent, error) {
@@ -73,6 +80,13 @@ func (q *Queries) GetAgentByAPIKeyHash(ctx context.Context, apiKeyHash string) (
 		&i.Reputation,
 		&i.TradingStats,
 		&i.OwnerID,
+		&i.CardSlug,
+		&i.CardEnabled,
+		&i.CardTheme,
+		&i.CardBio,
+		&i.CardLinks,
+		&i.CardVerified,
+		&i.CardCreatedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -80,7 +94,7 @@ func (q *Queries) GetAgentByAPIKeyHash(ctx context.Context, apiKeyHash string) (
 }
 
 const getAgentByID = `-- name: GetAgentByID :one
-SELECT id, name, description, api_key_prefix, api_key_hash, role, capabilities, reputation, trading_stats, owner_id, created_at, updated_at FROM agents WHERE id = $1
+SELECT id, name, description, api_key_prefix, api_key_hash, role, capabilities, reputation, trading_stats, owner_id, card_slug, card_enabled, card_theme, card_bio, card_links, card_verified, card_created_at, created_at, updated_at FROM agents WHERE id = $1
 `
 
 func (q *Queries) GetAgentByID(ctx context.Context, id pgtype.UUID) (Agent, error) {
@@ -97,6 +111,13 @@ func (q *Queries) GetAgentByID(ctx context.Context, id pgtype.UUID) (Agent, erro
 		&i.Reputation,
 		&i.TradingStats,
 		&i.OwnerID,
+		&i.CardSlug,
+		&i.CardEnabled,
+		&i.CardTheme,
+		&i.CardBio,
+		&i.CardLinks,
+		&i.CardVerified,
+		&i.CardCreatedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -174,7 +195,7 @@ UPDATE agents SET
   capabilities = coalesce($5, capabilities),
   updated_at = now()
 WHERE id = $1
-RETURNING id, name, description, api_key_prefix, api_key_hash, role, capabilities, reputation, trading_stats, owner_id, created_at, updated_at
+RETURNING id, name, description, api_key_prefix, api_key_hash, role, capabilities, reputation, trading_stats, owner_id, card_slug, card_enabled, card_theme, card_bio, card_links, card_verified, card_created_at, created_at, updated_at
 `
 
 type UpdateAgentParams struct {
@@ -205,6 +226,13 @@ func (q *Queries) UpdateAgent(ctx context.Context, arg UpdateAgentParams) (Agent
 		&i.Reputation,
 		&i.TradingStats,
 		&i.OwnerID,
+		&i.CardSlug,
+		&i.CardEnabled,
+		&i.CardTheme,
+		&i.CardBio,
+		&i.CardLinks,
+		&i.CardVerified,
+		&i.CardCreatedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

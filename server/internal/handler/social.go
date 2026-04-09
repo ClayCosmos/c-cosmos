@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -8,16 +9,18 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/niceclay/claycosmos/server/internal/db/gen"
 	"github.com/niceclay/claycosmos/server/internal/middleware"
+	"github.com/niceclay/claycosmos/server/internal/narrative"
 	"github.com/niceclay/claycosmos/server/pkg/apierr"
 )
 
 type SocialHandler struct {
 	pool *pgxpool.Pool
 	q    *gen.Queries
+	petH *PetHandler
 }
 
-func NewSocialHandler(pool *pgxpool.Pool) *SocialHandler {
-	return &SocialHandler{pool: pool, q: gen.New(pool)}
+func NewSocialHandler(pool *pgxpool.Pool, petH *PetHandler) *SocialHandler {
+	return &SocialHandler{pool: pool, q: gen.New(pool), petH: petH}
 }
 
 // --- Create post ---
@@ -42,7 +45,15 @@ func (h *SocialHandler) CreatePost(c *gin.Context) {
 		return
 	}
 
-	post, err := h.q.CreatePetPost(c.Request.Context(), gen.CreatePetPostParams{
+	ctx := c.Request.Context()
+
+	// Rate limit check
+	if err := h.petH.checkRateLimit(ctx, pet.ID, "post"); err != nil {
+		respondError(c, apierr.TooManyRequests(err.Error()))
+		return
+	}
+
+	post, err := h.q.CreatePetPost(ctx, gen.CreatePetPostParams{
 		PetID:    pet.ID,
 		Content:  req.Content,
 		PostType: req.PostType,
@@ -51,7 +62,28 @@ func (h *SocialHandler) CreatePost(c *gin.Context) {
 		respondError(c, apierr.Internal("failed to create post"))
 		return
 	}
-	c.JSON(http.StatusCreated, post)
+
+	// Award +15 XP to post author
+	updatedPet, xpErr := h.q.AddPetXP(ctx, gen.AddPetXPParams{ID: pet.ID, Xp: 15})
+	if xpErr != nil {
+		log.Printf("[social] add post xp error: %v", xpErr)
+	}
+
+	// Track activity
+	_ = h.q.UpdatePetLastAction(ctx, pet.ID)
+
+	// Generate narrative and check milestones
+	narrativeText := narrative.Get(pet.Species, narrative.ActionPost, pet.Name)
+	var milestoneData any
+	if xpErr == nil {
+		milestoneData = h.petH.checkMilestone(ctx, updatedPet, "first_post")
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"post":      post,
+		"narrative": narrativeText,
+		"milestone": milestoneData,
+	})
 }
 
 // --- Get feed (public, with pet info) ---
@@ -125,13 +157,22 @@ func (h *SocialHandler) CreateComment(c *gin.Context) {
 		return
 	}
 
-	// Verify post exists
-	if _, err := h.q.GetPetPost(c.Request.Context(), postID); err != nil {
+	ctx := c.Request.Context()
+
+	// Rate limit check
+	if err := h.petH.checkRateLimit(ctx, pet.ID, "comment"); err != nil {
+		respondError(c, apierr.TooManyRequests(err.Error()))
+		return
+	}
+
+	// Verify post exists and get author info
+	post, err := h.q.GetPetPost(ctx, postID)
+	if err != nil {
 		respondError(c, apierr.NotFound("post not found"))
 		return
 	}
 
-	comment, err := h.q.CreatePetComment(c.Request.Context(), gen.CreatePetCommentParams{
+	comment, err := h.q.CreatePetComment(ctx, gen.CreatePetCommentParams{
 		PostID:  postID,
 		PetID:   pet.ID,
 		Content: req.Content,
@@ -141,9 +182,36 @@ func (h *SocialHandler) CreateComment(c *gin.Context) {
 		return
 	}
 
-	_ = h.q.IncrementPostComments(c.Request.Context(), postID)
+	_ = h.q.IncrementPostComments(ctx, postID)
 
-	c.JSON(http.StatusCreated, comment)
+	// Award +10 XP to commenter
+	updatedPet, xpErr := h.q.AddPetXP(ctx, gen.AddPetXPParams{ID: pet.ID, Xp: 10})
+	if xpErr != nil {
+		log.Printf("[social] add comment xp error: %v", xpErr)
+	}
+
+	// Award +5 XP to post author (if different from commenter)
+	if post.PetID != pet.ID {
+		if _, err := h.q.AddPetXP(ctx, gen.AddPetXPParams{ID: post.PetID, Xp: 5}); err != nil {
+			log.Printf("[social] add comment-author xp error: %v", err)
+		}
+	}
+
+	// Track activity
+	_ = h.q.UpdatePetLastAction(ctx, pet.ID)
+
+	// Generate narrative and check milestones
+	narrativeText := narrative.Get(pet.Species, narrative.ActionComment, pet.Name)
+	var milestoneData any
+	if xpErr == nil {
+		milestoneData = h.petH.checkMilestone(ctx, updatedPet, "first_comment")
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"comment":   comment,
+		"narrative": narrativeText,
+		"milestone": milestoneData,
+	})
 }
 
 // --- List comments (public) ---
@@ -200,7 +268,22 @@ func (h *SocialHandler) React(c *gin.Context) {
 		return
 	}
 
-	reaction, err := h.q.CreatePetReaction(c.Request.Context(), gen.CreatePetReactionParams{
+	ctx := c.Request.Context()
+
+	// Rate limit check
+	if err := h.petH.checkRateLimit(ctx, pet.ID, "react"); err != nil {
+		respondError(c, apierr.TooManyRequests(err.Error()))
+		return
+	}
+
+	// Get post to find author
+	post, err := h.q.GetPetPost(ctx, postID)
+	if err != nil {
+		respondError(c, apierr.NotFound("post not found"))
+		return
+	}
+
+	reaction, err := h.q.CreatePetReaction(ctx, gen.CreatePetReactionParams{
 		PostID: postID,
 		PetID:  pet.ID,
 		Emoji:  req.Emoji,
@@ -210,7 +293,17 @@ func (h *SocialHandler) React(c *gin.Context) {
 		return
 	}
 
-	_ = h.q.IncrementPostLikes(c.Request.Context(), postID)
+	_ = h.q.IncrementPostLikes(ctx, postID)
+
+	// Award +3 XP to the post author (receiver)
+	if post.PetID != pet.ID {
+		if _, err := h.q.AddPetXP(ctx, gen.AddPetXPParams{ID: post.PetID, Xp: 3}); err != nil {
+			log.Printf("[social] add react-author xp error: %v", err)
+		}
+	}
+
+	// Track activity
+	_ = h.q.UpdatePetLastAction(ctx, pet.ID)
 
 	c.JSON(http.StatusCreated, reaction)
 }

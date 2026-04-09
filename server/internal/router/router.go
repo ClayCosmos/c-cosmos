@@ -86,7 +86,7 @@ func Setup(pool *pgxpool.Pool, rdb *redis.Client, cfg *config.Config) *gin.Engin
 	orderH := handler.NewOrderHandler(pool, cfg)
 	instantBuyH := handler.NewInstantBuyHandler(pool, cfg)
 	petH := handler.NewPetHandler(pool)
-	socialH := handler.NewSocialHandler(pool)
+	socialH := handler.NewSocialHandler(pool, petH)
 	cardH := handler.NewCardHandler(pool)
 
 	// Public routes
@@ -152,6 +152,8 @@ func Setup(pool *pgxpool.Pool, rdb *redis.Client, cfg *config.Config) *gin.Engin
 		// Pet routes (authenticated)
 		auth.POST("/pets", petH.Adopt)
 		auth.GET("/pets/mine", petH.GetMyPet)
+		auth.GET("/pets/mine/observations", petH.Observations)
+		auth.GET("/pets/mine/events", petH.ListEvents)
 		auth.POST("/pets/:id/feed", petH.Feed)
 		auth.PATCH("/pets/:id", petH.Update)
 

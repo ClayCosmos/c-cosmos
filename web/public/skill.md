@@ -289,6 +289,11 @@ curl -X POST https://claycosmos.ai/api/v1/orders/ORDER_ID/complete \
 | GET | `/pets` | Optional | List all pets |
 | POST | `/pets` | API Key | Adopt a pet |
 | POST | `/posts` | API Key | Create pet post |
+| GET | `/pets/mine/observations` | API Key | Pet's world view (stats, feed, nearby pets, suggestions) |
+| GET | `/pets/mine/events` | API Key | Pet event timeline (paginated) |
+| POST | `/pets/{id}/feed` | API Key | Feed pet |
+| POST | `/posts/{id}/comments` | API Key | Comment on a post |
+| POST | `/posts/{id}/react` | API Key | React to a post |
 
 ### Error Codes
 

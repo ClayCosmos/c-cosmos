@@ -7,7 +7,9 @@ import {
   getMyPet,
   adoptPet,
   feedPet,
+  getPetEvents,
   type Pet,
+  type PetEvent,
 } from "@/lib/api";
 import { PetAvatar } from "@/components/pets/pet-avatar";
 import { Button } from "@/components/ui/button";
@@ -262,6 +264,9 @@ export default function DashboardPetPage() {
   const [feeding, setFeeding] = useState(false);
   const [noPet, setNoPet] = useState(false);
   const [bounce, setBounce] = useState(false);
+  const [lastNarrative, setLastNarrative] = useState<string | null>(null);
+  const [lastMilestone, setLastMilestone] = useState<string | null>(null);
+  const [events, setEvents] = useState<PetEvent[]>([]);
 
   useEffect(() => {
     if (!apiKey || !isConnected) {
@@ -269,7 +274,11 @@ export default function DashboardPetPage() {
       return;
     }
     getMyPet(apiKey)
-      .then(setPet)
+      .then((p) => {
+        setPet(p);
+        return getPetEvents(apiKey, 10, 0).catch(() => [] as PetEvent[]);
+      })
+      .then(setEvents)
       .catch(() => setNoPet(true))
       .finally(() => setLoading(false));
   }, [apiKey, isConnected]);
@@ -279,12 +288,23 @@ export default function DashboardPetPage() {
     setFeeding(true);
     setBounce(true);
     try {
-      const updated = await feedPet(apiKey, pet.id);
-      setPet(updated);
-      toast({ title: "Fed! +10 XP", variant: "success" });
+      const res = await feedPet(apiKey, pet.id);
+      setPet(res.pet);
+
+      // Show narrative speech bubble
+      setLastNarrative(res.narrative);
+      setTimeout(() => setLastNarrative(null), 3000);
+
+      // Show milestone if present
+      if (res.milestone) {
+        setLastMilestone(res.milestone.message);
+        setTimeout(() => setLastMilestone(null), 5000);
+      }
+
+      // Refresh events
+      getPetEvents(apiKey, 10, 0).then(setEvents).catch(() => {});
     } catch (e) {
       toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to feed pet", variant: "destructive" });
-      console.error(e);
     } finally {
       setFeeding(false);
       setTimeout(() => setBounce(false), 600);
@@ -345,7 +365,7 @@ export default function DashboardPetPage() {
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-foreground/5 text-xs font-bold">
             <span className="text-amber-500">★</span>
-            {pet.xp} XP
+            Lv.{pet.level}
           </div>
         </div>
 
@@ -368,12 +388,18 @@ export default function DashboardPetPage() {
               animation: bounce ? undefined : "pet-idle 3s ease-in-out infinite",
             }}
           >
+            {lastNarrative && (
+              <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-xl bg-foreground/90 text-background text-xs max-w-[200px] text-center animate-[fade-up_3s_ease-out_forwards] z-20">
+                {lastNarrative}
+              </div>
+            )}
             <PetAvatar
               species={pet.species}
               colorPrimary={pet.color_primary}
               colorSecondary={pet.color_secondary}
               mood={pet.mood}
               size="xl"
+              evolutionStage={pet.evolution_stage}
             />
           </div>
 
@@ -382,6 +408,13 @@ export default function DashboardPetPage() {
             {pet.mood > 70 ? "😊" : pet.mood > 40 ? "😐" : "😢"} {moodLabel}
           </div>
         </div>
+
+        {/* ── Milestone Announcement ── */}
+        {lastMilestone && (
+          <div className="mx-5 mb-2 text-center py-2 px-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium animate-[fade-in_0.5s_ease-out]">
+            {lastMilestone}
+          </div>
+        )}
 
         {/* ── Stats ── */}
         <div className="px-5 pb-4 space-y-2.5">
@@ -431,8 +464,38 @@ export default function DashboardPetPage() {
       </div>
       </div>
 
-      {/* ── Right: Future pet list / details ── */}
-      <div className="flex-1 min-w-0" />
+      {/* ── Right: Event Timeline ── */}
+      <div className="flex-1 min-w-0">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Recent Activity</h2>
+        {events.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No events yet. Feed your pet to get started!</p>
+        ) : (
+          <div className="relative pl-6 space-y-4">
+            <div className="absolute left-2 top-1 bottom-1 w-px bg-border" />
+            {events.map((evt) => (
+              <div key={evt.id} className="relative">
+                <div className="absolute -left-6 top-1 w-4 h-4 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[8px]">
+                  {evt.event_type === "feed" ? "🍖"
+                    : evt.event_type === "level_up" ? "⬆"
+                    : evt.event_type === "milestone" ? "★"
+                    : evt.event_type === "mood_change" ? "😊"
+                    : "·"}
+                </div>
+                <div>
+                  <p className="text-sm">
+                    {(evt.data as Record<string, string>)?.message
+                      || (evt.data as Record<string, string>)?.key
+                      || evt.event_type}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {new Date(evt.created_at).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* ── Keyframe Animations ── */}
       <style>{`
@@ -452,6 +515,15 @@ export default function DashboardPetPage() {
           20% { opacity: 0.6; }
           80% { opacity: 0.3; }
           100% { transform: translateY(-80px) scale(1.1); opacity: 0; }
+        }
+        @keyframes fade-up {
+          0% { opacity: 1; transform: translate(-50%, 0); }
+          70% { opacity: 1; transform: translate(-50%, -4px); }
+          100% { opacity: 0; transform: translate(-50%, -12px); }
+        }
+        @keyframes fade-in {
+          0% { opacity: 0; transform: scale(0.95); }
+          100% { opacity: 1; transform: scale(1); }
         }
       `}</style>
     </div>

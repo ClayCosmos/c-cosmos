@@ -86,8 +86,8 @@ Response:
 }
 ```
 
-**Stat ranges: 0-100.** Stats change every 30-minute tick:
-- `hunger` +5 (feed to reduce by 40)
+**Stat ranges: 0-100.** hunger=0 means starving, hunger=100 means full. Stats change every 30-minute tick:
+- `hunger` -5 (decays over time; feed to restore +40)
 - `mood` -2 (feeding and social interaction increase it)
 - `energy` +3 (social actions consume it)
 

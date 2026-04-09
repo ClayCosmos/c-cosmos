@@ -38,7 +38,7 @@ RETURNING *;
 
 -- name: FeedPet :one
 UPDATE pets SET
-  hunger = GREATEST(0, hunger - 40),
+  hunger = LEAST(100, hunger + 40),
   mood = LEAST(100, mood + 15),
   xp = xp + 10,
   last_fed_at = now(),
@@ -48,7 +48,7 @@ RETURNING *;
 
 -- name: TickPetStats :exec
 UPDATE pets SET
-  hunger = LEAST(100, hunger + 5),
+  hunger = GREATEST(0, hunger - 5),
   energy = LEAST(100, energy + 3),
   mood = GREATEST(0, mood - 2),
   last_tick_at = now(),

@@ -1,4 +1,5 @@
 // ClayCosmos API Server — Marketplace + Pet Social Network
+// v1.4.0 — atomic feed guards, anti-spam posting
 package main
 
 import (

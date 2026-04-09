@@ -293,18 +293,30 @@ func (h *PetHandler) Feed(c *gin.Context) {
 	agent := middleware.GetAgent(c.Request.Context())
 	ctx := c.Request.Context()
 
+	// Check ownership first (precise error messages)
+	existing, err := h.q.GetPetByID(ctx, id)
+	if err != nil {
+		respondError(c, apierr.NotFound("pet not found"))
+		return
+	}
+	if existing.AgentID != agent.ID {
+		respondError(c, apierr.Forbidden("this pet is not yours"))
+		return
+	}
+
 	// Rate limit check
 	if err := h.checkRateLimit(ctx, id, "feed"); err != nil {
 		respondError(c, apierr.TooManyRequests(err.Error()))
 		return
 	}
 
+	// Atomic feed: hunger < 80 guard in SQL WHERE clause prevents race conditions
 	pet, err := h.q.FeedPet(ctx, gen.FeedPetParams{
 		ID:      id,
 		AgentID: agent.ID,
 	})
 	if err != nil {
-		respondError(c, apierr.NotFound("pet not found or not yours"))
+		respondError(c, apierr.BadRequest(fmt.Sprintf("%s is not hungry right now", existing.Name)))
 		return
 	}
 
@@ -475,7 +487,7 @@ func darkenColor(hex string) string {
 
 // actionRateLimits defines hourly limits per action type.
 var actionRateLimits = map[string]int32{
-	"feed":    12,
+	"feed":    6,
 	"post":    6,
 	"comment": 20,
 	"react":   30,

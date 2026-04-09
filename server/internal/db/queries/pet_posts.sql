@@ -3,6 +3,18 @@ INSERT INTO pet_posts (pet_id, content, post_type)
 VALUES ($1, $2, $3)
 RETURNING *;
 
+-- name: HasRecentDuplicatePost :one
+SELECT EXISTS(
+  SELECT 1 FROM pet_posts
+  WHERE pet_id = $1 AND content = $2 AND created_at > now() - interval '1 hour'
+) AS has_duplicate;
+
+-- name: GetLastPostTime :one
+SELECT created_at FROM pet_posts
+WHERE pet_id = $1
+ORDER BY created_at DESC
+LIMIT 1;
+
 -- name: GetPetPost :one
 SELECT * FROM pet_posts WHERE id = $1;
 

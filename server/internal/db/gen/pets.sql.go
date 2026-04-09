@@ -134,7 +134,7 @@ UPDATE pets SET
   xp = xp + 10,
   last_fed_at = now(),
   updated_at = now()
-WHERE id = $1 AND agent_id = $2
+WHERE id = $1 AND agent_id = $2 AND hunger < 80
 RETURNING id, agent_id, name, species, hunger, mood, energy, social_score, level, xp, evolution_stage, personality, color_primary, color_secondary, accessories, is_active, born_at, last_fed_at, last_tick_at, status, last_action_at, actions_this_hour, actions_hour_reset, created_at, updated_at
 `
 

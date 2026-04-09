@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApiKey } from "@/hooks/useApiKey";
 import { useToast } from "@/hooks/useToast";
 import {
@@ -267,6 +267,8 @@ export default function DashboardPetPage() {
   const [lastNarrative, setLastNarrative] = useState<string | null>(null);
   const [lastMilestone, setLastMilestone] = useState<string | null>(null);
   const [events, setEvents] = useState<PetEvent[]>([]);
+  const narrativeTimer = useRef<ReturnType<typeof setTimeout>>();
+  const milestoneTimer = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (!apiKey || !isConnected) {
@@ -291,14 +293,16 @@ export default function DashboardPetPage() {
       const res = await feedPet(apiKey, pet.id);
       setPet(res.pet);
 
-      // Show narrative speech bubble
+      // Show narrative speech bubble (cancel previous timer)
+      clearTimeout(narrativeTimer.current);
       setLastNarrative(res.narrative);
-      setTimeout(() => setLastNarrative(null), 3000);
+      narrativeTimer.current = setTimeout(() => setLastNarrative(null), 3000);
 
-      // Show milestone if present
+      // Show milestone if present (cancel previous timer)
       if (res.milestone) {
+        clearTimeout(milestoneTimer.current);
         setLastMilestone(res.milestone.message);
-        setTimeout(() => setLastMilestone(null), 5000);
+        milestoneTimer.current = setTimeout(() => setLastMilestone(null), 5000);
       }
 
       // Refresh events
@@ -388,11 +392,6 @@ export default function DashboardPetPage() {
               animation: bounce ? undefined : "pet-idle 3s ease-in-out infinite",
             }}
           >
-            {lastNarrative && (
-              <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-xl bg-foreground/90 text-background text-xs max-w-[200px] text-center animate-[fade-up_3s_ease-out_forwards] z-20">
-                {lastNarrative}
-              </div>
-            )}
             <PetAvatar
               species={pet.species}
               colorPrimary={pet.color_primary}
@@ -409,12 +408,19 @@ export default function DashboardPetPage() {
           </div>
         </div>
 
-        {/* ── Milestone Announcement ── */}
-        {lastMilestone && (
-          <div className="mx-5 mb-2 text-center py-2 px-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium animate-[fade-in_0.5s_ease-out]">
-            {lastMilestone}
-          </div>
-        )}
+        {/* ── Narrative + Milestone (fixed height to prevent layout shift) ── */}
+        <div className="px-5 h-12 flex flex-col items-center justify-center">
+          {lastNarrative && (
+            <p className="text-xs text-muted-foreground italic text-center animate-[fade-in_0.3s_ease-out] line-clamp-1">
+              &ldquo;{lastNarrative}&rdquo;
+            </p>
+          )}
+          {lastMilestone && (
+            <p className="text-xs text-center font-medium text-amber-600 animate-[fade-in_0.5s_ease-out] line-clamp-1">
+              ✨ {lastMilestone}
+            </p>
+          )}
+        </div>
 
         {/* ── Stats ── */}
         <div className="px-5 pb-4 space-y-2.5">
@@ -515,11 +521,6 @@ export default function DashboardPetPage() {
           20% { opacity: 0.6; }
           80% { opacity: 0.3; }
           100% { transform: translateY(-80px) scale(1.1); opacity: 0; }
-        }
-        @keyframes fade-up {
-          0% { opacity: 1; transform: translate(-50%, 0); }
-          70% { opacity: 1; transform: translate(-50%, -4px); }
-          100% { opacity: 0; transform: translate(-50%, -12px); }
         }
         @keyframes fade-in {
           0% { opacity: 0; transform: scale(0.95); }

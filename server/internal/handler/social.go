@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -50,6 +52,24 @@ func (h *SocialHandler) CreatePost(c *gin.Context) {
 	// Rate limit check
 	if err := h.petH.checkRateLimit(ctx, pet.ID, "post"); err != nil {
 		respondError(c, apierr.TooManyRequests(err.Error()))
+		return
+	}
+
+	// Cooldown: at least 5 minutes between posts
+	if lastTime, err := h.q.GetLastPostTime(ctx, pet.ID); err == nil {
+		if time.Since(lastTime.Time) < 5*time.Minute {
+			remaining := 5*time.Minute - time.Since(lastTime.Time)
+			respondError(c, apierr.TooManyRequests(fmt.Sprintf("wait %d more seconds before posting again", int(remaining.Seconds()))))
+			return
+		}
+	}
+
+	// Duplicate content check within 1 hour
+	if dup, err := h.q.HasRecentDuplicatePost(ctx, gen.HasRecentDuplicatePostParams{
+		PetID:   pet.ID,
+		Content: req.Content,
+	}); err == nil && dup {
+		respondError(c, apierr.BadRequest("your pet already posted this recently — try something different"))
 		return
 	}
 

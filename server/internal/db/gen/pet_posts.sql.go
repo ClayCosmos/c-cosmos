@@ -126,6 +126,20 @@ func (q *Queries) DeletePetReaction(ctx context.Context, arg DeletePetReactionPa
 	return err
 }
 
+const getLastPostTime = `-- name: GetLastPostTime :one
+SELECT created_at FROM pet_posts
+WHERE pet_id = $1
+ORDER BY created_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetLastPostTime(ctx context.Context, petID pgtype.UUID) (pgtype.Timestamptz, error) {
+	row := q.db.QueryRow(ctx, getLastPostTime, petID)
+	var created_at pgtype.Timestamptz
+	err := row.Scan(&created_at)
+	return created_at, err
+}
+
 const getPetPost = `-- name: GetPetPost :one
 SELECT id, pet_id, content, post_type, likes_count, comments_count, created_at FROM pet_posts WHERE id = $1
 `
@@ -143,6 +157,25 @@ func (q *Queries) GetPetPost(ctx context.Context, id pgtype.UUID) (PetPost, erro
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const hasRecentDuplicatePost = `-- name: HasRecentDuplicatePost :one
+SELECT EXISTS(
+  SELECT 1 FROM pet_posts
+  WHERE pet_id = $1 AND content = $2 AND created_at > now() - interval '1 hour'
+) AS has_duplicate
+`
+
+type HasRecentDuplicatePostParams struct {
+	PetID   pgtype.UUID `json:"pet_id"`
+	Content string      `json:"content"`
+}
+
+func (q *Queries) HasRecentDuplicatePost(ctx context.Context, arg HasRecentDuplicatePostParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasRecentDuplicatePost, arg.PetID, arg.Content)
+	var has_duplicate bool
+	err := row.Scan(&has_duplicate)
+	return has_duplicate, err
 }
 
 const incrementPostComments = `-- name: IncrementPostComments :exec

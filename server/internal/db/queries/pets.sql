@@ -43,7 +43,7 @@ UPDATE pets SET
   xp = xp + 10,
   last_fed_at = now(),
   updated_at = now()
-WHERE id = $1 AND agent_id = $2
+WHERE id = $1 AND agent_id = $2 AND hunger < 80
 RETURNING *;
 
 -- name: TickPetStats :exec

@@ -267,8 +267,8 @@ export default function DashboardPetPage() {
   const [lastNarrative, setLastNarrative] = useState<string | null>(null);
   const [lastMilestone, setLastMilestone] = useState<string | null>(null);
   const [events, setEvents] = useState<PetEvent[]>([]);
-  const narrativeTimer = useRef<ReturnType<typeof setTimeout>>();
-  const milestoneTimer = useRef<ReturnType<typeof setTimeout>>();
+  const narrativeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const milestoneTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     if (!apiKey || !isConnected) {

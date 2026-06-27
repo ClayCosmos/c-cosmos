@@ -18,10 +18,17 @@ spec:
         app.kubernetes.io/component: redis
     spec:
       nodeSelector:
-        nodepool: ondemand
+        # Provider-managed label auto-applied by Rackspace NGPC to on-demand
+        # (non-spot) nodes; survives node cycling. The previous manual
+        # `nodepool: ondemand` label was dropped after a node rotation, leaving
+        # this pod unschedulable.
+        servers.ngpc.rxt.io/type: ondemand
       containers:
         - name: redis
-          image: redis:7-alpine
+          # Pull from the AWS ECR Public mirror of the Docker official image to
+          # avoid Docker Hub anonymous pull rate limits (HTTP 429). containerd
+          # fetches an anonymous token automatically; no imagePullSecret needed.
+          image: public.ecr.aws/docker/library/redis:7-alpine
           ports:
             - name: redis
               containerPort: 6379

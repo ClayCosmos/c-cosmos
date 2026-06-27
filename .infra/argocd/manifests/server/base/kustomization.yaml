@@ -17,8 +17,7 @@ resources:
   - deployment.yaml
   - service.yaml
   - hpa.yaml
-  - redis-deployment.yaml
-  - redis-service.yaml
+  # redis moved to the claycosmos-infra repo (namespace `infra`).
 
 images:
   - name: ghcr.io/claycosmos/claycosmos-server

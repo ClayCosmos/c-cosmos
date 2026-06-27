@@ -35,7 +35,9 @@ fi
 
 NAMESPACE="claycosmos"
 SECRET_NAME="claycosmos-server-secrets"
-OUTPUT_FILE="$SCRIPT_DIR/../argocd/manifests/server/overlays/prod/sealed-secret.yaml"
+# The claycosmos-prod app syncs from overlays/prod (not server/overlays/prod),
+# so the generated sealed secret must land there to actually take effect.
+OUTPUT_FILE="$SCRIPT_DIR/../argocd/manifests/overlays/prod/sealed-secret.yaml"
 
 DATABASE_URL=$(grep "^DATABASE_URL=" "$ENV_FILE" | cut -d '=' -f2-)
 REDIS_URL=$(grep "^REDIS_URL=" "$ENV_FILE" | cut -d '=' -f2-)
